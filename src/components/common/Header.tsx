@@ -19,6 +19,32 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
     router.push("/login");
   };
 
+  const handleSwitchRole = () => {
+    if (userRole === "ADMIN") {
+      // Chuyển sang vai trò HLV
+      const coachUser = {
+        id: "user-coach-1",
+        name: "GM Bùi Vinh",
+        email: "hlv1@kttll.vn",
+        role: "COACH",
+        title: "Đại Kiện Tướng Quốc Tế",
+      };
+      localStorage.setItem("kttll_user", JSON.stringify(coachUser));
+      router.push("/coach/classes");
+    } else {
+      // Chuyển sang vai trò Admin
+      const adminUser = {
+        id: "user-admin",
+        name: "Ban Quản Trị CLB",
+        email: "admin@kttll.vn",
+        role: "ADMIN",
+        title: "Quản trị toàn bộ 7 cơ sở",
+      };
+      localStorage.setItem("kttll_user", JSON.stringify(adminUser));
+      router.push("/admin/branches");
+    }
+  };
+
   const todayStr = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
     year: "numeric",
@@ -26,14 +52,32 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
     day: "numeric",
   }).format(new Date());
 
-  const cleanName = (name?: string) => {
-    if (!name) return userRole === "ADMIN" ? "Ban Quản Trị" : "GM Bùi Vinh";
-    return name.replace(/ĐKT/g, "GM");
+  const getDisplayName = () => {
+    if (userRole === "ADMIN") {
+      if (!userName || userName.includes("HLV") || userName.includes("Bùi Vinh")) {
+        return "Ban Quản Trị CLB";
+      }
+      return userName.replace(/ĐKT/g, "GM");
+    } else {
+      if (!userName || userName.includes("Ban Quản") || userName.includes("Ban Chủ")) {
+        return "GM Bùi Vinh";
+      }
+      return userName.replace(/ĐKT/g, "GM");
+    }
   };
 
-  const cleanTitle = (title?: string) => {
-    if (!title) return userRole === "ADMIN" ? "Quản lý toàn bộ cơ sở" : "Đại Kiện Tướng Quốc Tế";
-    return title.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
+  const getDisplayTitle = () => {
+    if (userRole === "ADMIN") {
+      if (!userTitle || userTitle.includes("Kiện Tướng") || userTitle.includes("HLV")) {
+        return "Quản trị toàn bộ 7 cơ sở";
+      }
+      return userTitle.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
+    } else {
+      if (!userTitle || userTitle.includes("Quản trị") || userTitle.includes("Cơ sở")) {
+        return "Đại Kiện Tướng Quốc Tế";
+      }
+      return userTitle.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
+    }
   };
 
   return (
@@ -61,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
 
-        {/* User Badge */}
+        {/* User Badge - Đảm bảo phân biệt rạch ròi ADMIN và HLV */}
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-3 border border-slate-200/70">
           <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-white shadow-sm ${
             userRole === "ADMIN" ? "bg-slate-900" : "bg-brand-primary"
@@ -74,19 +118,19 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           </div>
           <div className="text-left leading-tight">
             <p className="text-xs font-bold text-slate-800">
-              {cleanName(userName)}
+              {getDisplayName()}
             </p>
             <p className="text-[10px] text-slate-500">
-              {cleanTitle(userTitle)}
+              {getDisplayTitle()}
             </p>
           </div>
         </div>
 
         {/* Role Switcher Demo */}
         <button
-          onClick={() => router.push(userRole === "ADMIN" ? "/coach/classes" : "/admin/dashboard")}
-          className="hidden rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 md:block"
-          title="Chuyển đổi giao diện để test"
+          onClick={handleSwitchRole}
+          className="hidden rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-brand-primary hover:text-white transition-colors md:block"
+          title="Chuyển đổi vai trò và đồng bộ thông tin"
         >
           Đổi sang {userRole === "ADMIN" ? "HLV" : "Admin"}
         </button>

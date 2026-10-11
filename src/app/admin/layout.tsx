@@ -9,26 +9,22 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [adminName, setAdminName] = useState("Ban Chủ Nhiệm CLB");
-  const [adminTitle, setAdminTitle] = useState("Quản trị toàn bộ 4 cơ sở");
+  const [adminName, setAdminName] = useState("Ban Quản Trị CLB");
+  const [adminTitle, setAdminTitle] = useState("Quản trị toàn bộ 7 cơ sở");
 
   useEffect(() => {
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        const fixedName = (u.name || "Ban Chủ Nhiệm CLB").replace(/ĐKT/g, "GM");
-        const fixedTitle = (u.title || "Quản trị toàn bộ 4 cơ sở")
-          .replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "")
-          .replace(/ĐKT/g, "GM")
-          .trim() || "Quản trị toàn bộ 4 cơ sở";
-
-        setAdminName(fixedName);
-        setAdminTitle(fixedTitle);
-
-        u.name = fixedName;
-        u.title = fixedTitle;
-        localStorage.setItem("kttll_user", JSON.stringify(u));
+        if (u.role === "ADMIN") {
+          setAdminName(u.name || "Ban Quản Trị CLB");
+          setAdminTitle(u.title || "Quản trị toàn bộ 7 cơ sở");
+        } else {
+          // Nếu đang lưu tài khoản HLV nhưng đang vào trang Admin
+          setAdminName("Ban Quản Trị CLB");
+          setAdminTitle("Quản trị toàn bộ 7 cơ sở");
+        }
       } catch (e) {
         // use default
       }

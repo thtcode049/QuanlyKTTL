@@ -19,7 +19,6 @@ import {
   ChevronRight,
   Shield,
   UserCheck,
-  ChevronLeft,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -77,37 +76,54 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     return (
       <div className="flex h-full flex-col justify-between bg-white text-slate-700 transition-all duration-300">
         <div>
-          {/* Brand Header with Logo & Full Title */}
+          {/* Brand Header with Logo, Full Title & 1 Compact Toggle Button */}
           <div
             className={`flex items-center border-b border-slate-100 ${
-              isSmall ? "justify-center px-2 py-4" : "gap-3 px-4 py-4"
+              isSmall ? "flex-col justify-center gap-2 p-2.5" : "justify-between px-3.5 py-3.5"
             }`}
           >
-            {/* Logo CLB */}
-            <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-primary shadow-sm">
-              <img
-                src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
-                alt="Logo CLB Kiện Tướng Tương Lai"
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                }}
-              />
-              <div className="flex h-full w-full items-center justify-center bg-brand-primary text-lg font-bold text-white">
-                ♞
+            <div className={`flex items-center gap-2.5 overflow-hidden ${isSmall ? "justify-center" : ""}`}>
+              {/* Logo CLB */}
+              <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-primary shadow-sm">
+                <img
+                  src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+                  alt="Logo CLB Kiện Tướng Tương Lai"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+                <div className="flex h-full w-full items-center justify-center bg-brand-primary text-base font-bold text-white">
+                  ♞
+                </div>
               </div>
+
+              {/* Tiêu đề ĐẦY ĐỦ KHÔNG BỊ CẮT CHỮ */}
+              {!isSmall && (
+                <div className="flex flex-col">
+                  <span className="text-[12px] font-black uppercase text-slate-900 leading-tight">
+                    Kiện Tướng Tương Lai
+                  </span>
+                  <span className="text-[9.5px] font-bold text-brand-primary tracking-wide">
+                    Chess Management
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Tiêu đề ĐẦY ĐỦ KHÔNG BỊ CẮT CHỮ */}
-            {!isSmall && (
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <span className="text-[13px] font-black uppercase text-slate-900 leading-snug tracking-tight">
-                  Kiện Tướng Tương Lai
-                </span>
-                <span className="text-[10px] font-bold text-brand-primary tracking-wide">
-                  Chess Management System
-                </span>
-              </div>
+            {/* Nút Thu Gọn Menu 1 NÚT ICON NHỎ GỌN DUY NHẤT (Không tốn không gian) */}
+            {!isMobile && (
+              <button
+                onClick={toggleCollapsed}
+                title={isSmall ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              >
+                {isSmall ? (
+                  <PanelLeftOpen className="h-4 w-4 text-brand-primary" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </button>
             )}
           </div>
 
@@ -177,36 +193,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
           </nav>
         </div>
 
-        {/* Footer Area: Toggle Collapse & Info */}
-        <div className="border-t border-slate-100 p-3 space-y-2">
-          {/* Nút Thu Gọn / Mở Rộng Menu (Desktop) */}
-          {!isMobile && (
-            <button
-              onClick={toggleCollapsed}
-              className={`flex w-full items-center rounded-xl py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors ${
-                isSmall ? "justify-center" : "gap-2 px-3"
-              }`}
-              title={isSmall ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
-            >
-              {isSmall ? (
-                <PanelLeftOpen className="h-4 w-4 text-brand-primary" />
-              ) : (
-                <>
-                  <PanelLeftClose className="h-4 w-4 text-slate-400" />
-                  <span>Thu gọn menu</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {/* Info Badge */}
+        {/* Footer Area: Info CLB (Đã bỏ nút dài chiếm không gian) */}
+        <div className="border-t border-slate-100 p-3">
           {!isSmall ? (
             <div className="rounded-xl bg-slate-50 p-2.5 text-xs border border-slate-100 text-slate-600">
               <p className="font-bold text-slate-900">CLB Cờ Vua KTTLL</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Chủ nhiệm: GM Bùi Vinh</p>
             </div>
           ) : (
-            <div className="flex justify-center text-[11px] font-bold text-brand-primary">
+            <div
+              className="flex justify-center text-xs font-bold text-brand-primary py-1"
+              title="CLB Cờ Vua Kiện Tướng Tương Lai"
+            >
               ♞
             </div>
           )}
@@ -244,7 +242,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
         <NavContent isMobile={true} />
       </div>
 
-      {/* Desktop Persistent Sidebar (Light Theme & Collapsible) */}
+      {/* Desktop Persistent Sidebar (Light Theme & Compact 1-button Toggle) */}
       <aside
         className={`hidden h-screen flex-shrink-0 md:block sticky top-0 border-r border-slate-200/90 shadow-soft transition-all duration-300 ${
           collapsed ? "w-20" : "w-64"

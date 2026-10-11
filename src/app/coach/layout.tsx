@@ -17,19 +17,19 @@ export default function CoachLayout({
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        const fixedName = (u.name || "GM Bùi Vinh").replace(/ĐKT/g, "GM");
-        const fixedTitle = (u.title || "Đại Kiện Tướng Quốc Tế")
-          .replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "")
-          .replace(/ĐKT/g, "GM")
-          .trim() || "Đại Kiện Tướng Quốc Tế";
-
-        setCoachName(fixedName);
-        setCoachTitle(fixedTitle);
-
-        // Cập nhật lại localStorage để xóa vĩnh viễn dữ liệu cũ
-        u.name = fixedName;
-        u.title = fixedTitle;
-        localStorage.setItem("kttll_user", JSON.stringify(u));
+        if (u.role === "COACH") {
+          const fixedName = (u.name || "GM Bùi Vinh").replace(/ĐKT/g, "GM");
+          const fixedTitle = (u.title || "Đại Kiện Tướng Quốc Tế")
+            .replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "")
+            .replace(/ĐKT/g, "GM")
+            .trim() || "Đại Kiện Tướng Quốc Tế";
+          setCoachName(fixedName);
+          setCoachTitle(fixedTitle);
+        } else {
+          // Nếu đang lưu tài khoản Admin nhưng đang vào trang HLV
+          setCoachName("GM Bùi Vinh");
+          setCoachTitle("Đại Kiện Tướng Quốc Tế");
+        }
       } catch (e) {
         // use default
       }
