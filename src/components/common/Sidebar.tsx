@@ -83,19 +83,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
             }`}
           >
             <div className={`flex items-center gap-2.5 overflow-hidden ${isSmall ? "justify-center" : ""}`}>
-              {/* Logo CLB */}
-              <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-primary shadow-sm">
+              {/* Logo CLB hoàn hảo tròn trịa không bị khuyết */}
+              <div className="relative h-10 w-10 flex-shrink-0 rounded-full bg-white p-0.5 shadow-sm ring-1 ring-brand-primary/30 flex items-center justify-center overflow-hidden">
                 <img
-                  src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+                  src="/logo.png"
                   alt="Logo CLB Kiện Tướng Tương Lai"
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
+                  className="h-full w-full object-contain"
                 />
-                <div className="flex h-full w-full items-center justify-center bg-brand-primary text-base font-bold text-white">
-                  ♞
-                </div>
               </div>
 
               {/* Tiêu đề ĐẦY ĐỦ KHÔNG BỊ CẮT CHỮ */}
@@ -129,19 +123,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
           {/* Role Indicator Banner */}
           {!isSmall ? (
-            <div className="mx-3 mt-3.5 rounded-xl bg-slate-50 p-2.5 border border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {userRole === "ADMIN" ? (
-                  <Shield className="h-4 w-4 text-brand-secondary" />
-                ) : (
-                  <UserCheck className="h-4 w-4 text-brand-primary" />
-                )}
-                <span className="text-xs font-bold text-slate-800">
-                  {userRole === "ADMIN" ? "Ban Quản Lý CLB" : "Huấn Luyện Viên"}
-                </span>
-              </div>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
-                Online
+            <div className="mx-3 mt-3.5 rounded-xl bg-slate-50 p-2.5 border border-slate-100 flex items-center gap-2">
+              {userRole === "ADMIN" ? (
+                <Shield className="h-4 w-4 text-brand-secondary" />
+              ) : (
+                <UserCheck className="h-4 w-4 text-brand-primary" />
+              )}
+              <span className="text-xs font-bold text-slate-800">
+                {userRole === "ADMIN" ? "Ban Quản Lý CLB" : "Huấn Luyện Viên"}
               </span>
             </div>
           ) : (

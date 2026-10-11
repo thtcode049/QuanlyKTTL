@@ -105,18 +105,12 @@ Kính gửi phụ huynh em ${payload.studentName}, CLB Cờ vua Kiện Tướng 
           {/* Zalo Verified OA Header Info */}
           <div className="mb-3 flex items-center justify-between rounded-xl bg-white/90 p-2.5 shadow-sm backdrop-blur-sm">
             <div className="flex items-center gap-2.5">
-              <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-emerald-500">
+              <div className="relative h-10 w-10 flex-shrink-0 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-emerald-500 flex items-center justify-center overflow-hidden">
                 <img
-                  src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+                  src="/logo.png"
                   alt="Logo CLB"
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
+                  className="h-full w-full object-contain"
                 />
-                <div className="flex h-full w-full items-center justify-center bg-brand-primary text-xs font-bold text-white">
-                  ♞
-                </div>
               </div>
               <div>
                 <div className="flex items-center gap-1">

@@ -108,18 +108,12 @@ export default function LoginPage() {
 
         {/* Top brand */}
         <div className="relative z-10 flex items-center gap-3.5">
-          <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-brand-primary">
+          <div className="relative h-12 w-12 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-brand-primary flex items-center justify-center overflow-hidden">
             <img
-              src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+              src="/logo.png"
               alt="Logo CLB Kiện Tướng Tương Lai"
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
+              className="h-full w-full object-contain"
             />
-            <div className="flex h-full w-full items-center justify-center bg-brand-primary text-xl font-bold text-white">
-              ♞
-            </div>
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tight uppercase text-white">
@@ -183,11 +177,11 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-md">
           {/* Mobile Logo display */}
           <div className="mb-6 flex items-center gap-3 lg:hidden">
-            <div className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-brand-primary">
+            <div className="relative h-11 w-11 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-brand-primary flex items-center justify-center overflow-hidden">
               <img
-                src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+                src="/logo.png"
                 alt="Logo CLB"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
               />
             </div>
             <div>
