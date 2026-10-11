@@ -90,12 +90,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
                 <UserCheck className="h-4 w-4 text-brand-primary" />
               )}
               <span className="text-xs font-semibold text-white">
-                {userRole === "ADMIN" ? "Phân hệ Quản Lý (Admin)" : "Phân hệ HLV (Coach)"}
+                {userRole === "ADMIN" ? "Quản Lý" : "Huấn Luyện Viên"}
               </span>
             </div>
-            <span className="rounded bg-brand-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-brand-primary">
-              v2.6
-            </span>
           </div>
         </div>
 
@@ -134,13 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
       <div className="border-t border-white/10 p-4">
         <div className="rounded-xl bg-black/40 p-3 text-xs text-slate-400">
           <p className="font-semibold text-slate-200">CLB Cờ Vua KTTLL</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Chủ nhiệm: ĐKT Bùi Vinh</p>
-          <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-            <span>PgBouncer: Ready</span>
-            <span className="flex items-center gap-1 text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Supabase
-            </span>
-          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Chủ nhiệm: GM Bùi Vinh</p>
         </div>
       </div>
     </div>

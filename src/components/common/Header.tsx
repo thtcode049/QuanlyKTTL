@@ -35,12 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           <span className="capitalize">{todayStr}</span>
         </div>
         <div className="hidden h-4 w-px bg-slate-200 sm:block" />
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary-light px-2.5 py-1 text-xs font-semibold text-brand-primary">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-primary animate-pulse" />
-            Hệ thống: Thực học - Thực trả
-          </span>
-        </div>
+        <span className="text-xs font-semibold text-slate-700">CLB Cờ Vua Kiện Tướng Tương Lai</span>
       </div>
 
       {/* Right controls */}
@@ -69,10 +64,10 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           </div>
           <div className="text-left leading-tight">
             <p className="text-xs font-bold text-slate-800">
-              {userName || (userRole === "ADMIN" ? "Ban Quản Trị" : "ĐKT Bùi Vinh")}
+              {userName || (userRole === "ADMIN" ? "Ban Quản Trị" : "GM Bùi Vinh")}
             </p>
             <p className="text-[10px] text-slate-500">
-              {userTitle || (userRole === "ADMIN" ? "Quản lý toàn bộ cơ sở" : "Huấn luyện viên")}
+              {userTitle || (userRole === "ADMIN" ? "Quản lý toàn bộ cơ sở" : "Đại Kiện Tướng Quốc Tế")}
             </p>
           </div>
         </div>

@@ -9,8 +9,8 @@ export default function CoachLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [coachName, setCoachName] = useState("ĐKT Bùi Vinh");
-  const [coachTitle, setCoachTitle] = useState("Đại Kiện Tướng Quốc Tế / Trưởng ban Chuyên môn");
+  const [coachName, setCoachName] = useState("GM Bùi Vinh");
+  const [coachTitle, setCoachTitle] = useState("Đại Kiện Tướng Quốc Tế");
 
   useEffect(() => {
     const stored = localStorage.getItem("kttll_user");

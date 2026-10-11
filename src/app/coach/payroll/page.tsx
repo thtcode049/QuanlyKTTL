@@ -18,7 +18,7 @@ export default function CoachPayrollPage() {
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
 
-  // Lấy dữ liệu của HLV ĐKT Bùi Vinh (user-coach-1)
+  // Lấy dữ liệu của HLV GM Bùi Vinh (user-coach-1)
   const currentCoach = dataStore.users.find((u) => u.id === "user-coach-1");
   const coachClasses = dataStore.classes.filter((c) => c.coachId === currentCoach?.id);
   const coachClassIds = coachClasses.map((c) => c.id);
@@ -41,14 +41,10 @@ export default function CoachPayrollPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-brand-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Quy tắc: Thù lao = Số ca dạy thực tế × Đơn giá ca</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Thù Lao Huấn Luyện Viên
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Theo dõi chi tiết số ca đứng lớp và tạm tính thu nhập cá nhân trong tháng.
           </p>
         </div>

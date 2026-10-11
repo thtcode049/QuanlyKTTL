@@ -189,14 +189,10 @@ function InvoicesContent() {
       {/* Top Banner */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-brand-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Quy tắc: Thực học - Thực trả (Nghỉ không tính phí)</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Tổng Kết Học Phí & Zalo OA
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Học phí = (Số buổi Có mặt thực tế) × (Đơn giá/buổi). Tự động sinh mã VietQR và gửi thông báo phụ huynh.
           </p>
         </div>

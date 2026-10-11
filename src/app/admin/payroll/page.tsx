@@ -43,14 +43,10 @@ export default function AdminPayrollPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">
-            <Sparkles className="h-3.5 w-3.5 text-brand-secondary" />
-            <span>Quy tắc: Thù lao HLV = Số ca thực dạy × Đơn giá ca</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Bảng Lương Huấn Luyện Viên
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Tự động tổng hợp ca dạy thực tế và xuất file Excel đối soát chi trả hàng tháng.
           </p>
         </div>

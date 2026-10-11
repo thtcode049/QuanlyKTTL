@@ -31,14 +31,10 @@ export default function AdminClassesPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">
-            <Sparkles className="h-3.5 w-3.5 text-brand-secondary" />
-            <span>Toàn Quyền Can Thiệp Hệ Thống</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Tất Cả Lớp Học Cờ Vua
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Ban Chủ Nhiệm có toàn quyền xem, điều chỉnh và can thiệp lịch sử điểm danh của mọi HLV.
           </p>
         </div>
@@ -111,7 +107,6 @@ export default function AdminClassesPage() {
               {/* Sessions indicator */}
               <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600 border border-slate-100 flex items-center justify-between">
                 <span>Số buổi đã diễn ra tháng 10: <strong>{sessions.length} buổi</strong></span>
-                <span className="text-[11px] text-brand-primary font-bold">Thực học - Thực trả</span>
               </div>
 
               {/* Action buttons for admin */}

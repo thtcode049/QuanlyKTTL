@@ -114,14 +114,10 @@ export default function CoachEvaluationsPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-brand-primary">
-            <Award className="h-3.5 w-3.5" />
-            <span>Chess Rating & 4 Tiêu Chí Chuyên Môn</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Đánh Giá Kỳ Thủ & Hệ Số Elo
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Theo dõi sự tiến bộ định kỳ: Khai cuộc, Chiến thuật, Tính toán và Tàn cuộc của học sinh.
           </p>
         </div>

@@ -49,7 +49,7 @@ export default function LoginPage() {
         const user = {
           id: isCoach2 ? "user-coach-2" : "user-coach-1",
           email: isCoach2 ? "hlv2@kttll.vn" : "hlv1@kttll.vn",
-          name: isCoach2 ? "HLV Nguyễn Văn Hùng" : "ĐKT Bùi Vinh",
+          name: isCoach2 ? "HLV Nguyễn Văn Hùng" : "GM Bùi Vinh",
           role: "COACH",
           title: isCoach2 ? "Kiện tướng Quốc gia / HLV Trẻ" : "Đại Kiện Tướng Quốc Tế",
         };
@@ -78,9 +78,9 @@ export default function LoginPage() {
       const user = {
         id: "user-coach-1",
         email: "hlv1@kttll.vn",
-        name: "ĐKT Bùi Vinh",
+        name: "GM Bùi Vinh",
         role: "COACH",
-        title: "Đại Kiện Tướng Quốc Tế / Trưởng ban Chuyên môn",
+        title: "Đại Kiện Tướng Quốc Tế",
       };
       localStorage.setItem("kttll_user", JSON.stringify(user));
       router.push("/coach/classes");
@@ -135,11 +135,7 @@ export default function LoginPage() {
 
         {/* Middle message */}
         <div className="relative z-10 my-auto py-12">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-brand-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Nguyên tắc: Thực học - Thực trả</span>
-          </div>
-          <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+          <h2 className="text-3xl font-extrabold leading-tight text-white xl:text-4xl">
             Hệ thống Quản lý Đào tạo Cờ vua Đa cơ sở
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-300">
@@ -252,7 +248,7 @@ export default function LoginPage() {
                   <UserCheck className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-brand-primary">ĐKT Bùi Vinh (HLV)</p>
+                  <p className="text-xs font-bold text-brand-primary">GM Bùi Vinh (HLV)</p>
                   <p className="text-[10px] text-slate-500">hlv1@kttll.vn</p>
                 </div>
               </button>

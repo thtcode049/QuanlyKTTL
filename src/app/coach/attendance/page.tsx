@@ -170,14 +170,10 @@ function AttendanceContent() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-brand-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Tối ưu Mobile 1-Click • Thực học - Thực trả</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Điểm Danh Buổi Học
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Học viên Có mặt tính phí, Vắng mặt không tính phí. Tích 1 chạm để chuyển trạng thái.
           </p>
         </div>

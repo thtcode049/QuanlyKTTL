@@ -46,14 +46,10 @@ export default function AdminBranchesPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">
-            <Sparkles className="h-3.5 w-3.5 text-brand-secondary" />
-            <span>Quản Trị Cơ Sở Đào Tạo</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Các Cơ Sở CLB Tại Hà Nội
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Hệ thống đào tạo cờ vua chuẩn quốc tế trên các quận huyện Hà Nội.
           </p>
         </div>

@@ -71,14 +71,10 @@ export default function AdminCoachesPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">
-            <Sparkles className="h-3.5 w-3.5 text-brand-secondary" />
-            <span>Đội Ngũ Kiện Tướng & Huấn Luyện Viên</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Quản Lý Huấn Luyện Viên
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Cấu hình đơn giá thù lao/ca dạy và cơ sở công tác của từng Huấn luyện viên.
           </p>
         </div>

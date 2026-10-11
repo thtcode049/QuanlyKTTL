@@ -117,13 +117,13 @@ export const initialUsers: UserData[] = [
   },
   {
     id: "user-coach-1",
-    name: "ĐKT Bùi Vinh",
+    name: "GM Bùi Vinh",
     email: "hlv1@kttll.vn",
     phone: "0912.345.678",
     role: "COACH",
     branchId: "branch-1",
     baseRate: 250000,
-    title: "Đại Kiện Tướng Quốc Tế / Trưởng ban Chuyên môn",
+    title: "Đại Kiện Tướng Quốc Tế",
   },
   {
     id: "user-coach-2",

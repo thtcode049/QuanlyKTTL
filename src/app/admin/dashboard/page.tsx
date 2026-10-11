@@ -111,14 +111,10 @@ export default function AdminDashboardPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">
-            <Sparkles className="h-3.5 w-3.5 text-brand-secondary" />
-            <span>Ban Quản Trị • Chủ Nhiệm Toàn Bộ Cơ Sở</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Tổng Quan Doanh Thu & Vận Hành
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Hệ thống đào tạo cờ vua đa cơ sở • Chuẩn hóa công thức Thực học - Thực trả.
           </p>
         </div>
