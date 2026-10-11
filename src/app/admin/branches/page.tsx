@@ -31,15 +31,17 @@ import {
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function AdminBranchesAndClassesPage() {
-  // Chuẩn hóa dữ liệu HLV ban đầu
-  useEffect(() => {
-    dataStore.normalizeCoachData();
-  }, []);
-
   const [branches, setBranches] = useState<BranchData[]>(dataStore.branches);
   const [classes, setClasses] = useState<ClassroomData[]>(dataStore.classes);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all"); // "all" hoặc id cơ sở
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Chuẩn hóa dữ liệu HLV và 7 cơ sở ban đầu
+  useEffect(() => {
+    dataStore.normalizeCoachData();
+    setBranches([...dataStore.branches]);
+    setClasses([...dataStore.classes]);
+  }, []);
 
   // Modal Cơ sở
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -237,8 +239,8 @@ export default function AdminBranchesAndClassesPage() {
           </span>
         </div>
 
-        {/* Grid Chọn Cơ Sở */}
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Grid Chọn Cơ Sở: 8 thẻ (1 Tất cả + 7 cơ sở) phân bổ đều 4 cột */}
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           {/* Card: Tất Cả Cơ Sở */}
           <div
             onClick={() => setSelectedBranchId("all")}

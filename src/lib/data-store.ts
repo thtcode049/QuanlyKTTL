@@ -100,12 +100,50 @@ export interface BankConfig {
   accountHolder: string;
 }
 
-// Khởi tạo cơ sở dữ liệu mẫu ban đầu
+// Khởi tạo cơ sở dữ liệu mẫu ban đầu theo đúng chuẩn web kientuongtuonglai.com
 export const initialBranches: BranchData[] = [
-  { id: "branch-1", name: "Cơ sở 1 - Bạch Mai", address: "187 Bạch Mai, Q. Hai Bà Trưng, Hà Nội", phone: "0988.123.456" },
-  { id: "branch-2", name: "Cơ sở 2 - Thái Hà", address: "45 Thái Hà, Q. Đống Đa, Hà Nội", phone: "0988.654.321" },
-  { id: "branch-3", name: "Cơ sở 3 - Hoàng Quốc Việt", address: "120 Hoàng Quốc Việt, Q. Cầu Giấy, Hà Nội", phone: "0977.888.999" },
-  { id: "branch-4", name: "Cơ sở 4 - Trương Định", address: "254 Trương Định, Q. Hoàng Mai, Hà Nội", phone: "0966.555.444" },
+  {
+    id: "branch-1",
+    name: "Cơ sở 1 - Bạch Mai (Hai Bà Trưng)",
+    address: "Số 257 Bạch Mai, Q. Hai Bà Trưng, Hà Nội (Trung tâm VHTT&TT Q. Hai Bà Trưng)",
+    phone: "0902.064.486",
+  },
+  {
+    id: "branch-2",
+    name: "Cơ sở 2 - Thái Hà (Đống Đa)",
+    address: "Số 111 ngõ 98 Thái Hà (hoặc 101B ngõ 111 Láng Hạ), Q. Đống Đa, Hà Nội",
+    phone: "0916.611.258",
+  },
+  {
+    id: "branch-3",
+    name: "Cơ sở 3 - Nam Đô (Hoàng Mai)",
+    address: "Tầng 2, Tòa CT2B KĐT Nam Đô, 609 Trương Định, Q. Hoàng Mai, Hà Nội",
+    phone: "0902.064.486",
+  },
+  {
+    id: "branch-4",
+    name: "Cơ sở 4 - Dịch Vọng (Cầu Giấy)",
+    address: "Số 49 Dịch Vọng, Q. Cầu Giấy, Hà Nội",
+    phone: "0916.611.258",
+  },
+  {
+    id: "branch-5",
+    name: "Cơ sở 5 - Văn Phú (Hà Đông)",
+    address: "Nhà Liền kề TT13-02, KĐT Văn Phú, Q. Hà Đông, Hà Nội",
+    phone: "0902.064.486",
+  },
+  {
+    id: "branch-6",
+    name: "Cơ sở 6 - Cung Việt Xô (Hoàn Kiếm)",
+    address: "Cung Văn hóa Hữu nghị Việt - Xô, 91 Trần Hưng Đạo, Q. Hoàn Kiếm, Hà Nội",
+    phone: "0916.611.258",
+  },
+  {
+    id: "branch-7",
+    name: "Cơ sở 7 - Tam Khương (Đống Đa)",
+    address: "Số 2 Tam Khương (phố Tôn Thất Tùng), P. Khương Thượng, Q. Đống Đa, Hà Nội",
+    phone: "0902.064.486",
+  },
 ];
 
 export const initialUsers: UserData[] = [
@@ -178,6 +216,36 @@ export const initialClasses: ClassroomData[] = [
     feePerSession: 250000,
     schedule: "Thứ 7 & CN (15:00 - 17:00)",
     branchId: "branch-4",
+    coachId: "user-coach-1",
+    isActive: true,
+  },
+  {
+    id: "class-5",
+    name: "Cờ vua Cơ Bản - K05",
+    level: "Nhập môn",
+    feePerSession: 160000,
+    schedule: "Thứ 4 & Thứ 7 (18:00 - 19:30)",
+    branchId: "branch-5",
+    coachId: "user-coach-1",
+    isActive: true,
+  },
+  {
+    id: "class-6",
+    name: "Cờ vua Nâng Cao - K06",
+    level: "Nâng cao",
+    feePerSession: 180000,
+    schedule: "Thứ 3 & Thứ 6 (19:30 - 21:00)",
+    branchId: "branch-6",
+    coachId: "user-coach-2",
+    isActive: true,
+  },
+  {
+    id: "class-7",
+    name: "Cờ vua Vỡ Lòng - K07",
+    level: "Vỡ lòng",
+    feePerSession: 150000,
+    schedule: "Thứ 7 & Chủ Nhật (09:00 - 10:30)",
+    branchId: "branch-7",
     coachId: "user-coach-1",
     isActive: true,
   },
@@ -495,7 +563,7 @@ class InMemoryDataStore {
     this.recalculateAllInvoices(10, 2026);
   }
 
-  // Chuẩn hóa dữ liệu HLV mẫu
+  // Chuẩn hóa dữ liệu HLV mẫu và danh sách cơ sở
   public normalizeCoachData() {
     for (const u of this.users) {
       if (u.id === "user-coach-2" || (u.name && u.name.includes("Hùng"))) {
@@ -506,6 +574,25 @@ class InMemoryDataStore {
         u.name = u.name.replace(/ĐKT/g, "GM");
       }
     }
+
+    // Đồng bộ đầy đủ 7 cơ sở theo chuẩn kientuongtuonglai.com
+    initialBranches.forEach((ib) => {
+      const existing = this.branches.find((b) => b.id === ib.id);
+      if (existing) {
+        existing.name = ib.name;
+        existing.address = ib.address;
+        existing.phone = ib.phone;
+      } else {
+        this.branches.push(ib);
+      }
+    });
+
+    // Đồng bộ các lớp học mẫu cho các cơ sở mới
+    initialClasses.forEach((ic) => {
+      if (!this.classes.some((c) => c.id === ic.id)) {
+        this.classes.push(ic);
+      }
+    });
   }
 
   // Cập nhật thông tin toàn diện của Huấn luyện viên

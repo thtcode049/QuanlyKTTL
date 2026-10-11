@@ -19,37 +19,61 @@ async function main() {
   // 2. Tạo 4 Cơ sở Hà Nội
   const b1 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 1 - Bạch Mai",
-      address: "187 Bạch Mai, Q. Hai Bà Trưng, Hà Nội",
-      phone: "0988.123.456",
+      name: "Cơ sở 1 - Bạch Mai (Hai Bà Trưng)",
+      address: "Số 257 Bạch Mai, Q. Hai Bà Trưng, Hà Nội (Trung tâm VHTT&TT Q. Hai Bà Trưng)",
+      phone: "0902.064.486",
     },
   });
 
   const b2 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 2 - Thái Hà",
-      address: "45 Thái Hà, Q. Đống Đa, Hà Nội",
-      phone: "0988.654.321",
+      name: "Cơ sở 2 - Thái Hà (Đống Đa)",
+      address: "Số 111 ngõ 98 Thái Hà (hoặc 101B ngõ 111 Láng Hạ), Q. Đống Đa, Hà Nội",
+      phone: "0916.611.258",
     },
   });
 
   const b3 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 3 - Hoàng Quốc Việt",
-      address: "120 Hoàng Quốc Việt, Q. Cầu Giấy, Hà Nội",
-      phone: "0977.888.999",
+      name: "Cơ sở 3 - Nam Đô (Hoàng Mai)",
+      address: "Tầng 2, Tòa CT2B KĐT Nam Đô, 609 Trương Định, Q. Hoàng Mai, Hà Nội",
+      phone: "0902.064.486",
     },
   });
 
   const b4 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 4 - Trương Định",
-      address: "254 Trương Định, Q. Hoàng Mai, Hà Nội",
-      phone: "0966.555.444",
+      name: "Cơ sở 4 - Dịch Vọng (Cầu Giấy)",
+      address: "Số 49 Dịch Vọng, Q. Cầu Giấy, Hà Nội",
+      phone: "0916.611.258",
     },
   });
 
-  console.log("✅ Đã tạo 4 cơ sở Hà Nội.");
+  const b5 = await prisma.branch.create({
+    data: {
+      name: "Cơ sở 5 - Văn Phú (Hà Đông)",
+      address: "Nhà Liền kề TT13-02, KĐT Văn Phú, Q. Hà Đông, Hà Nội",
+      phone: "0902.064.486",
+    },
+  });
+
+  const b6 = await prisma.branch.create({
+    data: {
+      name: "Cơ sở 6 - Cung Việt Xô (Hoàn Kiếm)",
+      address: "Cung Văn hóa Hữu nghị Việt - Xô, 91 Trần Hưng Đạo, Q. Hoàn Kiếm, Hà Nội",
+      phone: "0916.611.258",
+    },
+  });
+
+  const b7 = await prisma.branch.create({
+    data: {
+      name: "Cơ sở 7 - Tam Khương (Đống Đa)",
+      address: "Số 2 Tam Khương (phố Tôn Thất Tùng), P. Khương Thượng, Q. Đống Đa, Hà Nội",
+      phone: "0902.064.486",
+    },
+  });
+
+  console.log("✅ Đã tạo 7 cơ sở Hà Nội chuẩn kientuongtuonglai.com.");
 
   // 3. Tạo tài khoản Admin và HLV
   const admin = await prisma.user.create({

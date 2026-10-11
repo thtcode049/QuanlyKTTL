@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
-  BookOpen,
   Users,
   Wallet,
   Settings,
@@ -21,6 +19,9 @@ import {
   ChevronRight,
   Shield,
   UserCheck,
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -30,6 +31,27 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Khôi phục trạng thái thu gọn từ localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kttll_sidebar_collapsed");
+      if (saved !== null) {
+        setCollapsed(saved === "true");
+      }
+    } catch (e) {
+      // bỏ qua nếu SSR
+    }
+  }, []);
+
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem("kttll_sidebar_collapsed", String(next));
+    } catch (e) {}
+  };
 
   const adminNav = [
     { name: "Tổng quan Doanh thu", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -49,92 +71,149 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
   const navItems = userRole === "ADMIN" ? adminNav : coachNav;
 
-  const NavContent = () => (
-    <div className="flex h-full flex-col justify-between bg-[#161616] text-slate-200">
-      <div>
-        {/* Brand Header with Logo */}
-        <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
-          <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-primary">
-            {/* Fallback image or direct logo URL */}
-            <img
-              src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
-              alt="Logo CLB Kiện Tướng Tương Lai"
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                // In case network blocks image, show styled chess piece fallback
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-            <div className="flex h-full w-full items-center justify-center bg-brand-primary text-lg font-bold text-white">
-              ♞
-            </div>
-          </div>
-          <div className="overflow-hidden">
-            <h1 className="truncate text-sm font-extrabold tracking-tight text-white uppercase">
-              Kiện Tướng Tương Lai
-            </h1>
-            <p className="truncate text-[11px] font-medium text-brand-primary">
-              Chess Management System
-            </p>
-          </div>
-        </div>
+  const NavContent = ({ isMobile = false }: { isMobile?: boolean }) => {
+    const isSmall = collapsed && !isMobile;
 
-        {/* Role Indicator Banner */}
-        <div className="mx-4 mt-4 rounded-xl bg-gradient-to-r from-white/5 to-white/10 p-3 border border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {userRole === "ADMIN" ? (
-                <Shield className="h-4 w-4 text-brand-secondary" />
-              ) : (
-                <UserCheck className="h-4 w-4 text-brand-primary" />
-              )}
-              <span className="text-xs font-semibold text-white">
-                {userRole === "ADMIN" ? "Quản Lý" : "Huấn Luyện Viên"}
+    return (
+      <div className="flex h-full flex-col justify-between bg-white text-slate-700 transition-all duration-300">
+        <div>
+          {/* Brand Header with Logo & Full Title */}
+          <div
+            className={`flex items-center border-b border-slate-100 ${
+              isSmall ? "justify-center px-2 py-4" : "gap-3 px-4 py-4"
+            }`}
+          >
+            {/* Logo CLB */}
+            <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-primary shadow-sm">
+              <img
+                src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+                alt="Logo CLB Kiện Tướng Tương Lai"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+              <div className="flex h-full w-full items-center justify-center bg-brand-primary text-lg font-bold text-white">
+                ♞
+              </div>
+            </div>
+
+            {/* Tiêu đề ĐẦY ĐỦ KHÔNG BỊ CẮT CHỮ */}
+            {!isSmall && (
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <span className="text-[13px] font-black uppercase text-slate-900 leading-snug tracking-tight">
+                  Kiện Tướng Tương Lai
+                </span>
+                <span className="text-[10px] font-bold text-brand-primary tracking-wide">
+                  Chess Management System
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Role Indicator Banner */}
+          {!isSmall ? (
+            <div className="mx-3 mt-3.5 rounded-xl bg-slate-50 p-2.5 border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {userRole === "ADMIN" ? (
+                  <Shield className="h-4 w-4 text-brand-secondary" />
+                ) : (
+                  <UserCheck className="h-4 w-4 text-brand-primary" />
+                )}
+                <span className="text-xs font-bold text-slate-800">
+                  {userRole === "ADMIN" ? "Ban Quản Lý CLB" : "Huấn Luyện Viên"}
+                </span>
+              </div>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
+                Online
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* Navigation Links */}
-        <nav className="mt-4 space-y-1.5 px-3">
-          {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? "bg-brand-primary text-white shadow-lg shadow-brand-primary/20"
-                    : "text-slate-300 hover:bg-white/5 hover:text-white"
-                }`}
+          ) : (
+            <div className="mx-2 mt-3 flex justify-center">
+              <span
+                title={userRole === "ADMIN" ? "Ban Quản Lý" : "Huấn Luyện Viên"}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-brand-primary"
               >
-                <div className="flex items-center gap-3">
-                  <Icon
-                    className={`h-5 w-5 transition-transform duration-150 group-hover:scale-110 ${
-                      isActive ? "text-white" : "text-slate-400 group-hover:text-brand-primary"
-                    }`}
-                  />
-                  <span>{item.name}</span>
-                </div>
-                {isActive && <ChevronRight className="h-4 w-4 text-white/80" />}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                {userRole === "ADMIN" ? <Shield className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+              </span>
+            </div>
+          )}
 
-      {/* Footer Info */}
-      <div className="border-t border-white/10 p-4">
-        <div className="rounded-xl bg-black/40 p-3 text-xs text-slate-400">
-          <p className="font-semibold text-slate-200">CLB Cờ Vua KTTLL</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Chủ nhiệm: GM Bùi Vinh</p>
+          {/* Navigation Links */}
+          <nav className={`mt-4 space-y-1 ${isSmall ? "px-2" : "px-3"}`}>
+            {navItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={isSmall ? item.name : undefined}
+                  onClick={() => setMobileOpen(false)}
+                  className={`group flex items-center rounded-xl transition-all duration-150 ${
+                    isSmall
+                      ? "justify-center p-3"
+                      : "justify-between px-3.5 py-2.5 text-xs font-bold"
+                  } ${
+                    isActive
+                      ? "bg-brand-primary text-white shadow-md shadow-brand-primary/25"
+                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon
+                      className={`h-4 w-4 flex-shrink-0 transition-transform duration-150 group-hover:scale-110 ${
+                        isActive ? "text-white" : "text-slate-500 group-hover:text-brand-primary"
+                      }`}
+                    />
+                    {!isSmall && <span>{item.name}</span>}
+                  </div>
+                  {!isSmall && isActive && (
+                    <ChevronRight className="h-3.5 w-3.5 text-white/80" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Footer Area: Toggle Collapse & Info */}
+        <div className="border-t border-slate-100 p-3 space-y-2">
+          {/* Nút Thu Gọn / Mở Rộng Menu (Desktop) */}
+          {!isMobile && (
+            <button
+              onClick={toggleCollapsed}
+              className={`flex w-full items-center rounded-xl py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors ${
+                isSmall ? "justify-center" : "gap-2 px-3"
+              }`}
+              title={isSmall ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
+            >
+              {isSmall ? (
+                <PanelLeftOpen className="h-4 w-4 text-brand-primary" />
+              ) : (
+                <>
+                  <PanelLeftClose className="h-4 w-4 text-slate-400" />
+                  <span>Thu gọn menu</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Info Badge */}
+          {!isSmall ? (
+            <div className="rounded-xl bg-slate-50 p-2.5 text-xs border border-slate-100 text-slate-600">
+              <p className="font-bold text-slate-900">CLB Cờ Vua KTTLL</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Chủ nhiệm: GM Bùi Vinh</p>
+            </div>
+          ) : (
+            <div className="flex justify-center text-[11px] font-bold text-brand-primary">
+              ♞
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -158,16 +237,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 ease-in-out md:hidden shadow-2xl ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <NavContent />
+        <NavContent isMobile={true} />
       </div>
 
-      {/* Desktop Persistent Sidebar */}
-      <aside className="hidden h-screen w-64 flex-shrink-0 md:block sticky top-0 shadow-xl">
-        <NavContent />
+      {/* Desktop Persistent Sidebar (Light Theme & Collapsible) */}
+      <aside
+        className={`hidden h-screen flex-shrink-0 md:block sticky top-0 border-r border-slate-200/90 shadow-soft transition-all duration-300 ${
+          collapsed ? "w-20" : "w-64"
+        }`}
+      >
+        <NavContent isMobile={false} />
       </aside>
     </>
   );
