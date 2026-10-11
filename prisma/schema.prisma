@@ -1,0 +1,138 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  COACH
+}
+
+enum AttendanceStatus {
+  PRESENT // Đi học -> Tính phí
+  ABSENT  // Nghỉ -> Không tính phí
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+}
+
+model Branch {
+  id        String      @id @default(uuid())
+  name      String      // VD: Cơ sở 1 - Bạch Mai, Cơ sở 2 - Thái Hà
+  address   String
+  phone     String?
+  classes   Classroom[]
+  coaches   User[]
+  createdAt DateTime    @default(now())
+}
+
+model User {
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  phone        String
+  passwordHash String
+  role         Role        @default(COACH)
+  branchId     String?
+  branch       Branch?     @relation(fields: [branchId], references: [id])
+  classes      Classroom[]
+  baseRate     Float       @default(200000) // Đơn giá thù lao/ca dạy của HLV
+  createdAt    DateTime    @default(now())
+}
+
+model Classroom {
+  id            String              @id @default(uuid())
+  name          String              // VD: Cờ vua Nhập Môn - K1
+  level         String              // Vỡ lòng, Nhập môn, Nâng cao, Đội tuyển
+  feePerSession Float               @default(150000) // Đơn giá học phí / 1 buổi
+  schedule      String              // VD: Thứ 3 & Thứ 6 (18:00 - 19:30)
+  branchId      String
+  branch        Branch              @relation(fields: [branchId], references: [id])
+  coachId       String
+  coach         User                @relation(fields: [coachId], references: [id])
+  students      ClassStudent[]
+  sessions      AttendanceSession[]
+  invoices      MonthlyInvoice[]
+  isActive      Boolean             @default(true)
+}
+
+model Student {
+  id           String              @id @default(uuid())
+  fullName     String
+  birthYear    Int
+  parentName   String
+  parentPhone  String
+  currentLevel String              @default("Nhập môn")
+  eloRating    Int                 @default(1000)
+  notes        String?
+  classes      ClassStudent[]
+  attendances  AttendanceRecord[]
+  invoices     MonthlyInvoice[]
+  evaluations  StudentEvaluation[]
+}
+
+model ClassStudent {
+  classId   String
+  studentId String
+  classroom Classroom @relation(fields: [classId], references: [id])
+  student   Student   @relation(fields: [studentId], references: [id])
+  joinedAt  DateTime  @default(now())
+  @@id([classId, studentId])
+}
+
+model AttendanceSession {
+  id        String             @id @default(uuid())
+  classId   String
+  classroom Classroom          @relation(fields: [classId], references: [id])
+  date      DateTime           // Ngày diễn ra buổi học
+  topic     String?            // Chủ đề bài học cờ vua
+  records   AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id        String            @id @default(uuid())
+  sessionId String
+  session   AttendanceSession @relation(fields: [sessionId], references: [id])
+  studentId String
+  student   Student           @relation(fields: [studentId], references: [id])
+  status    AttendanceStatus  @default(PRESENT)
+  coachNote String?           // Nhận xét của HLV
+}
+
+model MonthlyInvoice {
+  id            String        @id @default(uuid())
+  invoiceCode   String        @unique // VD: HP-202610-001
+  classId       String
+  classroom     Classroom     @relation(fields: [classId], references: [id])
+  studentId     String
+  student       Student       @relation(fields: [studentId], references: [id])
+  month         Int           // Tháng
+  year          Int           // Năm
+  presentCount  Int           // Số buổi Có mặt thực tế
+  feePerSession Float         // Đơn giá tại thời điểm xuất
+  totalAmount   Float         // presentCount * feePerSession
+  status        InvoiceStatus @default(PENDING)
+  zaloSentAt    DateTime?
+  vietQrUrl     String?
+  createdAt     DateTime      @default(now())
+}
+
+model StudentEvaluation {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id])
+  month       Int
+  year        Int
+  opening     Int      @default(3) // Khai cuộc (1 - 5 sao)
+  tactics     Int      @default(3) // Chiến thuật (1 - 5 sao)
+  calculation Int      @default(3) // Tính toán (1 - 5 sao)
+  endgame     Int      @default(3) // Tàn cuộc (1 - 5 sao)
+  generalNote String?
+}

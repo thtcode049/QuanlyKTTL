@@ -1,0 +1,337 @@
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ShieldCheck,
+  UserCheck,
+  ArrowRight,
+  Sparkles,
+  Lock,
+  Mail,
+  CheckCircle2,
+  CalendarCheck2,
+  QrCode,
+  Layers,
+} from "lucide-react";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError("");
+
+    if (!email) {
+      setError("Vui lòng nhập email hoặc chọn tài khoản mẫu phía dưới");
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      // Phân luồng RBAC
+      if (email.includes("admin")) {
+        const user = {
+          id: "user-admin",
+          email: "admin@kttll.vn",
+          name: "Ban Chủ Nhiệm CLB",
+          role: "ADMIN",
+          title: "Chủ nhiệm toàn bộ cơ sở",
+        };
+        localStorage.setItem("kttll_user", JSON.stringify(user));
+        router.push("/admin/dashboard");
+      } else {
+        const isCoach2 = email.includes("hlv2");
+        const user = {
+          id: isCoach2 ? "user-coach-2" : "user-coach-1",
+          email: isCoach2 ? "hlv2@kttll.vn" : "hlv1@kttll.vn",
+          name: isCoach2 ? "HLV Nguyễn Văn Hùng" : "ĐKT Bùi Vinh",
+          role: "COACH",
+          title: isCoach2 ? "Kiện tướng Quốc gia / HLV Trẻ" : "Đại Kiện Tướng Quốc Tế",
+        };
+        localStorage.setItem("kttll_user", JSON.stringify(user));
+        router.push("/coach/classes");
+      }
+    }, 400);
+  };
+
+  const handleQuickLogin = (role: "ADMIN" | "COACH1" | "COACH2") => {
+    if (role === "ADMIN") {
+      setEmail("admin@kttll.vn");
+      setPassword("admin123");
+      const user = {
+        id: "user-admin",
+        email: "admin@kttll.vn",
+        name: "Ban Chủ Nhiệm CLB",
+        role: "ADMIN",
+        title: "Chủ nhiệm toàn bộ cơ sở",
+      };
+      localStorage.setItem("kttll_user", JSON.stringify(user));
+      router.push("/admin/dashboard");
+    } else if (role === "COACH1") {
+      setEmail("hlv1@kttll.vn");
+      setPassword("coach123");
+      const user = {
+        id: "user-coach-1",
+        email: "hlv1@kttll.vn",
+        name: "ĐKT Bùi Vinh",
+        role: "COACH",
+        title: "Đại Kiện Tướng Quốc Tế / Trưởng ban Chuyên môn",
+      };
+      localStorage.setItem("kttll_user", JSON.stringify(user));
+      router.push("/coach/classes");
+    } else {
+      setEmail("hlv2@kttll.vn");
+      setPassword("coach123");
+      const user = {
+        id: "user-coach-2",
+        email: "hlv2@kttll.vn",
+        name: "HLV Nguyễn Văn Hùng",
+        role: "COACH",
+        title: "Kiện tướng Quốc gia / HLV Trẻ",
+      };
+      localStorage.setItem("kttll_user", JSON.stringify(user));
+      router.push("/coach/classes");
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* Left Chess Showcase Panel */}
+      <div className="relative hidden w-full flex-col justify-between overflow-hidden bg-[#161616] p-10 text-white lg:flex lg:w-1/2 xl:w-5/12">
+        {/* Subtle chess board watermark */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#00B18A_1px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-primary/20 blur-3xl" />
+        <div className="absolute -left-24 -bottom-24 h-96 w-96 rounded-full bg-brand-secondary/20 blur-3xl" />
+
+        {/* Top brand */}
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-brand-primary">
+            <img
+              src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+              alt="Logo CLB Kiện Tướng Tương Lai"
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+            <div className="flex h-full w-full items-center justify-center bg-brand-primary text-xl font-bold text-white">
+              ♞
+            </div>
+          </div>
+          <div>
+            <h1 className="text-lg font-black tracking-tight uppercase text-white">
+              Kiện Tướng Tương Lai
+            </h1>
+            <p className="text-xs font-semibold text-brand-primary">
+              Chess Management System • Est. by GM Bùi Vinh
+            </p>
+          </div>
+        </div>
+
+        {/* Middle message */}
+        <div className="relative z-10 my-auto py-12">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-brand-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Nguyên tắc: Thực học - Thực trả</span>
+          </div>
+          <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+            Hệ thống Quản lý Đào tạo Cờ vua Đa cơ sở
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-300">
+            Học viên đi học buổi nào tính phí buổi đó, nghỉ không tính phí. Tự động hóa điểm danh 1 chạm trên di động, đối soát học phí với VietQR động và gửi thông báo qua Zalo OA.
+          </p>
+
+          {/* Core Highlights */}
+          <div className="mt-8 space-y-3.5">
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary/20 text-brand-primary">
+                <CalendarCheck2 className="h-5 w-5" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Điểm danh 1 chạm Mobile</p>
+                <p className="text-slate-400">HLV điểm danh nhanh ngay trên điện thoại trong lớp học</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-secondary/20 text-brand-secondary">
+                <QrCode className="h-5 w-5" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Mã VietQR Động & Zalo OA</p>
+                <p className="text-slate-400">Tự động sinh mã chuyển khoản chuẩn Napas và tin nhắn phụ huynh</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                <Layers className="h-5 w-5" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Supabase PostgreSQL & Vercel</p>
+                <p className="text-slate-400">Sẵn sàng triển khai cloud và tùy biến tên miền riêng</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom copyright */}
+        <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400">
+          <span>© 2026 CLB Cờ Vua Kiện Tướng Tương Lai</span>
+          <a
+            href="https://kientuongtuonglai.com"
+            target="_blank"
+            rel="noreferrer"
+            className="text-brand-primary hover:underline"
+          >
+            kientuongtuonglai.com
+          </a>
+        </div>
+      </div>
+
+      {/* Right Login Form */}
+      <div className="flex flex-1 flex-col justify-center bg-[#F8FAF9] p-6 sm:p-12 lg:p-16">
+        <div className="mx-auto w-full max-w-md">
+          {/* Mobile Logo display */}
+          <div className="mb-6 flex items-center gap-3 lg:hidden">
+            <div className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-brand-primary">
+              <img
+                src="https://kientuongtuonglai.com/wp-content/uploads/2024/08/logo-rounded-1-1024x1024.png"
+                alt="Logo CLB"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold uppercase text-slate-900">
+                Kiện Tướng Tương Lai
+              </h2>
+              <p className="text-xs text-brand-primary font-medium">Chess Management System</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+              Đăng nhập Hệ Thống
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Vui lòng đăng nhập để tiếp tục quản lý lớp học và cơ sở đào tạo.
+            </p>
+          </div>
+
+          {/* Quick Demo Access Buttons */}
+          <div className="mb-6 rounded-2xl bg-white p-4 shadow-soft border border-slate-200/80">
+            <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+              ⚡ Truy cập nhanh tài khoản thử nghiệm:
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin("ADMIN")}
+                className="group flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#161616] p-2.5 text-left text-white transition-all hover:bg-slate-800"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-brand-secondary">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold">Ban Quản Trị (Admin)</p>
+                  <p className="text-[10px] text-slate-300">admin@kttll.vn</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickLogin("COACH1")}
+                className="group flex items-center gap-2.5 rounded-xl border border-brand-primary bg-emerald-500/10 p-2.5 text-left text-slate-900 transition-all hover:bg-emerald-500/20"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary text-white">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-brand-primary">ĐKT Bùi Vinh (HLV)</p>
+                  <p className="text-[10px] text-slate-500">hlv1@kttll.vn</p>
+                </div>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("COACH2")}
+              className="mt-2 w-full rounded-lg bg-slate-50 py-1.5 text-center text-[11px] font-medium text-slate-600 hover:bg-slate-100 border border-slate-200"
+            >
+              Hoặc thử: HLV Nguyễn Văn Hùng (hlv2@kttll.vn)
+            </button>
+          </div>
+
+          {/* Regular Login Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            {error && (
+              <div className="rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-600 border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700">Email đăng nhập</label>
+              <div className="relative mt-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@kttll.vn hoặc hlv1@kttll.vn"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700">Mật khẩu</label>
+                <span className="text-[11px] text-slate-500">Mặc định: admin123 / coach123</span>
+              </div>
+              <div className="relative mt-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary py-3 text-xs font-bold text-white shadow-md shadow-brand-primary/25 transition-all hover:bg-brand-primary-hover active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <>
+                  <span>Đăng Nhập Vào Hệ Thống</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* System note */}
+          <div className="mt-8 rounded-xl bg-slate-100/80 p-3 text-center text-[11px] text-slate-500 border border-slate-200">
+            Hệ thống hỗ trợ cơ chế lưu trữ kép Supabase PostgreSQL & Local Dev Fallback. Sẵn sàng cấu hình biến môi trường và deploy lên Vercel.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
