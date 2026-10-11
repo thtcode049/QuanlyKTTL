@@ -191,6 +191,32 @@ export default function AdminBranchesAndClassesPage() {
     setNewClassFee("150000");
   };
 
+  // Xử lý xóa cơ sở
+  const handleDeleteBranch = (branchId: string, branchName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (window.confirm(`Bạn có chắc chắn muốn xóa "${branchName}" không?`)) {
+      dataStore.deleteBranch(branchId);
+      setBranches([...dataStore.branches]);
+      if (selectedBranchId === branchId) {
+        setSelectedBranchId("all");
+      }
+      if (editingBranch?.id === branchId) {
+        setEditingBranch(null);
+      }
+    }
+  };
+
+  // Xử lý xóa lớp học
+  const handleDeleteClass = (classId: string, className: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa lớp học "${className}" không?`)) {
+      dataStore.deleteClass(classId);
+      setClasses([...dataStore.classes]);
+      if (editingClass?.id === classId) {
+        setEditingClass(null);
+      }
+    }
+  };
+
   return (
     <div className="space-y-7">
       {/* Top Banner Header */}
@@ -300,13 +326,22 @@ export default function AdminBranchesAndClassesPage() {
                     <Building2 className="h-5 w-5" />
                   </span>
 
-                  <button
-                    onClick={(e) => openEditBranchModal(b, e)}
-                    title="Sửa cơ sở"
-                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => openEditBranchModal(b, e)}
+                      title="Sửa cơ sở"
+                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteBranch(b.id, b.name, e)}
+                      title="Xóa cơ sở"
+                      className="rounded-lg p-1 text-rose-400 hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-2.5">
@@ -460,16 +495,25 @@ export default function AdminBranchesAndClassesPage() {
                     </div>
                   </div>
 
-                  {/* CÁC NÚT HÀNH ĐỘNG: SỬA TOÀN BỘ THÔNG TIN THAY VÌ CHỈ SỬA ĐIỂM DANH */}
+                  {/* CÁC NÚT HÀNH ĐỘNG: SỬA TOÀN BỘ THÔNG TIN & XÓA LỚP */}
                   <div className="mt-5 space-y-2 border-t border-slate-100 pt-3">
-                    {/* Nút Sửa Toàn Bộ Thông Tin Lớp Học */}
-                    <button
-                      onClick={() => openEditClassModal(cls)}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-brand-primary/40 bg-emerald-50/60 py-2.5 text-xs font-bold text-brand-primary hover:bg-brand-primary hover:text-white transition-all shadow-sm"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                      <span>Sửa Thông Tin Lớp Học</span>
-                    </button>
+                    {/* Hàng nút Sửa & Xóa Lớp Học */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditClassModal(cls)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-primary/40 bg-emerald-50/60 py-2.5 text-xs font-bold text-brand-primary hover:bg-brand-primary hover:text-white transition-all shadow-sm"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                        <span>Sửa Thông Tin Lớp</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClass(cls.id, cls.name)}
+                        title="Xóa lớp học này"
+                        className="flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
 
                     {/* Các Nút Điểm Danh & Học Phí */}
                     <div className="flex gap-2">
@@ -610,20 +654,30 @@ export default function AdminBranchesAndClassesPage() {
                 </label>
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setEditingClass(null)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  onClick={() => handleDeleteClass(editingClass.id, editingClass.name)}
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  Hủy
+                  <Trash2 className="h-4 w-4" />
+                  <span>Xóa Lớp Này</span>
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                >
-                  Lưu Thay Đổi Lớp
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingClass(null)}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  >
+                    Lưu Thay Đổi
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -794,20 +848,30 @@ export default function AdminBranchesAndClassesPage() {
                 />
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setEditingBranch(null)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  onClick={() => handleDeleteBranch(editingBranch.id, editingBranch.name)}
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  Hủy
+                  <Trash2 className="h-4 w-4" />
+                  <span>Xóa Cơ Sở Này</span>
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                >
-                  Lưu Thay Đổi
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingBranch(null)}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  >
+                    Lưu Thay Đổi
+                  </button>
+                </div>
               </div>
             </form>
           </div>

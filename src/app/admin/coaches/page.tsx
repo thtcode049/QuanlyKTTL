@@ -9,6 +9,7 @@ import {
   Award,
   Building2,
   Edit2,
+  Trash2,
   X,
   Sparkles,
   Check,
@@ -108,6 +109,16 @@ export default function AdminCoachesPage() {
     setEditingCoach(null);
   };
 
+  const handleDeleteCoach = (coachId: string, coachName: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa Huấn luyện viên "${coachName}" không?`)) {
+      dataStore.deleteCoach(coachId);
+      setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
+      if (editingCoach?.id === coachId) {
+        setEditingCoach(null);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -155,13 +166,22 @@ export default function AdminCoachesPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => openEditModal(coach)}
-                  className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-primary hover:text-white transition-all shadow-sm"
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                  <span>Sửa thông tin</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => openEditModal(coach)}
+                    className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-primary hover:text-white transition-all shadow-sm"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    <span>Sửa thông tin</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCoach(coach.id, coach.name)}
+                    title="Xóa Huấn luyện viên"
+                    className="flex items-center justify-center rounded-xl bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 space-y-2 text-xs text-slate-600">
@@ -278,20 +298,30 @@ export default function AdminCoachesPage() {
                 </select>
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setEditingCoach(null)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  onClick={() => handleDeleteCoach(editingCoach.id, editingCoach.name)}
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  Hủy
+                  <Trash2 className="h-4 w-4" />
+                  <span>Xóa HLV Này</span>
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                >
-                  Lưu Thay Đổi
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCoach(null)}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  >
+                    Lưu Thay Đổi
+                  </button>
+                </div>
               </div>
             </form>
           </div>

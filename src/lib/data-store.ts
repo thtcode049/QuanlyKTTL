@@ -628,6 +628,36 @@ class InMemoryDataStore {
     return null;
   }
 
+  // Xóa cơ sở đào tạo
+  public deleteBranch(branchId: string) {
+    this.branches = this.branches.filter((b) => b.id !== branchId);
+    return true;
+  }
+
+  // Xóa lớp học
+  public deleteClass(classId: string) {
+    this.classes = this.classes.filter((c) => c.id !== classId);
+    // Gỡ lớp khỏi danh sách học viên
+    this.students.forEach((s) => {
+      s.classIds = s.classIds.filter((cid) => cid !== classId);
+    });
+    this.recalculateAllInvoices(10, 2026);
+    return true;
+  }
+
+  // Xóa huấn luyện viên
+  public deleteCoach(coachId: string) {
+    this.users = this.users.filter((u) => u.id !== coachId);
+    return true;
+  }
+
+  // Xóa học viên
+  public deleteStudent(studentId: string) {
+    this.students = this.students.filter((s) => s.id !== studentId);
+    this.recalculateAllInvoices(10, 2026);
+    return true;
+  }
+
   // Tự động tính toán hóa đơn học phí cho tất cả học viên theo nguyên tắc THỰC HỌC - THỰC TRẢ
   public recalculateAllInvoices(month: number, year: number) {
     const newInvoices: MonthlyInvoiceData[] = [];

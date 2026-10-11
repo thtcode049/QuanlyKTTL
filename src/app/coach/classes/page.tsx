@@ -18,6 +18,7 @@ import {
   X,
   Sparkles,
   Edit2,
+  Trash2,
 } from "lucide-react";
 import { dataStore, ClassroomData, StudentData } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
@@ -145,6 +146,28 @@ export default function CoachClassesPage() {
 
     setClasses([...dataStore.classes]);
     setIsEditClassOpen(false);
+  };
+
+  const handleDeleteClass = () => {
+    if (!selectedClass) return;
+    if (window.confirm(`Bạn có chắc chắn muốn xóa lớp học "${selectedClass.name}" không?`)) {
+      dataStore.deleteClass(selectedClass.id);
+      const remainingClasses = [...dataStore.classes];
+      setClasses(remainingClasses);
+      setSelectedClassId(remainingClasses[0]?.id || "");
+      setIsEditClassOpen(false);
+    }
+  };
+
+  const handleRemoveStudentFromClass = (studentId: string, studentName: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${studentName}" khỏi lớp này không?`)) {
+      const student = dataStore.students.find((s) => s.id === studentId);
+      if (student) {
+        student.classIds = student.classIds.filter((cid) => cid !== selectedClass.id);
+        dataStore.recalculateAllInvoices(10, 2026);
+        setStudents([...dataStore.students]);
+      }
+    }
   };
 
   return (
@@ -325,6 +348,7 @@ export default function CoachClassesPage() {
                 <th className="px-4 py-3">Hệ Số Elo</th>
                 <th className="px-4 py-3">Học Phí / Buổi</th>
                 <th className="px-4 py-3">Ghi Chú HLV</th>
+                <th className="px-4 py-3 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -367,11 +391,20 @@ export default function CoachClassesPage() {
                   <td className="px-4 py-3 text-slate-500 italic">
                     {std.notes || "—"}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => handleRemoveStudentFromClass(std.id, std.fullName)}
+                      title="Xóa học viên khỏi lớp này"
+                      className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {classStudents.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                  <td colSpan={9} className="py-8 text-center text-slate-400">
                     Không tìm thấy học viên nào phù hợp.
                   </td>
                 </tr>
@@ -679,20 +712,30 @@ export default function CoachClassesPage() {
                 />
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsEditClassOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  onClick={handleDeleteClass}
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  Hủy
+                  <Trash2 className="h-4 w-4" />
+                  <span>Xóa Lớp Này</span>
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                >
-                  Lưu Thay Đổi
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditClassOpen(false)}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  >
+                    Lưu Thay Đổi
+                  </button>
+                </div>
               </div>
             </form>
           </div>
