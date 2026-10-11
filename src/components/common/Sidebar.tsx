@@ -33,8 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
   const adminNav = [
     { name: "Tổng quan Doanh thu", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Cơ sở Đào tạo", href: "/admin/branches", icon: Building2 },
-    { name: "Tất cả Lớp học", href: "/admin/classes", icon: BookOpen },
+    { name: "Cơ sở & Lớp học", href: "/admin/branches", icon: Building2 },
     { name: "Đội ngũ HLV", href: "/admin/coaches", icon: Users },
     { name: "Thu nhập & Lương HLV", href: "/admin/payroll", icon: Wallet },
     { name: "Cài đặt VietQR & Zalo", href: "/admin/settings", icon: Settings },

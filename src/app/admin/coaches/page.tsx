@@ -1,23 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Users,
   Plus,
   Phone,
   Mail,
   Award,
-  DollarSign,
   Building2,
   Edit2,
   X,
   Sparkles,
   Check,
+  GraduationCap,
 } from "lucide-react";
 import { dataStore, UserData } from "@/lib/data-store";
-import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function AdminCoachesPage() {
+  // Đảm bảo dữ liệu HLV luôn được chuẩn hóa
+  useEffect(() => {
+    dataStore.normalizeCoachData();
+    setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
+  }, []);
+
   const [coaches, setCoaches] = useState<UserData[]>(
     dataStore.users.filter((u) => u.role === "COACH")
   );
@@ -25,13 +30,25 @@ export default function AdminCoachesPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [title, setTitle] = useState("Kiện tướng Quốc gia / HLV Trẻ");
-  const [baseRate, setBaseRate] = useState("200000");
+  const [title, setTitle] = useState("HLV Quốc gia");
   const [branchId, setBranchId] = useState("branch-1");
 
-  // Edit rate inline modal
+  // Modal Sửa Toàn Bộ Thông Tin HLV
   const [editingCoach, setEditingCoach] = useState<UserData | null>(null);
-  const [editRateValue, setEditRateValue] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editBranchId, setEditBranchId] = useState("branch-1");
+
+  const openEditModal = (coach: UserData) => {
+    setEditingCoach(coach);
+    setEditName(coach.name);
+    setEditTitle(coach.title || "HLV Quốc gia");
+    setEditEmail(coach.email);
+    setEditPhone(coach.phone);
+    setEditBranchId(coach.branchId || "branch-1");
+  };
 
   const handleCreateCoach = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,24 +61,49 @@ export default function AdminCoachesPage() {
       phone: phone || "0912.000.111",
       role: "COACH",
       branchId,
-      baseRate: parseFloat(baseRate) || 200000,
-      title,
+      baseRate: 200000,
+      title: title || "HLV Quốc gia",
     };
 
     dataStore.users.push(newCoach);
-    setCoaches(dataStore.users.filter((u) => u.role === "COACH"));
+    setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
     setIsModalOpen(false);
 
     setName("");
     setEmail("");
     setPhone("");
+    setTitle("HLV Quốc gia");
   };
 
-  const handleUpdateRate = (e: React.FormEvent) => {
+  const handleUpdateCoach = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCoach) return;
 
-    editingCoach.baseRate = parseFloat(editRateValue) || editingCoach.baseRate;
+    dataStore.updateCoach(editingCoach.id, {
+      name: editName,
+      title: editTitle,
+      email: editEmail,
+      phone: editPhone,
+      branchId: editBranchId,
+    });
+
+    // Đồng bộ nếu đang lưu trong localStorage
+    try {
+      const stored = localStorage.getItem("kttll_user");
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u.id === editingCoach.id) {
+          u.name = editName;
+          u.title = editTitle;
+          u.email = editEmail;
+          u.phone = editPhone;
+          localStorage.setItem("kttll_user", JSON.stringify(u));
+        }
+      }
+    } catch (e) {
+      // bỏ qua nếu lỗi parse
+    }
+
     setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
     setEditingCoach(null);
   };
@@ -75,7 +117,7 @@ export default function AdminCoachesPage() {
             Quản Lý Huấn Luyện Viên
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Quản lý danh sách, cơ sở công tác và phân công lớp của từng Huấn luyện viên.
+            Quản lý toàn bộ thông tin HLV, danh hiệu chuyên môn và cơ sở công tác.
           </p>
         </div>
 
@@ -114,14 +156,11 @@ export default function AdminCoachesPage() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    setEditingCoach(coach);
-                    setEditRateValue(coach.baseRate.toString());
-                  }}
-                  className="flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200"
+                  onClick={() => openEditModal(coach)}
+                  className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-primary hover:text-white transition-all shadow-sm"
                 >
-                  <Edit2 className="h-3 w-3" />
-                  <span>Sửa đơn giá</span>
+                  <Edit2 className="h-3.5 w-3.5" />
+                  <span>Sửa thông tin</span>
                 </button>
               </div>
 
@@ -140,23 +179,17 @@ export default function AdminCoachesPage() {
                 </div>
               </div>
 
-              {/* Rate & Classes Stats */}
-              <div className="mt-5 grid grid-cols-3 gap-3 rounded-xl bg-slate-50 p-3 text-center border border-slate-100">
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400">Đơn Giá / Ca</p>
-                  <p className="mt-0.5 text-sm font-black text-brand-secondary">
-                    {formatCurrencyVND(coach.baseRate)}
-                  </p>
-                </div>
+              {/* Classes & Sessions Stats (Đã xóa bỏ hoàn toàn phần Đơn Giá / Ca) */}
+              <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 text-center border border-slate-100">
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400">Lớp Đang Dạy</p>
-                  <p className="mt-0.5 text-sm font-black text-slate-800">
+                  <p className="mt-0.5 text-base font-black text-slate-800">
                     {coachClasses.length} lớp
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400">Ca Đã Dạy T10</p>
-                  <p className="mt-0.5 text-sm font-black text-brand-primary">
+                  <p className="mt-0.5 text-base font-black text-brand-primary">
                     {sessionsTaught} ca
                   </p>
                 </div>
@@ -166,35 +199,86 @@ export default function AdminCoachesPage() {
         })}
       </div>
 
-      {/* Modal Cấu hình Đơn giá Thù Lao */}
+      {/* Modal Sửa Toàn Bộ Thông Tin HLV */}
       {editingCoach && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Sửa Đơn Giá Thù Lao: {editingCoach.name}
-              </h3>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Sửa Thông Tin Huấn Luyện Viên
+                </h3>
+                <p className="text-xs text-slate-500">Mã HLV: {editingCoach.id}</p>
+              </div>
               <button onClick={() => setEditingCoach(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateRate} className="mt-4 space-y-4 text-xs">
+            <form onSubmit={handleUpdateCoach} className="mt-4 space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-700">Đơn giá thù lao / 1 ca dạy (VNĐ)</label>
+                <label className="font-bold text-slate-700">Họ và tên HLV *</label>
                 <input
-                  type="number"
-                  step="10000"
-                  value={editRateValue}
-                  onChange={(e) => setEditRateValue(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-base font-black text-brand-secondary focus:border-brand-primary focus:outline-none"
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="VD: HLV Trần Huyền Trang"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
-                <p className="mt-1 text-[11px] text-slate-400">
-                  Đơn giá cơ bản tham chiếu (Thu nhập chính tính theo: 50% Học phí + 30% Tiền sách)
-                </p>
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div>
+                <label className="font-bold text-slate-700">Danh hiệu / Chức danh *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="VD: HLV Quốc gia / Đại Kiện Tướng"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700">Email đăng nhập *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Số điện thoại *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Cơ sở công tác chính</label>
+                <select
+                  value={editBranchId}
+                  onChange={(e) => setEditBranchId(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                >
+                  {dataStore.branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-5 flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingCoach(null)}
@@ -206,7 +290,7 @@ export default function AdminCoachesPage() {
                   type="submit"
                   className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
                 >
-                  Cập Nhật
+                  Lưu Thay Đổi
                 </button>
               </div>
             </form>
@@ -214,7 +298,7 @@ export default function AdminCoachesPage() {
         </div>
       )}
 
-      {/* Modal Thêm HLV Mới */}
+      {/* Modal Thêm HLV Mới (Đã loại bỏ trường đơn giá/ca) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
@@ -233,7 +317,7 @@ export default function AdminCoachesPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="VD: Kiện tướng Trần Văn A"
+                  placeholder="VD: HLV Trần Huyền Trang"
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>
@@ -244,7 +328,7 @@ export default function AdminCoachesPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="VD: Kiện tướng Quốc gia"
+                  placeholder="VD: HLV Quốc gia"
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>
@@ -258,7 +342,7 @@ export default function AdminCoachesPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="hlv3@kttll.vn"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
                 <div>
@@ -269,35 +353,24 @@ export default function AdminCoachesPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0912.333.444"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700">Đơn giá thù lao / ca (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={baseRate}
-                    onChange={(e) => setBaseRate(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700">Cơ sở chính</label>
-                  <select
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                  >
-                    {dataStore.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="font-bold text-slate-700">Cơ sở chính</label>
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                >
+                  {dataStore.branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mt-5 flex gap-2 pt-2">

@@ -47,9 +47,9 @@ export default function LoginPage() {
         const user = {
           id: isCoach2 ? "user-coach-2" : "user-coach-1",
           email: isCoach2 ? "hlv2@kttll.vn" : "hlv1@kttll.vn",
-          name: isCoach2 ? "HLV Nguyễn Văn Hùng" : "GM Bùi Vinh",
+          name: isCoach2 ? "HLV Trần Huyền Trang" : "GM Bùi Vinh",
           role: "COACH",
-          title: isCoach2 ? "Kiện tướng Quốc gia / HLV Trẻ" : "Đại Kiện Tướng Quốc Tế",
+          title: isCoach2 ? "HLV Quốc gia" : "Đại Kiện Tướng Quốc Tế",
         };
         localStorage.setItem("kttll_user", JSON.stringify(user));
         router.push("/coach/classes");
@@ -88,9 +88,9 @@ export default function LoginPage() {
       const user = {
         id: "user-coach-2",
         email: "hlv2@kttll.vn",
-        name: "HLV Nguyễn Văn Hùng",
+        name: "HLV Trần Huyền Trang",
         role: "COACH",
-        title: "Kiện tướng Quốc gia / HLV Trẻ",
+        title: "HLV Quốc gia",
       };
       localStorage.setItem("kttll_user", JSON.stringify(user));
       router.push("/coach/classes");

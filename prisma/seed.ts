@@ -77,7 +77,7 @@ async function main() {
 
   const hlv2 = await prisma.user.create({
     data: {
-      name: "HLV Nguyễn Văn Hùng",
+      name: "HLV Trần Huyền Trang",
       email: "hlv2@kttll.vn",
       phone: "0983.112.233",
       passwordHash: "coach123",

@@ -130,13 +130,13 @@ export const initialUsers: UserData[] = [
   },
   {
     id: "user-coach-2",
-    name: "HLV Nguyễn Văn Hùng",
+    name: "HLV Trần Huyền Trang",
     email: "hlv2@kttll.vn",
     phone: "0983.112.233",
     role: "COACH",
     branchId: "branch-3",
     baseRate: 200000,
-    title: "Kiện tướng Quốc gia / HLV Trẻ",
+    title: "HLV Quốc gia",
   },
 ];
 
@@ -491,7 +491,54 @@ class InMemoryDataStore {
   public invoices: MonthlyInvoiceData[] = [];
 
   constructor() {
+    this.normalizeCoachData();
     this.recalculateAllInvoices(10, 2026);
+  }
+
+  // Chuẩn hóa dữ liệu HLV mẫu
+  public normalizeCoachData() {
+    for (const u of this.users) {
+      if (u.id === "user-coach-2" || (u.name && u.name.includes("Hùng"))) {
+        u.name = "HLV Trần Huyền Trang";
+        u.title = "HLV Quốc gia";
+      }
+      if (u.name && u.name.includes("ĐKT")) {
+        u.name = u.name.replace(/ĐKT/g, "GM");
+      }
+    }
+  }
+
+  // Cập nhật thông tin toàn diện của Huấn luyện viên
+  public updateCoach(coachId: string, data: Partial<UserData>) {
+    const coach = this.users.find((u) => u.id === coachId);
+    if (coach) {
+      Object.assign(coach, data);
+      return coach;
+    }
+    return null;
+  }
+
+  // Cập nhật thông tin toàn diện của Lớp học
+  public updateClass(classId: string, data: Partial<ClassroomData>) {
+    const cls = this.classes.find((c) => c.id === classId);
+    if (cls) {
+      Object.assign(cls, data);
+      if (data.feePerSession !== undefined) {
+        this.recalculateAllInvoices(10, 2026);
+      }
+      return cls;
+    }
+    return null;
+  }
+
+  // Cập nhật thông tin cơ sở
+  public updateBranch(branchId: string, data: Partial<BranchData>) {
+    const branch = this.branches.find((b) => b.id === branchId);
+    if (branch) {
+      Object.assign(branch, data);
+      return branch;
+    }
+    return null;
   }
 
   // Tự động tính toán hóa đơn học phí cho tất cả học viên theo nguyên tắc THỰC HỌC - THỰC TRẢ

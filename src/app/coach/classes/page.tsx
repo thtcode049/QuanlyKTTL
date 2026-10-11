@@ -17,6 +17,7 @@ import {
   Check,
   X,
   Sparkles,
+  Edit2,
 } from "lucide-react";
 import { dataStore, ClassroomData, StudentData } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
@@ -44,6 +45,14 @@ export default function CoachClassesPage() {
   const [newClassBranch, setNewClassBranch] = useState("branch-1");
   const [newClassSchedule, setNewClassSchedule] = useState("Thứ 4 & Thứ 7 (18:00 - 19:30)");
   const [newClassFee, setNewClassFee] = useState("160000");
+
+  // Modal State: Sửa thông tin lớp
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false);
+  const [editClassName, setEditClassName] = useState("");
+  const [editClassLevel, setEditClassLevel] = useState("Nhập môn");
+  const [editClassBranch, setEditClassBranch] = useState("branch-1");
+  const [editClassSchedule, setEditClassSchedule] = useState("");
+  const [editClassFee, setEditClassFee] = useState("");
 
   const selectedClass = classes.find((c) => c.id === selectedClassId) || classes[0];
   const branchInfo = dataStore.branches.find((b) => b.id === selectedClass?.branchId);
@@ -110,6 +119,32 @@ export default function CoachClassesPage() {
     setSelectedClassId(newCls.id);
     setIsCreateClassOpen(false);
     setNewClassName("");
+  };
+
+  const openEditClassModal = () => {
+    if (!selectedClass) return;
+    setEditClassName(selectedClass.name);
+    setEditClassLevel(selectedClass.level);
+    setEditClassBranch(selectedClass.branchId);
+    setEditClassSchedule(selectedClass.schedule);
+    setEditClassFee(selectedClass.feePerSession.toString());
+    setIsEditClassOpen(true);
+  };
+
+  const handleUpdateClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClass || !editClassName) return;
+
+    dataStore.updateClass(selectedClass.id, {
+      name: editClassName,
+      level: editClassLevel,
+      branchId: editClassBranch,
+      schedule: editClassSchedule,
+      feePerSession: parseFloat(editClassFee) || selectedClass.feePerSession,
+    });
+
+    setClasses([...dataStore.classes]);
+    setIsEditClassOpen(false);
   };
 
   return (
@@ -226,6 +261,14 @@ export default function CoachClassesPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={openEditClassModal}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <Edit2 className="h-4 w-4 text-brand-primary" />
+              <span>Sửa Thông Tin Lớp</span>
+            </button>
+
             <Link
               href={`/coach/attendance?classId=${selectedClass.id}`}
               className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-primary-hover"
@@ -547,6 +590,108 @@ export default function CoachClassesPage() {
                   className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
                 >
                   Tạo Lớp
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sửa Toàn Bộ Thông Tin Lớp Học */}
+      {isEditClassOpen && selectedClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">
+                Sửa Thông Tin Lớp: {selectedClass.name}
+              </h3>
+              <button
+                onClick={() => setIsEditClassOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateClass} className="mt-4 space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-slate-700">Tên lớp học *</label>
+                <input
+                  type="text"
+                  required
+                  value={editClassName}
+                  onChange={(e) => setEditClassName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700">Trình độ / Cấp độ *</label>
+                  <select
+                    value={editClassLevel}
+                    onChange={(e) => setEditClassLevel(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  >
+                    <option value="Vỡ lòng">Vỡ lòng</option>
+                    <option value="Nhập môn">Nhập môn</option>
+                    <option value="Nâng cao">Nâng cao</option>
+                    <option value="Đội tuyển">Đội tuyển</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Cơ sở</label>
+                  <select
+                    value={editClassBranch}
+                    onChange={(e) => setEditClassBranch(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  >
+                    {dataStore.branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Lịch học</label>
+                <input
+                  type="text"
+                  required
+                  value={editClassSchedule}
+                  onChange={(e) => setEditClassSchedule(e.target.value)}
+                  placeholder="VD: Thứ 3 & Thứ 6 (18:00 - 19:30)"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Đơn giá học phí / 1 buổi (VNĐ)</label>
+                <input
+                  type="number"
+                  step="10000"
+                  required
+                  value={editClassFee}
+                  onChange={(e) => setEditClassFee(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
+                />
+              </div>
+
+              <div className="mt-5 flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditClassOpen(false)}
+                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                >
+                  Lưu Thay Đổi
                 </button>
               </div>
             </form>
