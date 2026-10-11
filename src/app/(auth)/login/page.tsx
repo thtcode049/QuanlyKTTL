@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   ShieldCheck,
   UserCheck,
-  ArrowRight,
-  Sparkles,
   Lock,
   Mail,
   CheckCircle2,
   CalendarCheck2,
   QrCode,
-  Layers,
+  ArrowRight,
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -163,16 +161,6 @@ export default function LoginPage() {
                 <p className="text-slate-400">Tự động sinh mã chuyển khoản chuẩn Napas và tin nhắn phụ huynh</p>
               </div>
             </div>
-
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
-                <Layers className="h-5 w-5" />
-              </div>
-              <div className="text-xs">
-                <p className="font-bold text-white">Supabase PostgreSQL & Vercel</p>
-                <p className="text-slate-400">Sẵn sàng triển khai cloud và tùy biến tên miền riêng</p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -253,14 +241,6 @@ export default function LoginPage() {
                 </div>
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("COACH2")}
-              className="mt-2 w-full rounded-lg bg-slate-50 py-1.5 text-center text-[11px] font-medium text-slate-600 hover:bg-slate-100 border border-slate-200"
-            >
-              Hoặc thử: HLV Nguyễn Văn Hùng (hlv2@kttll.vn)
-            </button>
           </div>
 
           {/* Regular Login Form */}

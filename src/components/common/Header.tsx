@@ -26,6 +26,16 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
     day: "numeric",
   }).format(new Date());
 
+  const cleanName = (name?: string) => {
+    if (!name) return userRole === "ADMIN" ? "Ban Quản Trị" : "GM Bùi Vinh";
+    return name.replace(/ĐKT/g, "GM");
+  };
+
+  const cleanTitle = (title?: string) => {
+    if (!title) return userRole === "ADMIN" ? "Quản lý toàn bộ cơ sở" : "Đại Kiện Tướng Quốc Tế";
+    return title.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md md:px-6">
       {/* Left info & Breadcrumb */}
@@ -64,10 +74,10 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           </div>
           <div className="text-left leading-tight">
             <p className="text-xs font-bold text-slate-800">
-              {userName || (userRole === "ADMIN" ? "Ban Quản Trị" : "GM Bùi Vinh")}
+              {cleanName(userName)}
             </p>
             <p className="text-[10px] text-slate-500">
-              {userTitle || (userRole === "ADMIN" ? "Quản lý toàn bộ cơ sở" : "Đại Kiện Tướng Quốc Tế")}
+              {cleanTitle(userTitle)}
             </p>
           </div>
         </div>

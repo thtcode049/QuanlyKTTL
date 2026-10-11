@@ -11,11 +11,12 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  Sparkles,
   AlertCircle,
   Eye,
   Check,
   Search,
+  Edit3,
+  X,
 } from "lucide-react";
 import { dataStore, MonthlyInvoiceData, ClassroomData, StudentData } from "@/lib/data-store";
 import { formatCurrencyVND, generateVietQrUrl } from "@/lib/vietqr";
@@ -50,6 +51,34 @@ function InvoicesContent() {
   // Modal Zalo Simulator State
   const [zaloModalOpen, setZaloModalOpen] = useState(false);
   const [activeZaloPayload, setActiveZaloPayload] = useState<ZaloStudentInvoicePayload | null>(null);
+
+  // Modal Chỉnh Sửa Học Phí Riêng Cho Học Viên
+  const [editingStudentFee, setEditingStudentFee] = useState<{
+    student: StudentData;
+    currentFee: number;
+  } | null>(null);
+  const [customFeeInput, setCustomFeeInput] = useState<string>("");
+
+  const handleOpenEditFee = (student: StudentData, currentFee: number) => {
+    setEditingStudentFee({ student, currentFee });
+    setCustomFeeInput(
+      student.customFeePerSession !== undefined && student.customFeePerSession !== null
+        ? String(student.customFeePerSession)
+        : String(currentFee)
+    );
+  };
+
+  const handleSaveCustomFee = (resetToDefault = false) => {
+    if (!editingStudentFee) return;
+    if (resetToDefault) {
+      dataStore.updateStudentFee(editingStudentFee.student.id, null);
+    } else {
+      const fee = Number(customFeeInput);
+      dataStore.updateStudentFee(editingStudentFee.student.id, fee);
+    }
+    reloadInvoices();
+    setEditingStudentFee(null);
+  };
 
   const selectedClass = classes.find((c) => c.id === selectedClassId) || classes[0];
   const branchInfo = dataStore.branches.find((b) => b.id === selectedClass?.branchId);
@@ -359,8 +388,26 @@ function InvoicesContent() {
                     <td className="px-4 py-3 text-[11px] text-slate-600">
                       {presentDates.length > 0 ? presentDates.join(", ") : "Chưa có"}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-600">
-                      {formatCurrencyVND(inv.feePerSession)}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <div className="text-right">
+                          <p className="font-bold text-slate-800">{formatCurrencyVND(inv.feePerSession)}</p>
+                          {student?.customFeePerSession !== undefined && student?.customFeePerSession !== null ? (
+                            <span className="inline-block rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
+                              Giá riêng
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">Giá lớp</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => student && handleOpenEditFee(student, inv.feePerSession)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
+                          title="Sửa đơn giá học phí cho học viên này"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
                       {formatCurrencyVND(inv.totalAmount)}
@@ -417,6 +464,79 @@ function InvoicesContent() {
           </table>
         </div>
       </div>
+
+      {/* Modal Điều Chỉnh Học Phí Riêng Học Viên */}
+      {editingStudentFee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary">
+                  <DollarSign className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Điều Chỉnh Học Phí Học Viên
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingStudentFee(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3.5 text-xs">
+              <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                <p className="font-bold text-slate-900 text-sm">
+                  {editingStudentFee.student.fullName} ({editingStudentFee.student.code})
+                </p>
+                <p className="mt-1 text-slate-500">
+                  Lớp: <strong className="text-slate-800">{selectedClass?.name}</strong> • Đơn giá chuẩn của lớp: <strong className="text-brand-primary">{formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi</strong>
+                </p>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">
+                  Đơn giá học phí áp dụng cho học viên này (VNĐ / buổi)
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    type="number"
+                    step="10000"
+                    value={customFeeInput}
+                    onChange={(e) => setCustomFeeInput(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 pr-8 text-sm font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                  />
+                  <span className="pointer-events-none absolute right-3 top-2.5 font-bold text-slate-400">
+                    đ
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Áp dụng cho trường hợp học bổng, ưu đãi anh/chị em, hoặc đơn giá kèm riêng.
+                </p>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleSaveCustomFee(false)}
+                  className="w-full rounded-xl bg-brand-primary py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95"
+                >
+                  Lưu Đơn Giá Riêng Cho Học Viên
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveCustomFee(true)}
+                  className="w-full rounded-xl border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Đặt Lại Theo Giá Chung Của Lớp ({formatCurrencyVND(selectedClass?.feePerSession || 150000)})
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {activeQrData && (

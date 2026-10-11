@@ -17,8 +17,18 @@ export default function AdminLayout({
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.name) setAdminName(u.name);
-        if (u.title) setAdminTitle(u.title);
+        const fixedName = (u.name || "Ban Chủ Nhiệm CLB").replace(/ĐKT/g, "GM");
+        const fixedTitle = (u.title || "Quản trị toàn bộ 4 cơ sở")
+          .replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "")
+          .replace(/ĐKT/g, "GM")
+          .trim() || "Quản trị toàn bộ 4 cơ sở";
+
+        setAdminName(fixedName);
+        setAdminTitle(fixedTitle);
+
+        u.name = fixedName;
+        u.title = fixedTitle;
+        localStorage.setItem("kttll_user", JSON.stringify(u));
       } catch (e) {
         // use default
       }

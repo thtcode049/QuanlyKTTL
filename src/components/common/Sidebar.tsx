@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { name: "Cơ sở Đào tạo", href: "/admin/branches", icon: Building2 },
     { name: "Tất cả Lớp học", href: "/admin/classes", icon: BookOpen },
     { name: "Đội ngũ HLV", href: "/admin/coaches", icon: Users },
-    { name: "Bảng lương & Thù lao", href: "/admin/payroll", icon: Wallet },
+    { name: "Thu nhập & Lương HLV", href: "/admin/payroll", icon: Wallet },
     { name: "Cài đặt VietQR & Zalo", href: "/admin/settings", icon: Settings },
   ];
 
@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { name: "Điểm danh buổi học", href: "/coach/attendance", icon: CheckSquare },
     { name: "Tổng kết & Học phí", href: "/coach/invoices", icon: FileSpreadsheet },
     { name: "Đánh giá kỳ thủ", href: "/coach/evaluations", icon: Award },
-    { name: "Thù lao cá nhân", href: "/coach/payroll", icon: Coins },
+    { name: "Thu nhập HLV", href: "/coach/payroll", icon: Coins },
   ];
 
   const navItems = userRole === "ADMIN" ? adminNav : coachNav;

@@ -75,7 +75,7 @@ export default function AdminCoachesPage() {
             Quản Lý Huấn Luyện Viên
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Cấu hình đơn giá thù lao/ca dạy và cơ sở công tác của từng Huấn luyện viên.
+            Quản lý danh sách, cơ sở công tác và phân công lớp của từng Huấn luyện viên.
           </p>
         </div>
 
@@ -190,7 +190,7 @@ export default function AdminCoachesPage() {
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-base font-black text-brand-secondary focus:border-brand-primary focus:outline-none"
                 />
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Thù lao = (Số ca dạy thực tế) × (Đơn giá này)
+                  Đơn giá cơ bản tham chiếu (Thu nhập chính tính theo: 50% Học phí + 30% Tiền sách)
                 </p>
               </div>
 

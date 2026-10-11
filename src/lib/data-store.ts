@@ -44,6 +44,7 @@ export interface StudentData {
   eloRating: number;
   notes?: string;
   classIds: string[];
+  customFeePerSession?: number; // Đơn giá học phí riêng theo từng học viên (ưu đãi, học bổng hoặc kèm riêng)
 }
 
 export interface AttendanceRecordData {
@@ -52,6 +53,8 @@ export interface AttendanceRecordData {
   studentId: string;
   status: 'PRESENT' | 'ABSENT';
   coachNote?: string;
+  bookTitle?: string; // Tên sách được phát cho học viên
+  bookPrice?: number; // Giá bìa sách (VNĐ)
 }
 
 export interface AttendanceSessionData {
@@ -184,7 +187,7 @@ export const initialStudents: StudentData[] = [
   // Lớp 1 (Vỡ lòng - K01, Bạch Mai) - 7 học viên
   { id: "std-1", code: "HS001", fullName: "Nguyễn Minh Khang", birthYear: 2018, parentName: "Nguyễn Hoàng Nam", parentPhone: "0912111222", currentLevel: "Vỡ lòng", eloRating: 1020, notes: "Nắm luật nhanh, rất tập trung", classIds: ["class-1"] },
   { id: "std-2", code: "HS002", fullName: "Trần Bảo An", birthYear: 2019, parentName: "Lê Thị Thu", parentPhone: "0983222333", currentLevel: "Vỡ lòng", eloRating: 980, notes: "Thích ăn quân Xe, vui vẻ", classIds: ["class-1"] },
-  { id: "std-3", code: "HS003", fullName: "Lê Hoàng Phúc", birthYear: 2018, parentName: "Lê Văn Hùng", parentPhone: "0904333444", currentLevel: "Vỡ lòng", eloRating: 1050, notes: "Biết phong Cấp Tốt tốt", classIds: ["class-1"] },
+  { id: "std-3", code: "HS003", fullName: "Lê Hoàng Phúc", birthYear: 2018, parentName: "Lê Văn Hùng", parentPhone: "0904333444", currentLevel: "Vỡ lòng", eloRating: 1050, notes: "Biết phong Cấp Tốt tốt", classIds: ["class-1"], customFeePerSession: 120000 },
   { id: "std-4", code: "HS004", fullName: "Phạm Gia Huy", birthYear: 2017, parentName: "Phạm Quốc Tuấn", parentPhone: "0975444555", currentLevel: "Vỡ lòng", eloRating: 1010, notes: "Học đều đặn", classIds: ["class-1"] },
   { id: "std-5", code: "HS005", fullName: "Vũ Tuệ Lâm", birthYear: 2018, parentName: "Nguyễn Hương Giang", parentPhone: "0966555666", currentLevel: "Vỡ lòng", eloRating: 1040, notes: "Tư duy không gian tốt", classIds: ["class-1"] },
   { id: "std-6", code: "HS006", fullName: "Đỗ Đăng Khoa", birthYear: 2019, parentName: "Đỗ Xuân Bách", parentPhone: "0918666777", currentLevel: "Vỡ lòng", eloRating: 990, notes: "Mới vào học đầu tháng", classIds: ["class-1"] },
@@ -211,7 +214,7 @@ export const initialStudents: StudentData[] = [
   { id: "std-21", code: "HS021", fullName: "Nguyễn Khánh Nam", birthYear: 2013, parentName: "Nguyễn Minh Đức", parentPhone: "0985234999", currentLevel: "Đội tuyển", eloRating: 1420, notes: "Huy chương vàng cấp quận", classIds: ["class-4"] },
   { id: "std-22", code: "HS022", fullName: "Lê Tuấn Kiệt", birthYear: 2014, parentName: "Lê Văn Hùng", parentPhone: "0936345000", currentLevel: "Đội tuyển", eloRating: 1390, notes: "Khai cuộc Sicilian lão luyện", classIds: ["class-4"] },
   { id: "std-23", code: "HS023", fullName: "Hoàng Thảo Nguyên", birthYear: 2015, parentName: "Hoàng Minh Tâm", parentPhone: "0974456111", currentLevel: "Đội tuyển", eloRating: 1410, notes: "Tính nước chiếu hết rất nhạy bén", classIds: ["class-4"] },
-  { id: "std-24", code: "HS024", fullName: "Trần Đức Minh", birthYear: 2013, parentName: "Trần Văn Toàn", parentPhone: "0907567222", currentLevel: "Đội tuyển", eloRating: 1480, notes: "Đạt chuẩn Kiện tướng tương lai", classIds: ["class-4"] },
+  { id: "std-24", code: "HS024", fullName: "Trần Đức Minh", birthYear: 2013, parentName: "Trần Văn Toàn", parentPhone: "0907567222", currentLevel: "Đội tuyển", eloRating: 1480, notes: "Đạt chuẩn Kiện tướng tương lai", classIds: ["class-4"], customFeePerSession: 200000 },
   { id: "std-25", code: "HS025", fullName: "Võ Minh Khôi", birthYear: 2014, parentName: "Võ Đình Trọng", parentPhone: "0962678333", currentLevel: "Đội tuyển", eloRating: 1430, notes: "Tập trung cao độ, thi đấu bản lĩnh", classIds: ["class-4"] },
 ];
 
@@ -224,11 +227,11 @@ export const initialSessions: AttendanceSessionData[] = [
     date: "2026-10-02",
     topic: "Ôn tập luật đi quân và Quy tắc Nhập thành an toàn",
     records: [
-      { id: "rec-1-1-1", sessionId: "sess-1-1", studentId: "std-1", status: "PRESENT", coachNote: "Hiểu tốt quy tắc nhập thành" },
+      { id: "rec-1-1-1", sessionId: "sess-1-1", studentId: "std-1", status: "PRESENT", coachNote: "Hiểu tốt quy tắc nhập thành", bookTitle: "Sách Cờ vua Vỡ lòng & Bài tập", bookPrice: 80000 },
       { id: "rec-1-1-2", sessionId: "sess-1-1", studentId: "std-2", status: "PRESENT", coachNote: "Cần chú ý không đi Vua qua ô bị kiểm soát" },
       { id: "rec-1-1-3", sessionId: "sess-1-1", studentId: "std-3", status: "PRESENT", coachNote: "Tập trung tốt" },
       { id: "rec-1-1-4", sessionId: "sess-1-1", studentId: "std-4", status: "ABSENT", coachNote: "Phụ huynh xin nghỉ về quê" },
-      { id: "rec-1-1-5", sessionId: "sess-1-1", studentId: "std-5", status: "PRESENT", coachNote: "Thực hành nhanh" },
+      { id: "rec-1-1-5", sessionId: "sess-1-1", studentId: "std-5", status: "PRESENT", coachNote: "Thực hành nhanh", bookTitle: "Sách Cờ vua Vỡ lòng & Bài tập", bookPrice: 80000 },
       { id: "rec-1-1-6", sessionId: "sess-1-1", studentId: "std-6", status: "PRESENT", coachNote: "Rất hào hứng" },
       { id: "rec-1-1-7", sessionId: "sess-1-1", studentId: "std-7", status: "PRESENT", coachNote: "Làm bài tập đúng 100%" },
     ],
@@ -402,11 +405,11 @@ export const initialSessions: AttendanceSessionData[] = [
     date: "2026-10-03",
     topic: "Chuyên đề Phòng thủ Sicilian: Biến thể Najdorf 6.Bg5",
     records: [
-      { id: "rec-4-1-20", sessionId: "sess-4-1", studentId: "std-20", status: "PRESENT", coachNote: "Hiểu biến sâu tới nước 18" },
+      { id: "rec-4-1-20", sessionId: "sess-4-1", studentId: "std-20", status: "PRESENT", coachNote: "Hiểu biến sâu tới nước 18", bookTitle: "Cẩm nang Đại Kiện Tướng - Sicilian", bookPrice: 150000 },
       { id: "rec-4-1-21", sessionId: "sess-4-1", studentId: "std-21", status: "PRESENT", coachNote: "Nắm vững ý đồ đối phó" },
       { id: "rec-4-1-22", sessionId: "sess-4-1", studentId: "std-22", status: "PRESENT", coachNote: "Phản công cánh Vua mạnh mẽ" },
       { id: "rec-4-1-23", sessionId: "sess-4-1", studentId: "std-23", status: "PRESENT", coachNote: "Xử lý trung tàn cuộc nhạy bén" },
-      { id: "rec-4-1-24", sessionId: "sess-4-1", studentId: "std-24", status: "PRESENT", coachNote: "Chuẩn bị khai cuộc chuẩn Đại Kiện Tướng" },
+      { id: "rec-4-1-24", sessionId: "sess-4-1", studentId: "std-24", status: "PRESENT", coachNote: "Chuẩn bị khai cuộc chuẩn Đại Kiện Tướng", bookTitle: "Kỹ thuật Tàn cuộc Nâng cao", bookPrice: 120000 },
       { id: "rec-4-1-25", sessionId: "sess-4-1", studentId: "std-25", status: "PRESENT", coachNote: "Tập trung tối đa" },
     ],
   },
@@ -516,7 +519,10 @@ class InMemoryDataStore {
           }
         }
 
-        const feePerSession = cls.feePerSession;
+        // Ưu tiên đơn giá riêng của từng học viên (nếu có), nếu không áp dụng đơn giá chung của lớp
+        const feePerSession = (student.customFeePerSession !== undefined && student.customFeePerSession !== null)
+          ? student.customFeePerSession
+          : cls.feePerSession;
         // Công thức THỰC HỌC - THỰC TRẢ: Số buổi Có mặt * Đơn giá
         const totalAmount = presentCount * feePerSession;
 
@@ -566,9 +572,29 @@ class InMemoryDataStore {
           return d.getMonth() + 1 === month && d.getFullYear() === year;
         });
 
+        // Tổng học phí từ các lớp mà HLV phụ trách trong tháng (quy tắc Thực học - Thực trả)
+        const coachInvoices = this.invoices.filter(
+          (inv) => classIds.includes(inv.classId) && inv.month === month && inv.year === year
+        );
+        const totalTuition = coachInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+        const tuitionCommission = Math.round(totalTuition * 0.5); // 50% Tổng học phí
+
+        // Tiền sách phát cho học viên trong các buổi dạy của HLV trong tháng
+        let totalBooksCount = 0;
+        let totalBookRevenue = 0;
+        sessionsInMonth.forEach((sess) => {
+          sess.records.forEach((rec) => {
+            if (rec.bookPrice && rec.bookPrice > 0) {
+              totalBooksCount += 1;
+              totalBookRevenue += rec.bookPrice;
+            }
+          });
+        });
+        const bookCommission = Math.round(totalBookRevenue * 0.3); // 30% Tiền sách
+
+        // Công thức mới: Thu nhập HLV = Tổng học phí * 50% + Tiền sách * 30%
         const totalSessions = sessionsInMonth.length;
-        const baseRate = coach.baseRate;
-        const totalSalary = totalSessions * baseRate;
+        const totalIncome = tuitionCommission + bookCommission;
 
         return {
           coachId: coach.id,
@@ -576,14 +602,49 @@ class InMemoryDataStore {
           coachPhone: coach.phone,
           branchName: this.branches.find((b) => b.id === coach.branchId)?.name || "Chưa gán",
           totalSessions,
-          baseRate,
-          totalSalary,
+          totalTuition,
+          tuitionCommission,
+          totalBooksCount,
+          totalBookRevenue,
+          bookCommission,
+          totalIncome,
+          totalSalary: totalIncome, // compatibility alias
           month,
           year,
           classesCount: coachClasses.length,
           sessionsList: sessionsInMonth,
         };
       });
+  }
+
+  // Cập nhật đơn giá học phí riêng theo từng học viên (học bổng, ưu đãi hoặc thỏa thuận riêng)
+  public updateStudentFee(studentId: string, customFeePerSession: number | null) {
+    const student = this.students.find((s) => s.id === studentId);
+    if (student) {
+      if (customFeePerSession === null || isNaN(customFeePerSession) || customFeePerSession < 0) {
+        delete student.customFeePerSession;
+      } else {
+        student.customFeePerSession = customFeePerSession;
+      }
+      this.recalculateAllInvoices(10, 2026);
+    }
+  }
+
+  // Cập nhật thông tin phát sách cho học viên trong buổi điểm danh
+  public updateRecordBook(sessionId: string, studentId: string, bookTitle?: string, bookPrice?: number) {
+    const session = this.sessions.find((s) => s.id === sessionId);
+    if (session) {
+      const rec = session.records.find((r) => r.studentId === studentId);
+      if (rec) {
+        if (!bookTitle || !bookPrice || bookPrice <= 0) {
+          delete rec.bookTitle;
+          delete rec.bookPrice;
+        } else {
+          rec.bookTitle = bookTitle;
+          rec.bookPrice = bookPrice;
+        }
+      }
+    }
   }
 }
 

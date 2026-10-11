@@ -35,6 +35,7 @@ export default function CoachClassesPage() {
   const [newParentPhone, setNewParentPhone] = useState("");
   const [newStudentElo, setNewStudentElo] = useState("1000");
   const [newStudentNotes, setNewStudentNotes] = useState("");
+  const [newCustomFee, setNewCustomFee] = useState("");
 
   // Modal State: Tạo lớp mới
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
@@ -73,9 +74,11 @@ export default function CoachClassesPage() {
       eloRating: parseInt(newStudentElo) || 1000,
       notes: newStudentNotes,
       classIds: [selectedClass.id],
+      customFeePerSession: newCustomFee ? Number(newCustomFee) : undefined,
     };
 
     dataStore.students.push(newStudent);
+    dataStore.recalculateAllInvoices(10, 2026);
     setStudents([...dataStore.students]);
     setIsAddStudentOpen(false);
 
@@ -84,6 +87,7 @@ export default function CoachClassesPage() {
     setNewParentName("");
     setNewParentPhone("");
     setNewStudentNotes("");
+    setNewCustomFee("");
   };
 
   const handleCreateClass = (e: React.FormEvent) => {
@@ -276,6 +280,7 @@ export default function CoachClassesPage() {
                 <th className="px-4 py-3">Phụ Huynh</th>
                 <th className="px-4 py-3">Số Điện Thoại</th>
                 <th className="px-4 py-3">Hệ Số Elo</th>
+                <th className="px-4 py-3">Học Phí / Buổi</th>
                 <th className="px-4 py-3">Ghi Chú HLV</th>
               </tr>
             </thead>
@@ -302,6 +307,20 @@ export default function CoachClassesPage() {
                       ★ {std.eloRating}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    {std.customFeePerSession !== undefined && std.customFeePerSession !== null ? (
+                      <div>
+                        <span className="font-bold text-slate-900">{formatCurrencyVND(std.customFeePerSession)}</span>
+                        <span className="ml-1 rounded bg-amber-50 px-1.5 py-0.2 text-[9px] font-bold text-amber-700 border border-amber-200">
+                          Giá riêng
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-600 font-medium">
+                        {formatCurrencyVND(selectedClass?.feePerSession || 150000)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-500 italic">
                     {std.notes || "—"}
                   </td>
@@ -309,7 +328,7 @@ export default function CoachClassesPage() {
               ))}
               {classStudents.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
                     Không tìm thấy học viên nào phù hợp.
                   </td>
                 </tr>
@@ -376,6 +395,20 @@ export default function CoachClassesPage() {
                   value={newParentName}
                   onChange={(e) => setNewParentName(e.target.value)}
                   placeholder="VD: Nguyễn Văn Toàn"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">
+                  Học phí riêng (VNĐ/buổi)
+                </label>
+                <input
+                  type="number"
+                  step="10000"
+                  value={newCustomFee}
+                  onChange={(e) => setNewCustomFee(e.target.value)}
+                  placeholder={`Để trống nếu áp dụng giá lớp (${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi)`}
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>

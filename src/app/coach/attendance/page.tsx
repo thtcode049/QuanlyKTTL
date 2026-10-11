@@ -40,9 +40,18 @@ function AttendanceContent() {
     s.classIds.includes(selectedClass?.id || "")
   );
 
-  // State điểm danh hiện tại: studentId -> { status: "PRESENT" | "ABSENT", note: string }
+  // State điểm danh hiện tại: studentId -> { status, note, hasBook, bookTitle, bookPrice }
   const [records, setRecords] = useState<
-    Record<string, { status: "PRESENT" | "ABSENT"; note: string }>
+    Record<
+      string,
+      {
+        status: "PRESENT" | "ABSENT";
+        note: string;
+        hasBook: boolean;
+        bookTitle: string;
+        bookPrice: number;
+      }
+    >
   >({});
 
   // Khởi tạo trạng thái mặc định: TẤT CẢ CÓ MẶT (PRESENT)
@@ -52,7 +61,16 @@ function AttendanceContent() {
       (s) => s.classId === selectedClass?.id && s.date === sessionDate
     );
 
-    const initial: Record<string, { status: "PRESENT" | "ABSENT"; note: string }> = {};
+    const initial: Record<
+      string,
+      {
+        status: "PRESENT" | "ABSENT";
+        note: string;
+        hasBook: boolean;
+        bookTitle: string;
+        bookPrice: number;
+      }
+    > = {};
 
     if (existingSession) {
       setTopic(existingSession.topic || "");
@@ -61,6 +79,9 @@ function AttendanceContent() {
         initial[std.id] = {
           status: r ? r.status : "PRESENT",
           note: r?.coachNote || "",
+          hasBook: !!(r?.bookTitle && r?.bookPrice),
+          bookTitle: r?.bookTitle || "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+          bookPrice: r?.bookPrice || 80000,
         };
       });
     } else {
@@ -68,6 +89,9 @@ function AttendanceContent() {
         initial[std.id] = {
           status: "PRESENT", // Mặc định [Có mặt] theo đặc tả
           note: "",
+          hasBook: false,
+          bookTitle: "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+          bookPrice: 80000,
         };
       });
     }
@@ -78,13 +102,19 @@ function AttendanceContent() {
   // Toggle 1 chạm: PRESENT <-> ABSENT
   const toggleStatus = (studentId: string) => {
     setRecords((prev) => {
-      const current = prev[studentId]?.status || "PRESENT";
-      const nextStatus = current === "PRESENT" ? "ABSENT" : "PRESENT";
+      const current = prev[studentId] || {
+        status: "PRESENT",
+        note: "",
+        hasBook: false,
+        bookTitle: "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+        bookPrice: 80000,
+      };
+      const nextStatus = current.status === "PRESENT" ? "ABSENT" : "PRESENT";
       return {
         ...prev,
         [studentId]: {
+          ...current,
           status: nextStatus,
-          note: prev[studentId]?.note || "",
         },
       };
     });
@@ -94,18 +124,70 @@ function AttendanceContent() {
     setRecords((prev) => ({
       ...prev,
       [studentId]: {
-        status: prev[studentId]?.status || "PRESENT",
+        ...prev[studentId],
         note,
       },
     }));
   };
 
+  const handleBookToggle = (studentId: string) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || {
+        status: "PRESENT",
+        note: "",
+        hasBook: false,
+        bookTitle: "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+        bookPrice: 80000,
+      };
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          hasBook: !current.hasBook,
+        },
+      };
+    });
+  };
+
+  const handleBookTitleChange = (studentId: string, bookTitle: string) => {
+    setRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        bookTitle,
+      },
+    }));
+  };
+
+  const handleBookPriceChange = (studentId: string, bookPrice: number) => {
+    setRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        bookPrice,
+      },
+    }));
+  };
+
   const setAllPresent = () => {
-    const updated: Record<string, { status: "PRESENT" | "ABSENT"; note: string }> = {};
+    const updated: Record<
+      string,
+      {
+        status: "PRESENT" | "ABSENT";
+        note: string;
+        hasBook: boolean;
+        bookTitle: string;
+        bookPrice: number;
+      }
+    > = {};
     classStudents.forEach((std) => {
+      const current = records[std.id];
       updated[std.id] = {
         status: "PRESENT",
-        note: records[std.id]?.note || "",
+        note: current?.note || "",
+        hasBook: current?.hasBook || false,
+        bookTitle: current?.bookTitle || "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+        bookPrice: current?.bookPrice || 80000,
       };
     });
     setRecords(updated);
@@ -119,6 +201,8 @@ function AttendanceContent() {
       studentId: std.id,
       status: records[std.id]?.status || "PRESENT",
       coachNote: records[std.id]?.note || "",
+      bookTitle: records[std.id]?.hasBook ? (records[std.id]?.bookTitle || "Sách Cờ Vua") : undefined,
+      bookPrice: records[std.id]?.hasBook ? (Number(records[std.id]?.bookPrice) || 0) : undefined,
     }));
 
     const existingIndex = dataStore.sessions.findIndex(
@@ -159,6 +243,14 @@ function AttendanceContent() {
     (std) => records[std.id]?.status === "PRESENT"
   ).length;
   const absentCount = classStudents.length - presentCount;
+
+  // Thống kê phát sách trong buổi học
+  const totalBooksInSession = classStudents.filter((std) => records[std.id]?.hasBook).length;
+  const totalBookPriceInSession = classStudents.reduce(
+    (sum, std) => sum + (records[std.id]?.hasBook ? (Number(records[std.id]?.bookPrice) || 0) : 0),
+    0
+  );
+  const coachBookCommissionInSession = Math.round(totalBookPriceInSession * 0.3);
 
   // Lịch sử các buổi học của lớp này
   const pastSessions = dataStore.sessions
@@ -253,8 +345,8 @@ function AttendanceContent() {
         </div>
 
         {/* Quick summary bar */}
-        <div className="mt-4 flex flex-wrap items-center justify-between border-t border-slate-100 pt-3 text-xs">
-          <div className="flex items-center gap-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="font-semibold text-slate-600">
               Sĩ số: <strong className="text-slate-900">{classStudents.length} học viên</strong>
             </span>
@@ -265,6 +357,13 @@ function AttendanceContent() {
             <span className="inline-flex items-center gap-1 font-bold text-brand-secondary">
               <span className="h-2 w-2 rounded-full bg-brand-secondary" />
               Vắng: {absentCount}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 font-bold text-amber-800">
+              <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+              Phát sách: {totalBooksInSession} cuốn ({totalBookPriceInSession.toLocaleString("vi-VN")} đ)
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-extrabold text-emerald-800">
+              Thu nhập sách HLV (+30%): +{coachBookCommissionInSession.toLocaleString("vi-VN")} đ
             </span>
           </div>
           <span className="text-[11px] text-slate-400">
@@ -319,39 +418,89 @@ function AttendanceContent() {
                   </div>
                 </div>
 
-                {/* Status Toggle & Note Input */}
-                <div className="flex flex-1 items-center justify-end gap-3 sm:max-w-md">
-                  {/* Quick Note input */}
-                  <input
-                    type="text"
-                    value={currentNote}
-                    onChange={(e) => handleNoteChange(std.id, e.target.value)}
-                    placeholder="Nhận xét buổi học (tùy chọn)..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
-                  />
+                {/* Book & Note & Status Toggle */}
+                <div className="flex flex-1 flex-col gap-2.5 sm:items-end">
+                  {/* Cột Phát Sách */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label
+                      className={`flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                        records[std.id]?.hasBook
+                          ? "border-amber-400 bg-amber-50 text-amber-900 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!records[std.id]?.hasBook}
+                        onChange={() => handleBookToggle(std.id)}
+                        className="h-3.5 w-3.5 rounded text-amber-600 focus:ring-amber-500"
+                      />
+                      <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                      <span>Phát sách</span>
+                    </label>
 
-                  {/* 1-Click Big Button */}
-                  <button
-                    type="button"
-                    onClick={() => toggleStatus(std.id)}
-                    className={`flex min-w-[110px] items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-150 active:scale-95 ${
-                      isPresent
-                        ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                        : "bg-brand-secondary text-white shadow-sm shadow-brand-secondary/20 hover:bg-brand-secondary-hover"
-                    }`}
-                  >
-                    {isPresent ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        <span>Có mặt</span>
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4" />
-                        <span>Vắng mặt</span>
-                      </>
+                    {records[std.id]?.hasBook && (
+                      <div className="flex flex-wrap items-center gap-1.5 animate-fade-in">
+                        <input
+                          type="text"
+                          value={records[std.id]?.bookTitle || ""}
+                          onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
+                          placeholder="Tên sách (VD: Sách Cờ vua Vỡ lòng)..."
+                          className="w-48 rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
+                        />
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="10000"
+                            value={records[std.id]?.bookPrice || 0}
+                            onChange={(e) => handleBookPriceChange(std.id, Number(e.target.value))}
+                            placeholder="Giá sách"
+                            className="w-28 rounded-xl border border-amber-300 bg-amber-50/40 py-1.5 pl-2.5 pr-6 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                          />
+                          <span className="pointer-events-none absolute right-2 top-1.5 text-[10px] font-bold text-slate-400">
+                            đ
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-bold text-emerald-600">
+                          (+30%: {Math.round((records[std.id]?.bookPrice || 0) * 0.3).toLocaleString("vi-VN")} đ)
+                        </span>
+                      </div>
                     )}
-                  </button>
+                  </div>
+
+                  <div className="flex w-full items-center gap-2">
+                    {/* Quick Note input */}
+                    <input
+                      type="text"
+                      value={currentNote}
+                      onChange={(e) => handleNoteChange(std.id, e.target.value)}
+                      placeholder="Nhận xét buổi học (tùy chọn)..."
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
+                    />
+
+                    {/* 1-Click Big Button */}
+                    <button
+                      type="button"
+                      onClick={() => toggleStatus(std.id)}
+                      className={`flex min-w-[105px] items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-150 active:scale-95 ${
+                        isPresent
+                          ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                          : "bg-brand-secondary text-white shadow-sm shadow-brand-secondary/20 hover:bg-brand-secondary-hover"
+                      }`}
+                    >
+                      {isPresent ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          <span>Có mặt</span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4" />
+                          <span>Vắng mặt</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             );

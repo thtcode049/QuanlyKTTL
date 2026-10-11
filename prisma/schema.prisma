@@ -72,6 +72,7 @@ model Student {
   currentLevel String              @default("Nhập môn")
   eloRating    Int                 @default(1000)
   notes        String?
+  customFeePerSession Float?
   classes      ClassStudent[]
   attendances  AttendanceRecord[]
   invoices     MonthlyInvoice[]
@@ -104,6 +105,8 @@ model AttendanceRecord {
   student   Student           @relation(fields: [studentId], references: [id])
   status    AttendanceStatus  @default(PRESENT)
   coachNote String?           // Nhận xét của HLV
+  bookTitle String?           // Tên sách phát
+  bookPrice Float?            // Giá sách
 }
 
 model MonthlyInvoice {

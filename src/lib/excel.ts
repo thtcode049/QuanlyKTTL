@@ -97,24 +97,32 @@ export interface PayrollExportRow {
   phone: string;
   branchName: string;
   totalSessions: number;
-  baseRate: number;
-  totalSalary: number;
+  totalTuition: number;
+  tuitionCommission: number;
+  totalBooksCount: number;
+  totalBookRevenue: number;
+  bookCommission: number;
+  totalIncome: number;
 }
 
 export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, year: number) {
   const excelData = [
     ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTLL)"],
-    [`BẢNG THANH TOÁN THÙ LAO HUẤN LUYỆN VIÊN THÁNG ${month}/${year}`],
-    ["Quy tắc: Thù lao = Số ca dạy thực tế trong tháng x Đơn giá ca dạy"],
+    [`BẢNG THANH TOÁN THU NHẬP HUẤN LUYỆN VIÊN THÁNG ${month}/${year}`],
+    ["Công thức: Thu nhập HLV = 50% Tổng học phí + 30% Tiền sách phát"],
     [],
     [
       "STT",
       "Họ và Tên HLV",
       "Số Điện Thoại",
       "Cơ Sở Phụ Trách",
-      "Số Ca Dạy Thực Tế",
-      "Đơn Giá / Ca (VNĐ)",
-      "Tổng Thù Lao (VNĐ)",
+      "Số Ca Dạy",
+      "Tổng Học Phí (VNĐ)",
+      "50% Học Phí (VNĐ)",
+      "Số Sách Phát",
+      "Tiền Sách (VNĐ)",
+      "30% Tiền Sách (VNĐ)",
+      "Tổng Thu Nhập HLV (VNĐ)",
     ],
     ...rows.map((r) => [
       r.stt,
@@ -122,13 +130,23 @@ export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, ye
       r.phone,
       r.branchName,
       r.totalSessions,
-      r.baseRate,
-      r.totalSalary,
+      r.totalTuition,
+      r.tuitionCommission,
+      r.totalBooksCount,
+      r.totalBookRevenue,
+      r.bookCommission,
+      r.totalIncome,
     ]),
   ];
 
-  const totalSalary = rows.reduce((sum, r) => sum + r.totalSalary, 0);
+  const totalTuition = rows.reduce((sum, r) => sum + r.totalTuition, 0);
+  const totalTuitionCommission = rows.reduce((sum, r) => sum + r.tuitionCommission, 0);
+  const totalBooksCount = rows.reduce((sum, r) => sum + r.totalBooksCount, 0);
+  const totalBookRevenue = rows.reduce((sum, r) => sum + r.totalBookRevenue, 0);
+  const totalBookCommission = rows.reduce((sum, r) => sum + r.bookCommission, 0);
+  const totalIncome = rows.reduce((sum, r) => sum + r.totalIncome, 0);
   const totalSessions = rows.reduce((sum, r) => sum + r.totalSessions, 0);
+
   excelData.push([]);
   excelData.push([
     "TỔNG CỘNG",
@@ -136,22 +154,30 @@ export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, ye
     "",
     "",
     totalSessions,
-    "",
-    totalSalary,
+    totalTuition,
+    totalTuitionCommission,
+    totalBooksCount,
+    totalBookRevenue,
+    totalBookCommission,
+    totalIncome,
   ]);
 
   const worksheet = XLSX.utils.aoa_to_sheet(excelData);
   worksheet["!cols"] = [
     { wch: 6 },
-    { wch: 26 },
-    { wch: 16 },
-    { wch: 25 },
-    { wch: 20 },
-    { wch: 20 },
+    { wch: 24 },
+    { wch: 15 },
     { wch: 22 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 24 },
   ];
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, `ThuLaoHLV_T${month}_${year}`);
+  XLSX.utils.book_append_sheet(workbook, worksheet, `ThuNhapHLV_T${month}_${year}`);
   XLSX.writeFile(workbook, `KTTLL_BangThuLao_HLV_T${month}_${year}.xlsx`);
 }
