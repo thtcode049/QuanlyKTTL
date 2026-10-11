@@ -104,45 +104,51 @@ export interface BankConfig {
 export const initialBranches: BranchData[] = [
   {
     id: "branch-1",
-    name: "Cơ sở 1 - Bạch Mai (Hai Bà Trưng)",
-    address: "Số 257 Bạch Mai, Q. Hai Bà Trưng, Hà Nội (Trung tâm VHTT&TT Q. Hai Bà Trưng)",
-    phone: "0902.064.486",
+    name: "Cơ sở 1 – Phố Bạch Mai, Phường Bạch Mai",
+    address: "Số 257 Bạch Mai, Phường Bạch Mai, TP Hà Nội (Ngã tư Bạch Mai – Lê Thanh Nghị – Thanh Nhàn)",
+    phone: "0968.543.141",
   },
   {
     id: "branch-2",
-    name: "Cơ sở 2 - Thái Hà (Đống Đa)",
-    address: "Số 111 ngõ 98 Thái Hà (hoặc 101B ngõ 111 Láng Hạ), Q. Đống Đa, Hà Nội",
-    phone: "0916.611.258",
+    name: "Cơ sở 2 – Phố Thái Hà, Phường Đống Đa",
+    address: "Số 111 ngõ 98 Thái Hà, Phường Trung Liệt, Quận Đống Đa, TP Hà Nội",
+    phone: "0968.543.141",
   },
   {
     id: "branch-3",
-    name: "Cơ sở 3 - Nam Đô (Hoàng Mai)",
-    address: "Tầng 2, Tòa CT2B KĐT Nam Đô, 609 Trương Định, Q. Hoàng Mai, Hà Nội",
-    phone: "0902.064.486",
+    name: "Cơ sở 3 – Phố Hoàng Quốc Việt, Phường Cầu Giấy",
+    address: "Số 1 ngách 42, ngõ 106 Hoàng Quốc Việt, Quận Cầu Giấy, TP Hà Nội",
+    phone: "0983.585.499",
   },
   {
     id: "branch-4",
-    name: "Cơ sở 4 - Dịch Vọng (Cầu Giấy)",
-    address: "Số 49 Dịch Vọng, Q. Cầu Giấy, Hà Nội",
+    name: "Cơ sở 4 – Phố Trương Định – Hoàng Mai",
+    address: "Tầng 2, Tòa CT2B (lối lên sảnh văn phòng dịch vụ), KĐT Nam Đô, 609 Trương Định, Hoàng Mai, Hà Nội",
     phone: "0916.611.258",
   },
   {
     id: "branch-5",
-    name: "Cơ sở 5 - Văn Phú (Hà Đông)",
-    address: "Nhà Liền kề TT13-02, KĐT Văn Phú, Q. Hà Đông, Hà Nội",
-    phone: "0902.064.486",
+    name: "Cơ sở 5 – Phố Láng Hạ, Phường Đống Đa",
+    address: "Nhà 101B ngõ 111 Láng Hạ, Phường Láng Hạ, Quận Đống Đa, TP Hà Nội",
+    phone: "0342.666.688",
   },
   {
     id: "branch-6",
-    name: "Cơ sở 6 - Cung Việt Xô (Hoàn Kiếm)",
-    address: "Cung Văn hóa Hữu nghị Việt - Xô, 91 Trần Hưng Đạo, Q. Hoàn Kiếm, Hà Nội",
-    phone: "0916.611.258",
+    name: "Cơ sở 6 – Phố Quang Trung, Phường Hà Đông",
+    address: "Liền kề 07 Lô 4, KĐT Nam La Khê, 368B Quang Trung, Quận Hà Đông, TP Hà Nội",
+    phone: "0968.543.141",
   },
   {
     id: "branch-7",
-    name: "Cơ sở 7 - Tam Khương (Đống Đa)",
-    address: "Số 2 Tam Khương (phố Tôn Thất Tùng), P. Khương Thượng, Q. Đống Đa, Hà Nội",
-    phone: "0902.064.486",
+    name: "Cơ sở 7 – KĐT GAMUDA, Phường Hoàng Mai",
+    address: "Tầng 4, Số 10 đường 2.2, Gamuda Gardens, Phường Trần Phú, Quận Hoàng Mai, TP Hà Nội",
+    phone: "0869.310.200",
+  },
+  {
+    id: "branch-8",
+    name: "Cơ sở 8 – Phố Nguyễn Tuân, Phường Thanh Xuân",
+    address: "Liền kề 03-32 KĐT số 90 Nguyễn Tuân, Phường Thanh Xuân Trung, Quận Thanh Xuân, TP Hà Nội",
+    phone: "0968.543.141",
   },
 ];
 
@@ -249,6 +255,16 @@ export const initialClasses: ClassroomData[] = [
     coachId: "user-coach-1",
     isActive: true,
   },
+  {
+    id: "class-8",
+    name: "Cờ vua Thi Đấu - TD08",
+    level: "Nâng cao",
+    feePerSession: 180000,
+    schedule: "Thứ 4 & Thứ 7 (19:00 - 20:30)",
+    branchId: "branch-8",
+    coachId: "user-coach-2",
+    isActive: true,
+  },
 ];
 
 export const initialStudents: StudentData[] = [
@@ -284,6 +300,30 @@ export const initialStudents: StudentData[] = [
   { id: "std-23", code: "HS023", fullName: "Hoàng Thảo Nguyên", birthYear: 2015, parentName: "Hoàng Minh Tâm", parentPhone: "0974456111", currentLevel: "Đội tuyển", eloRating: 1410, notes: "Tính nước chiếu hết rất nhạy bén", classIds: ["class-4"] },
   { id: "std-24", code: "HS024", fullName: "Trần Đức Minh", birthYear: 2013, parentName: "Trần Văn Toàn", parentPhone: "0907567222", currentLevel: "Đội tuyển", eloRating: 1480, notes: "Đạt chuẩn Kiện tướng tương lai", classIds: ["class-4"], customFeePerSession: 200000 },
   { id: "std-25", code: "HS025", fullName: "Võ Minh Khôi", birthYear: 2014, parentName: "Võ Đình Trọng", parentPhone: "0962678333", currentLevel: "Đội tuyển", eloRating: 1430, notes: "Tập trung cao độ, thi đấu bản lĩnh", classIds: ["class-4"] },
+
+  // Lớp 5 (Cơ sở 5 – Láng Hạ) - 4 học viên
+  { id: "std-26", code: "HS026", fullName: "Nguyễn Gia Khiêm", birthYear: 2017, parentName: "Nguyễn Văn Hưng", parentPhone: "0915667788", currentLevel: "Nhập môn", eloRating: 1100, notes: "Học rất chăm chỉ", classIds: ["class-5"] },
+  { id: "std-27", code: "HS027", fullName: "Trần Hà My", birthYear: 2018, parentName: "Trần Văn Cường", parentPhone: "0982334455", currentLevel: "Nhập môn", eloRating: 1070, notes: "Nắm chắc luật chơi", classIds: ["class-5"] },
+  { id: "std-28", code: "HS028", fullName: "Lê Minh Quân", birthYear: 2017, parentName: "Lê Tuấn Hùng", parentPhone: "0903445566", currentLevel: "Nhập môn", eloRating: 1120, notes: "Thích học đòn phối hợp", classIds: ["class-5"] },
+  { id: "std-29", code: "HS029", fullName: "Vũ Đăng Khôi", birthYear: 2016, parentName: "Vũ Đình Nam", parentPhone: "0976556677", currentLevel: "Nhập môn", eloRating: 1140, notes: "Phản xạ nhanh", classIds: ["class-5"] },
+
+  // Lớp 6 (Cơ sở 6 – Quang Trung, Hà Đông) - 4 học viên
+  { id: "std-30", code: "HS030", fullName: "Bùi Tuấn Kiệt", birthYear: 2015, parentName: "Bùi Văn Thành", parentPhone: "0912889900", currentLevel: "Nâng cao", eloRating: 1260, notes: "Đánh cờ chắc chắn", classIds: ["class-6"] },
+  { id: "std-31", code: "HS031", fullName: "Đỗ Phương Thảo", birthYear: 2016, parentName: "Đỗ Minh Đức", parentPhone: "0983112244", currentLevel: "Nâng cao", eloRating: 1240, notes: "Tập trung cao", classIds: ["class-6"] },
+  { id: "std-32", code: "HS032", fullName: "Hoàng Gia Hưng", birthYear: 2015, parentName: "Hoàng Văn Nam", parentPhone: "0904223355", currentLevel: "Nâng cao", eloRating: 1290, notes: "Lực cờ tốt", classIds: ["class-6"] },
+  { id: "std-33", code: "HS033", fullName: "Phạm Ngọc Diệp", birthYear: 2016, parentName: "Phạm Quốc Toản", parentPhone: "0968334466", currentLevel: "Nâng cao", eloRating: 1230, notes: "Chăm giải cờ thế", classIds: ["class-6"] },
+
+  // Lớp 7 (Cơ sở 7 – Gamuda Gardens) - 4 học viên
+  { id: "std-34", code: "HS034", fullName: "Trịnh Minh Trí", birthYear: 2018, parentName: "Trịnh Văn Tuấn", parentPhone: "0916445577", currentLevel: "Vỡ lòng", eloRating: 1010, notes: "Rất thích cờ vua", classIds: ["class-7"] },
+  { id: "std-35", code: "HS035", fullName: "Ngô Thảo Vy", birthYear: 2019, parentName: "Ngô Văn Kiên", parentPhone: "0987556688", currentLevel: "Vỡ lòng", eloRating: 990, notes: "Học luật đi quân nhanh", classIds: ["class-7"] },
+  { id: "std-36", code: "HS036", fullName: "Đặng Quốc Bảo", birthYear: 2018, parentName: "Đặng Văn Hùng", parentPhone: "0905667799", currentLevel: "Vỡ lòng", eloRating: 1040, notes: "Tư duy tốt", classIds: ["class-7"] },
+  { id: "std-37", code: "HS037", fullName: "Nguyễn Thùy Trang", birthYear: 2018, parentName: "Nguyễn Văn Thắng", parentPhone: "0978778800", currentLevel: "Vỡ lòng", eloRating: 1020, notes: "Ngoan ngoãn", classIds: ["class-7"] },
+
+  // Lớp 8 (Cơ sở 8 – Nguyễn Tuân, Thanh Xuân) - 4 học viên
+  { id: "std-38", code: "HS038", fullName: "Mai Đức Anh", birthYear: 2015, parentName: "Mai Văn Long", parentPhone: "0918889911", currentLevel: "Nâng cao", eloRating: 1300, notes: "Chiến thuật tốt", classIds: ["class-8"] },
+  { id: "std-39", code: "HS039", fullName: "Phan Khánh Linh", birthYear: 2016, parentName: "Phan Văn Hậu", parentPhone: "0989990022", currentLevel: "Nâng cao", eloRating: 1270, notes: "Tàn cuộc hay", classIds: ["class-8"] },
+  { id: "std-40", code: "HS040", fullName: "Lê Minh Hoàng", birthYear: 2015, parentName: "Lê Văn Sơn", parentPhone: "0906001133", currentLevel: "Nâng cao", eloRating: 1320, notes: "Khai cuộc tốt", classIds: ["class-8"] },
+  { id: "std-41", code: "HS041", fullName: "Vũ Bảo Trâm", birthYear: 2016, parentName: "Vũ Đình Chiến", parentPhone: "0977112244", currentLevel: "Nâng cao", eloRating: 1250, notes: "Rất cố gắng", classIds: ["class-8"] },
 ];
 
 // Khởi tạo các buổi học thực tế trong tháng 10/2026
@@ -575,7 +615,7 @@ class InMemoryDataStore {
       }
     }
 
-    // Đồng bộ đầy đủ 7 cơ sở theo chuẩn kientuongtuonglai.com
+    // Đồng bộ đầy đủ 8 cơ sở theo chuẩn kientuongtuonglai.com
     initialBranches.forEach((ib) => {
       const existing = this.branches.find((b) => b.id === ib.id);
       if (existing) {
@@ -587,10 +627,22 @@ class InMemoryDataStore {
       }
     });
 
-    // Đồng bộ các lớp học mẫu cho các cơ sở mới
+    // Đồng bộ các lớp học mẫu cho 8 cơ sở
     initialClasses.forEach((ic) => {
-      if (!this.classes.some((c) => c.id === ic.id)) {
+      const existingCls = this.classes.find((c) => c.id === ic.id);
+      if (existingCls) {
+        existingCls.branchId = ic.branchId;
+        existingCls.name = ic.name;
+        existingCls.schedule = ic.schedule;
+      } else {
         this.classes.push(ic);
+      }
+    });
+
+    // Đồng bộ học viên mẫu cho các lớp mới
+    initialStudents.forEach((is) => {
+      if (!this.students.some((s) => s.id === is.id)) {
+        this.students.push(is);
       }
     });
   }

@@ -16,64 +16,72 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.branch.deleteMany();
 
-  // 2. Tạo 4 Cơ sở Hà Nội
+  // 2. Tạo 8 Cơ sở Hà Nội chuẩn kientuongtuonglai.com
   const b1 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 1 - Bạch Mai (Hai Bà Trưng)",
-      address: "Số 257 Bạch Mai, Q. Hai Bà Trưng, Hà Nội (Trung tâm VHTT&TT Q. Hai Bà Trưng)",
-      phone: "0902.064.486",
+      name: "Cơ sở 1 – Phố Bạch Mai, Phường Bạch Mai",
+      address: "Số 257 Bạch Mai, Phường Bạch Mai, TP Hà Nội (Ngã tư Bạch Mai – Lê Thanh Nghị – Thanh Nhàn)",
+      phone: "0968.543.141",
     },
   });
 
   const b2 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 2 - Thái Hà (Đống Đa)",
-      address: "Số 111 ngõ 98 Thái Hà (hoặc 101B ngõ 111 Láng Hạ), Q. Đống Đa, Hà Nội",
-      phone: "0916.611.258",
+      name: "Cơ sở 2 – Phố Thái Hà, Phường Đống Đa",
+      address: "Số 111 ngõ 98 Thái Hà, Phường Trung Liệt, Quận Đống Đa, TP Hà Nội",
+      phone: "0968.543.141",
     },
   });
 
   const b3 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 3 - Nam Đô (Hoàng Mai)",
-      address: "Tầng 2, Tòa CT2B KĐT Nam Đô, 609 Trương Định, Q. Hoàng Mai, Hà Nội",
-      phone: "0902.064.486",
+      name: "Cơ sở 3 – Phố Hoàng Quốc Việt, Phường Cầu Giấy",
+      address: "Số 1 ngách 42, ngõ 106 Hoàng Quốc Việt, Quận Cầu Giấy, TP Hà Nội",
+      phone: "0983.585.499",
     },
   });
 
   const b4 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 4 - Dịch Vọng (Cầu Giấy)",
-      address: "Số 49 Dịch Vọng, Q. Cầu Giấy, Hà Nội",
+      name: "Cơ sở 4 – Phố Trương Định – Hoàng Mai",
+      address: "Tầng 2, Tòa CT2B (lối lên sảnh văn phòng dịch vụ), KĐT Nam Đô, 609 Trương Định, Hoàng Mai, Hà Nội",
       phone: "0916.611.258",
     },
   });
 
   const b5 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 5 - Văn Phú (Hà Đông)",
-      address: "Nhà Liền kề TT13-02, KĐT Văn Phú, Q. Hà Đông, Hà Nội",
-      phone: "0902.064.486",
+      name: "Cơ sở 5 – Phố Láng Hạ, Phường Đống Đa",
+      address: "Nhà 101B ngõ 111 Láng Hạ, Phường Láng Hạ, Quận Đống Đa, TP Hà Nội",
+      phone: "0342.666.688",
     },
   });
 
   const b6 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 6 - Cung Việt Xô (Hoàn Kiếm)",
-      address: "Cung Văn hóa Hữu nghị Việt - Xô, 91 Trần Hưng Đạo, Q. Hoàn Kiếm, Hà Nội",
-      phone: "0916.611.258",
+      name: "Cơ sở 6 – Phố Quang Trung, Phường Hà Đông",
+      address: "Liền kề 07 Lô 4, KĐT Nam La Khê, 368B Quang Trung, Quận Hà Đông, TP Hà Nội",
+      phone: "0968.543.141",
     },
   });
 
   const b7 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 7 - Tam Khương (Đống Đa)",
-      address: "Số 2 Tam Khương (phố Tôn Thất Tùng), P. Khương Thượng, Q. Đống Đa, Hà Nội",
-      phone: "0902.064.486",
+      name: "Cơ sở 7 – KĐT GAMUDA, Phường Hoàng Mai",
+      address: "Tầng 4, Số 10 đường 2.2, Gamuda Gardens, Phường Trần Phú, Quận Hoàng Mai, TP Hà Nội",
+      phone: "0869.310.200",
     },
   });
 
-  console.log("✅ Đã tạo 7 cơ sở Hà Nội chuẩn kientuongtuonglai.com.");
+  const b8 = await prisma.branch.create({
+    data: {
+      name: "Cơ sở 8 – Phố Nguyễn Tuân, Phường Thanh Xuân",
+      address: "Liền kề 03-32 KĐT số 90 Nguyễn Tuân, Phường Thanh Xuân Trung, Quận Thanh Xuân, TP Hà Nội",
+      phone: "0968.543.141",
+    },
+  });
+
+  console.log("✅ Đã tạo 8 cơ sở Hà Nội chuẩn kientuongtuonglai.com.");
 
   // 3. Tạo tài khoản Admin và HLV
   const admin = await prisma.user.create({
@@ -113,7 +121,7 @@ async function main() {
 
   console.log("✅ Đã tạo Admin và 2 Huấn luyện viên.");
 
-  // 4. Tạo 4 Lớp học
+  // 4. Tạo các Lớp học cho các Cơ sở
   const c1 = await prisma.classroom.create({
     data: {
       name: "Cờ vua Vỡ Lòng - K01",
@@ -158,7 +166,51 @@ async function main() {
     },
   });
 
-  console.log("✅ Đã tạo 4 lớp học các cấp độ.");
+  const c5 = await prisma.classroom.create({
+    data: {
+      name: "Cờ vua Cơ Bản - K05",
+      level: "Nhập môn",
+      feePerSession: 160000,
+      schedule: "Thứ 4 & Thứ 7 (18:00 - 19:30)",
+      branchId: b5.id,
+      coachId: hlv1.id,
+    },
+  });
+
+  const c6 = await prisma.classroom.create({
+    data: {
+      name: "Cờ vua Nâng Cao - K06",
+      level: "Nâng cao",
+      feePerSession: 180000,
+      schedule: "Thứ 3 & Thứ 6 (19:30 - 21:00)",
+      branchId: b6.id,
+      coachId: hlv2.id,
+    },
+  });
+
+  const c7 = await prisma.classroom.create({
+    data: {
+      name: "Cờ vua Vỡ Lòng - K07",
+      level: "Vỡ lòng",
+      feePerSession: 150000,
+      schedule: "Thứ 7 & Chủ Nhật (09:00 - 10:30)",
+      branchId: b7.id,
+      coachId: hlv1.id,
+    },
+  });
+
+  const c8 = await prisma.classroom.create({
+    data: {
+      name: "Cờ vua Thi Đấu - TD08",
+      level: "Nâng cao",
+      feePerSession: 180000,
+      schedule: "Thứ 4 & Thứ 7 (19:00 - 20:30)",
+      branchId: b8.id,
+      coachId: hlv2.id,
+    },
+  });
+
+  console.log("✅ Đã tạo 8 lớp học cho 8 cơ sở đào tạo.");
 
   // 5. Tạo 25 Học viên
   const studentData = [
