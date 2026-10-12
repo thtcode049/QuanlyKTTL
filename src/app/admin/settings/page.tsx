@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Settings,
   CreditCard,
@@ -12,41 +12,109 @@ import {
   ExternalLink,
   Smartphone,
   Eye,
+  Upload,
+  RotateCcw,
+  Sparkles,
+  ImageIcon,
+  Trash2,
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
-import { generateVietQrUrl } from "@/lib/vietqr";
+import { generateVietQrUrl, SUPPORTED_BANKS } from "@/lib/vietqr";
 import VietQrModal from "@/components/vietqr-modal";
 import ZaloSimulatorModal from "@/components/zalo-simulator";
 import confetti from "canvas-confetti";
 
 export default function AdminSettingsPage() {
-  // Bank config
-  const [bankId, setBankId] = useState(dataStore.bankConfig.bankId);
-  const [bankAccount, setBankAccount] = useState(dataStore.bankConfig.bankAccount);
-  const [bankName, setBankName] = useState(dataStore.bankConfig.bankName);
-  const [accountHolder, setAccountHolder] = useState(dataStore.bankConfig.accountHolder);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Zalo OA config
-  const [zaloAppId, setZaloAppId] = useState(process.env.ZALO_APP_ID || "");
-  const [zaloSecretKey, setZaloSecretKey] = useState(process.env.ZALO_SECRET_KEY || "");
-  const [zaloOaId, setZaloOaId] = useState(process.env.ZALO_OA_ID || "");
+  // Bank config state
+  const [bankId, setBankId] = useState(dataStore.bankConfig.bankId || "MB");
+  const [bankAccount, setBankAccount] = useState(dataStore.bankConfig.bankAccount || "0987654321");
+  const [bankName, setBankName] = useState(dataStore.bankConfig.bankName || "Ngân hàng TMCP Quân Đội (MBBank)");
+  const [accountHolder, setAccountHolder] = useState(dataStore.bankConfig.accountHolder || "CLB CO VUA KIEN TUONG TUONG LAI");
+  const [qrTemplate, setQrTemplate] = useState<"compact2" | "compact" | "qr_only">(
+    (dataStore.bankConfig.qrTemplate as any) || "compact2"
+  );
+  const [customQrImage, setCustomQrImage] = useState<string>(dataStore.bankConfig.customQrImage || "");
+  const [useCustomQr, setUseCustomQr] = useState<boolean>(Boolean(dataStore.bankConfig.useCustomQr));
+
+  // Zalo OA API config state
+  const [zaloAppId, setZaloAppId] = useState(dataStore.zaloConfig.appId || "");
+  const [zaloSecretKey, setZaloSecretKey] = useState(dataStore.zaloConfig.secretKey || "");
+  const [zaloOaId, setZaloOaId] = useState(dataStore.zaloConfig.oaId || "");
+
+  // Zalo OA Template state
+  const [titleTemplate, setTitleTemplate] = useState(dataStore.zaloConfig.titleTemplate);
+  const [bodyTemplate, setBodyTemplate] = useState(dataStore.zaloConfig.bodyTemplate);
+  const [footerNote, setFooterNote] = useState(dataStore.zaloConfig.footerNote);
 
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Test VietQR Modal
+  // Modals for testing
   const [testQrModalOpen, setTestQrModalOpen] = useState(false);
-
-  // Test Zalo Simulator Modal
   const [testZaloModalOpen, setTestZaloModalOpen] = useState(false);
+
+  const handleBankSelect = (selectedId: string) => {
+    setBankId(selectedId);
+    const found = SUPPORTED_BANKS.find((b) => b.id === selectedId);
+    if (found) {
+      setBankName(`${found.name} (${found.shortName})`);
+    }
+  };
+
+  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Vui lòng chọn ảnh dung lượng dưới 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setCustomQrImage(base64);
+      setUseCustomQr(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetZaloTemplate = () => {
+    setTitleTemplate("[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
+    setBodyTemplate(
+      "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả."
+    );
+    setFooterNote(
+      "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666."
+    );
+  };
+
+  const handleInsertTag = (tag: string) => {
+    setBodyTemplate((prev) => `${prev} ${tag}`);
+  };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    dataStore.bankConfig = {
+
+    dataStore.updateBankConfig({
       bankId,
       bankAccount,
       bankName,
       accountHolder,
-    };
+      qrTemplate,
+      customQrImage,
+      useCustomQr,
+    });
+
+    dataStore.updateZaloConfig({
+      appId: zaloAppId,
+      secretKey: zaloSecretKey,
+      oaId: zaloOaId,
+      titleTemplate,
+      bodyTemplate,
+      footerNote,
+    });
 
     setSavedSuccess(true);
     confetti({
@@ -59,13 +127,17 @@ export default function AdminSettingsPage() {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const sampleQrUrl = generateVietQrUrl({
-    bankId,
-    accountNo: bankAccount,
-    accountName: accountHolder,
-    amount: 600000,
-    description: "HP HS001 T10",
-  });
+  const sampleQrUrl =
+    useCustomQr && customQrImage
+      ? customQrImage
+      : generateVietQrUrl({
+          bankId,
+          accountNo: bankAccount,
+          accountName: accountHolder,
+          amount: 600000,
+          description: "HP HS001 T10",
+          template: qrTemplate,
+        });
 
   const sampleZaloPayload = {
     studentName: "Nguyễn Minh Khang",
@@ -93,32 +165,32 @@ export default function AdminSettingsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
-            Cài Đặt VietQR & Zalo OA
+            Cài Đặt VietQR & Mẫu Zalo OA
           </h1>
           <p className="text-xs text-slate-500">
-            Cấu hình tài khoản Napas 247 nhận học phí và hệ thống gửi tin Zalo thông báo tới phụ huynh.
+            Tùy chỉnh thông tin tài khoản ngân hàng, mã QR thanh toán và mẫu nội dung tin nhắn gửi phụ huynh.
           </p>
         </div>
 
         <button
           onClick={handleSaveSettings}
-          className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95"
+          className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 transition-all"
         >
           <Save className="h-4 w-4" />
-          <span>Lưu Cấu Hình</span>
+          <span>Lưu Toàn Bộ Cấu Hình</span>
         </button>
       </div>
 
       {savedSuccess && (
         <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800 border border-emerald-200 animate-fade-in shadow-sm">
           <Check className="h-4 w-4 text-emerald-600" />
-          <span>Đã lưu thành công cấu hình ngân hàng VietQR và Zalo OA!</span>
+          <span>Đã lưu thành công cấu hình ngân hàng VietQR và mẫu tin nhắn Zalo OA vào hệ thống!</span>
         </div>
       )}
 
       <form onSubmit={handleSaveSettings} className="space-y-6">
-        {/* VietQR Bank Configuration */}
-        <div className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80">
+        {/* VietQR Bank Configuration & QR Changing */}
+        <div className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80 space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-brand-primary">
@@ -126,10 +198,10 @@ export default function AdminSettingsPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Cấu Hình Ngân Hàng Thụ Hưởng (VietQR Napas 247)
+                  Cấu Hình Ngân Hàng Thụ Hưởng & Thay Đổi Mã QR
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Mã QR động sẽ được sinh tự động kèm số tiền học phí và cú pháp HP [MãHV] T[Tháng]
+                  Cấu hình tài khoản VietQR Napas hoặc tải lên ảnh mã QR riêng của CLB
                 </p>
               </div>
             </div>
@@ -137,147 +209,297 @@ export default function AdminSettingsPage() {
             <button
               type="button"
               onClick={() => setTestQrModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              <Eye className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5 text-brand-primary" />
               <span>Xem Thử Mã QR</span>
             </button>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-xs">
             <div>
-              <label className="text-xs font-bold text-slate-700">Ngân hàng (Mã BIN Napas)</label>
+              <label className="font-bold text-slate-700">Ngân hàng thụ hưởng</label>
               <select
                 value={bankId}
-                onChange={(e) => {
-                  setBankId(e.target.value);
-                  if (e.target.value === "MB") setBankName("Ngân hàng TMCP Quân Đội (MBBank)");
-                  if (e.target.value === "VCB") setBankName("Ngân hàng TMCP Ngoại Thương (Vietcombank)");
-                  if (e.target.value === "TCB") setBankName("Ngân hàng TMCP Kỹ Thương (Techcombank)");
-                  if (e.target.value === "BIDV") setBankName("Ngân hàng Đầu tư & Phát triển VN (BIDV)");
-                }}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                onChange={(e) => handleBankSelect(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-2.5 font-medium text-slate-900 focus:border-brand-primary focus:outline-none"
               >
-                <option value="MB">MBBank - Ngân hàng Quân Đội (MB)</option>
-                <option value="VCB">Vietcombank - Ngoại Thương Việt Nam</option>
-                <option value="TCB">Techcombank - Kỹ Thương Việt Nam</option>
-                <option value="BIDV">BIDV - Đầu tư và Phát triển Việt Nam</option>
+                {SUPPORTED_BANKS.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.shortName} - {b.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700">Số tài khoản thụ hưởng *</label>
+              <label className="font-bold text-slate-700">Số tài khoản thụ hưởng *</label>
               <input
                 type="text"
                 required
                 value={bankAccount}
                 onChange={(e) => setBankAccount(e.target.value)}
                 placeholder="VD: 0987654321"
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-mono text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-2.5 font-mono font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="text-xs font-bold text-slate-700">Tên chủ tài khoản (Không dấu) *</label>
+              <label className="font-bold text-slate-700">Tên chủ tài khoản (In hoa không dấu) *</label>
               <input
                 type="text"
                 required
                 value={accountHolder}
                 onChange={(e) => setAccountHolder(e.target.value.toUpperCase())}
                 placeholder="VD: CLB CO VUA KIEN TUONG TUONG LAI"
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold uppercase text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-2.5 font-bold uppercase text-slate-900 focus:border-brand-primary focus:outline-none"
               />
-              <p className="mt-1 text-[11px] text-slate-400">
-                Hiển thị chuẩn trên giao diện quét mã của tất cả các ứng dụng ngân hàng di động Việt Nam.
-              </p>
+            </div>
+
+            {/* QR Template style */}
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Kiểu dáng hiển thị VietQR</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "compact2", name: "Chuẩn Napas" },
+                  { id: "compact", name: "Gọn gàng" },
+                  { id: "qr_only", name: "Chỉ mã QR" },
+                ].map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => setQrTemplate(tpl.id as any)}
+                    className={`rounded-xl p-2 text-center border font-bold transition-all text-xs ${
+                      qrTemplate === tpl.id
+                        ? "bg-brand-primary/10 border-brand-primary text-brand-primary shadow-sm"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {tpl.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom QR Image upload */}
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Mã QR riêng / Tĩnh của CLB</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleQrUpload}
+              />
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm"
+                >
+                  <Upload className="h-3.5 w-3.5 text-brand-primary" />
+                  <span>Tải ảnh QR riêng</span>
+                </button>
+
+                {customQrImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomQrImage("");
+                      setUseCustomQr(false);
+                    }}
+                    className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Xóa</span>
+                  </button>
+                )}
+              </div>
+
+              {customQrImage && (
+                <div className="mt-2 flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                  <img
+                    src={customQrImage}
+                    alt="Custom QR Preview"
+                    className="h-12 w-12 object-contain rounded border border-slate-200 bg-white"
+                  />
+                  <div>
+                    <label className="flex items-center gap-1.5 font-bold text-slate-800 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useCustomQr}
+                        onChange={(e) => setUseCustomQr(e.target.checked)}
+                        className="rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                      />
+                      <span>Ưu tiên dùng ảnh QR này</span>
+                    </label>
+                    <span className="text-[10px] text-slate-500 block">
+                      Áp dụng thay cho mã VietQR sinh tự động
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Zalo OA Configuration */}
-        <div className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80">
+        {/* Zalo OA Template Configuration */}
+        <div className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80 space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0068FF]">
                 <Send className="h-5 w-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Cấu Hình Zalo Official Account (Zalo OA / ZNS)
-                  </h3>
-                  <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-[#0068FF]">
-                    Tích hợp Mock Simulator
-                  </span>
-                </div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Mẫu Nội Dung Tin Nhắn Zalo OA Thông Báo Học Phí
+                </h3>
                 <p className="text-xs text-slate-500">
-                  Gửi tin nhắn thông báo học phí chi tiết có gắn link VietQR trực tiếp đến số điện thoại phụ huynh
+                  Tùy chỉnh tiêu đề, lời mở đầu, ghi chú gửi phụ huynh kèm các thẻ dữ liệu động
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setTestZaloModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-[#0068FF] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-blue-600"
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-              <span>Mở Zalo Simulator</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetZaloTemplate}
+                className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Mẫu gốc</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTestZaloModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-[#0068FF] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-blue-600 transition-colors"
+              >
+                <Smartphone className="h-3.5 w-3.5" />
+                <span>Xem Thử Zalo</span>
+              </button>
+            </div>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Variable chips */}
+          <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
+            <span className="text-[11px] font-bold text-slate-700 block mb-1.5">
+              💡 Bấm vào thẻ để chèn biến tự động vào nội dung tin nhắn:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { tag: "{studentName}", label: "Tên học viên" },
+                { tag: "{studentCode}", label: "Mã học viên" },
+                { tag: "{className}", label: "Tên lớp học" },
+                { tag: "{month}", label: "Tháng" },
+                { tag: "{year}", label: "Năm" },
+                { tag: "{presentCount}", label: "Số buổi học" },
+                { tag: "{totalAmount}", label: "Tổng học phí" },
+                { tag: "{transferContent}", label: "Cú pháp chuyển khoản" },
+              ].map((item) => (
+                <button
+                  key={item.tag}
+                  type="button"
+                  onClick={() => handleInsertTag(item.tag)}
+                  className="rounded-lg bg-white px-2 py-1 text-[11px] font-mono font-bold text-brand-primary border border-slate-200 hover:border-brand-primary hover:bg-emerald-50 transition-colors shadow-2xs"
+                  title={`Chèn ${item.label}`}
+                >
+                  {item.tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4 text-xs">
+            {/* Tiêu đề */}
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">
+                Mẫu Tiêu Đề Tin Nhắn Zalo OA
+              </label>
+              <input
+                type="text"
+                value={titleTemplate}
+                onChange={(e) => setTitleTemplate(e.target.value)}
+                placeholder="VD: [KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}"
+                className="w-full rounded-xl border border-slate-300 p-2.5 font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+              />
+            </div>
+
+            {/* Nội dung lời chào & thân tin nhắn */}
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">
+                Mẫu Lời Mở Đầu & Thân Tin Nhắn
+              </label>
+              <textarea
+                rows={3}
+                value={bodyTemplate}
+                onChange={(e) => setBodyTemplate(e.target.value)}
+                placeholder="Nhập nội dung tin nhắn gửi phụ huynh..."
+                className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none leading-relaxed"
+              />
+            </div>
+
+            {/* Lưu ý / Ghi chú chân trang */}
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">
+                Mẫu Lưu Ý / Ghi Chú Chân Trang
+              </label>
+              <textarea
+                rows={2}
+                value={footerNote}
+                onChange={(e) => setFooterNote(e.target.value)}
+                placeholder="VD: Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp..."
+                className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none leading-relaxed"
+              />
+            </div>
+          </div>
+
+          {/* API credentials section */}
+          <div className="border-t border-slate-100 pt-4">
+            <h4 className="font-bold text-slate-800 mb-2">Thông Số Kết Nối Zalo OA (Tùy Chọn)</h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
               <div>
-                <label className="text-xs font-bold text-slate-700">Zalo App ID</label>
+                <label className="font-semibold text-slate-600 block mb-1">Zalo App ID</label>
                 <input
                   type="text"
                   value={zaloAppId}
                   onChange={(e) => setZaloAppId(e.target.value)}
-                  placeholder="Để trống để chạy chế độ Simulator"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-mono text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  placeholder="Để trống dùng Mock Simulator"
+                  className="w-full rounded-xl border border-slate-300 p-2 font-mono text-slate-900 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700">Zalo Secret Key</label>
+                <label className="font-semibold text-slate-600 block mb-1">Zalo Secret Key</label>
                 <input
                   type="password"
                   value={zaloSecretKey}
                   onChange={(e) => setZaloSecretKey(e.target.value)}
                   placeholder="••••••••••••••••"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-mono text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 p-2 font-mono text-slate-900 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700">Zalo OA ID</label>
+                <label className="font-semibold text-slate-600 block mb-1">Zalo OA ID</label>
                 <input
                   type="text"
                   value={zaloOaId}
                   onChange={(e) => setZaloOaId(e.target.value)}
                   placeholder="VD: 123456789012345"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-mono text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 p-2 font-mono text-slate-900 focus:border-brand-primary focus:outline-none"
                 />
-              </div>
-            </div>
-
-            <div className="rounded-xl bg-blue-50/70 p-3.5 text-xs text-slate-700 border border-blue-100 flex items-start gap-2.5">
-              <ShieldCheck className="h-5 w-5 text-[#0068FF] flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-slate-900">Chế độ Zalo Simulator Modal đã sẵn sàng:</p>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Khi các biến Zalo để trống, hệ thống tự động kích hoạt Zalo Simulator Modal mô phỏng tin nhắn gửi cho phụ huynh ngay trên web giúp HLV và Quản lý kiểm tra nội dung, giao diện và mã QR trước khi triển khai thực tế.
-                </p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Submit */}
         <div className="flex justify-end">
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+            className="flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 transition-all"
           >
             <Save className="h-4 w-4" />
             <span>Lưu Toàn Bộ Cấu Hình</span>

@@ -114,6 +114,18 @@ export interface BankConfig {
   bankAccount: string;
   bankName: string;
   accountHolder: string;
+  qrTemplate?: 'compact2' | 'compact' | 'qr_only' | 'print';
+  customQrImage?: string; // Ảnh mã QR tùy chỉnh tải lên (Base64)
+  useCustomQr?: boolean; // Tùy chọn ưu tiên ảnh QR tải lên
+}
+
+export interface ZaloConfig {
+  titleTemplate: string;
+  bodyTemplate: string;
+  footerNote: string;
+  appId?: string;
+  secretKey?: string;
+  oaId?: string;
 }
 
 // Khởi tạo cơ sở dữ liệu mẫu ban đầu theo đúng chuẩn web kientuongtuonglai.com
@@ -599,6 +611,16 @@ export const initialBankConfig: BankConfig = {
   bankAccount: "0987654321",
   bankName: "Ngân hàng TMCP Quân Đội (MBBank)",
   accountHolder: "CLB CO VUA KIEN TUONG TUONG LAI",
+  qrTemplate: "compact2",
+};
+
+export const initialZaloConfig: ZaloConfig = {
+  titleTemplate: "[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}",
+  bodyTemplate: "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả.",
+  footerNote: "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666.",
+  appId: "",
+  secretKey: "",
+  oaId: "",
 };
 
 /**
@@ -612,6 +634,7 @@ class InMemoryDataStore {
   public sessions: AttendanceSessionData[] = [...initialSessions];
   public evaluations: StudentEvaluationData[] = [...initialEvaluations];
   public bankConfig: BankConfig = { ...initialBankConfig };
+  public zaloConfig: ZaloConfig = { ...initialZaloConfig };
   public invoices: MonthlyInvoiceData[] = [];
 
   constructor() {
@@ -630,6 +653,7 @@ class InMemoryDataStore {
         students: this.students,
         branches: this.branches,
         bankConfig: this.bankConfig,
+        zaloConfig: this.zaloConfig,
       };
       localStorage.setItem("kttll_datastore", JSON.stringify(payload));
     } catch (e) {
@@ -667,6 +691,9 @@ class InMemoryDataStore {
       }
       if (data.bankConfig) {
         this.bankConfig = { ...this.bankConfig, ...data.bankConfig };
+      }
+      if (data.zaloConfig) {
+        this.zaloConfig = { ...this.zaloConfig, ...data.zaloConfig };
       }
       this.recalculateAllInvoices(10, 2026);
     } catch (e) {
@@ -994,6 +1021,20 @@ class InMemoryDataStore {
         this.saveToLocalStorage();
       }
     }
+  }
+
+  // Cập nhật cấu hình ngân hàng thụ hưởng & mã VietQR
+  public updateBankConfig(data: Partial<BankConfig>) {
+    Object.assign(this.bankConfig, data);
+    this.saveToLocalStorage();
+    return this.bankConfig;
+  }
+
+  // Cập nhật mẫu tin nhắn Zalo OA
+  public updateZaloConfig(data: Partial<ZaloConfig>) {
+    Object.assign(this.zaloConfig, data);
+    this.saveToLocalStorage();
+    return this.zaloConfig;
   }
 }
 

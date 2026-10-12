@@ -2,6 +2,29 @@
  * Helper sinh mã VietQR Napas 247 theo chuẩn ngân hàng Việt Nam
  */
 
+export interface BankOption {
+  id: string; // BIN Code hoặc mã viết tắt: MB, VCB, TCB...
+  name: string;
+  shortName: string;
+}
+
+export const SUPPORTED_BANKS: BankOption[] = [
+  { id: "MB", name: "Ngân hàng TMCP Quân Đội", shortName: "MBBank" },
+  { id: "VCB", name: "Ngân hàng TMCP Ngoại Thương Việt Nam", shortName: "Vietcombank" },
+  { id: "TCB", name: "Ngân hàng TMCP Kỹ Thương Việt Nam", shortName: "Techcombank" },
+  { id: "BIDV", name: "Ngân hàng Đầu tư & Phát triển Việt Nam", shortName: "BIDV" },
+  { id: "ACB", name: "Ngân hàng TMCP Á Châu", shortName: "ACB" },
+  { id: "TPB", name: "Ngân hàng TMCP Tiên Phong", shortName: "TPBank" },
+  { id: "VPB", name: "Ngân hàng TMCP Việt Nam Thịnh Vượng", shortName: "VPBank" },
+  { id: "ICB", name: "Ngân hàng TMCP Công Thương Việt Nam", shortName: "VietinBank" },
+  { id: "STB", name: "Ngân hàng TMCP Sài Gòn Thương Tín", shortName: "Sacombank" },
+  { id: "VIB", name: "Ngân hàng TMCP Quốc Tế", shortName: "VIB" },
+  { id: "HDB", name: "Ngân hàng TMCP Phát triển TP.HCM", shortName: "HDBank" },
+  { id: "SHB", name: "Ngân hàng TMCP Sài Gòn - Hà Nội", shortName: "SHB" },
+  { id: "MSB", name: "Ngân hàng TMCP Hàng Hải", shortName: "MSB" },
+  { id: "VBA", name: "Ngân hàng Nông nghiệp & PTNT Việt Nam", shortName: "Agribank" },
+];
+
 export interface VietQrOptions {
   bankId?: string; // MB, VCB, TCB, ACB, ...
   accountNo?: string;

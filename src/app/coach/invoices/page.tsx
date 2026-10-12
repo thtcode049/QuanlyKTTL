@@ -46,6 +46,9 @@ function InvoicesContent() {
     year: number;
     qrUrl: string;
     transferContent: string;
+    bankName?: string;
+    bankAccount?: string;
+    accountHolder?: string;
   } | null>(null);
 
   // Modal Zalo Simulator State
@@ -126,11 +129,18 @@ function InvoicesContent() {
 
   // Mở VietQR Modal
   const handleOpenVietQr = (inv: MonthlyInvoiceData, student: StudentData) => {
+    const bank = dataStore.bankConfig;
     const transferContent = `HP ${student.code} T${selectedMonth}`;
-    const qrUrl = generateVietQrUrl({
-      amount: inv.totalAmount,
-      description: transferContent,
-    });
+    const qrUrl = bank.useCustomQr && bank.customQrImage
+      ? bank.customQrImage
+      : generateVietQrUrl({
+          bankId: bank.bankId,
+          accountNo: bank.bankAccount,
+          accountName: bank.accountHolder,
+          template: (bank.qrTemplate as any) || "compact2",
+          amount: inv.totalAmount,
+          description: transferContent,
+        });
 
     setActiveQrData({
       studentName: student.fullName,
@@ -140,18 +150,28 @@ function InvoicesContent() {
       year: selectedYear,
       qrUrl,
       transferContent,
+      bankName: bank.bankName,
+      bankAccount: bank.bankAccount,
+      accountHolder: bank.accountHolder,
     });
     setVietQrModalOpen(true);
   };
 
   // Mở Zalo OA Simulator
   const handleOpenZalo = (inv: MonthlyInvoiceData, student: StudentData) => {
+    const bank = dataStore.bankConfig;
     const presentDates = getPresentDatesForStudent(student.id);
     const transferContent = `HP ${student.code} T${selectedMonth}`;
-    const qrUrl = generateVietQrUrl({
-      amount: inv.totalAmount,
-      description: transferContent,
-    });
+    const qrUrl = bank.useCustomQr && bank.customQrImage
+      ? bank.customQrImage
+      : generateVietQrUrl({
+          bankId: bank.bankId,
+          accountNo: bank.bankAccount,
+          accountName: bank.accountHolder,
+          template: (bank.qrTemplate as any) || "compact2",
+          amount: inv.totalAmount,
+          description: transferContent,
+        });
 
     const payload: ZaloStudentInvoicePayload = {
       studentName: student.fullName,
@@ -167,10 +187,11 @@ function InvoicesContent() {
       feePerSession: inv.feePerSession,
       totalAmount: inv.totalAmount,
       vietQrUrl: qrUrl,
+      customQrUrl: bank.useCustomQr && bank.customQrImage ? bank.customQrImage : undefined,
       transferContent,
-      bankName: dataStore.bankConfig.bankName,
-      bankAccount: dataStore.bankConfig.bankAccount,
-      accountHolder: dataStore.bankConfig.accountHolder,
+      bankName: bank.bankName,
+      bankAccount: bank.bankAccount,
+      accountHolder: bank.accountHolder,
     };
 
     setActiveZaloPayload(payload);
@@ -550,6 +571,9 @@ function InvoicesContent() {
           year={activeQrData.year}
           qrUrl={activeQrData.qrUrl}
           transferContent={activeQrData.transferContent}
+          bankName={activeQrData.bankName}
+          bankAccount={activeQrData.bankAccount}
+          accountHolder={activeQrData.accountHolder}
         />
       )}
 
