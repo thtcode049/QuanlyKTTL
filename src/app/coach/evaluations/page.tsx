@@ -15,6 +15,7 @@ import {
   Swords,
 } from "lucide-react";
 import { dataStore, StudentData, StudentEvaluationData } from "@/lib/data-store";
+import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import EvaluationStars from "@/components/evaluation-stars";
 import confetti from "canvas-confetti";
 
@@ -159,26 +160,34 @@ export default function CoachEvaluationsPage() {
           <div className="max-h-[550px] space-y-1.5 overflow-y-auto pr-1">
             {filteredStudents.map((std) => {
               const isSelected = std.id === selectedStudent?.id;
+              const avatarUrl = getStudentAvatarUrl(std.avatar, std.fullName);
               return (
                 <div
                   key={std.id}
                   onClick={() => handleSelectStudent(std)}
-                  className={`flex cursor-pointer items-center justify-between rounded-xl p-3 transition-all ${
+                  className={`flex cursor-pointer items-center justify-between rounded-xl p-2.5 transition-all ${
                     isSelected
                       ? "bg-brand-primary text-white shadow-md shadow-brand-primary/20"
                       : "bg-slate-50/70 hover:bg-slate-100 text-slate-800"
                   }`}
                 >
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold">{std.fullName}</span>
-                      <span className={`text-[10px] ${isSelected ? "text-white/80" : "text-slate-400"}`}>
-                        ({std.code})
-                      </span>
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={avatarUrl}
+                      alt={std.fullName}
+                      className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/30 flex-shrink-0"
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold">{std.fullName}</span>
+                        <span className={`text-[10px] ${isSelected ? "text-white/80" : "text-slate-400"}`}>
+                          ({std.code})
+                        </span>
+                      </div>
+                      <p className={`text-[11px] ${isSelected ? "text-white/80" : "text-slate-500"}`}>
+                        {std.currentLevel} • Sinh năm {std.birthYear}
+                      </p>
                     </div>
-                    <p className={`text-[11px] ${isSelected ? "text-white/80" : "text-slate-500"}`}>
-                      {std.currentLevel} • Sinh năm {std.birthYear}
-                    </p>
                   </div>
 
                   <span className={`rounded-lg px-2 py-0.5 text-xs font-black ${
@@ -199,8 +208,12 @@ export default function CoachEvaluationsPage() {
               {/* Header profile */}
               <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3.5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-primary to-emerald-700 text-white text-xl font-black shadow-md shadow-brand-primary/20">
-                    ♞
+                  <div className="relative h-14 w-14 rounded-2xl overflow-hidden bg-slate-100 ring-2 ring-brand-primary/30 shadow-md shadow-brand-primary/20 flex-shrink-0">
+                    <img
+                      src={getStudentAvatarUrl(selectedStudent.avatar, selectedStudent.fullName)}
+                      alt={selectedStudent.fullName}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">

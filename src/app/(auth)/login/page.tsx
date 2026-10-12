@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ShieldCheck,
   UserCheck,
@@ -11,7 +12,9 @@ import {
   CalendarCheck2,
   QrCode,
   ArrowRight,
+  UserPlus,
 } from "lucide-react";
+import { dataStore } from "@/lib/data-store";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,8 +34,39 @@ export default function LoginPage() {
 
     setLoading(true);
     setTimeout(() => {
-      // Phân luồng RBAC
-      if (email.includes("admin")) {
+      // 1. Kiểm tra tài khoản trong dataStore (Bao gồm cả HLV vừa đăng ký)
+      const foundUser = dataStore.users.find(
+        (u) => u.email.toLowerCase() === email.trim().toLowerCase()
+      );
+
+      if (foundUser) {
+        // Kiểm tra mật khẩu nếu tài khoản có mật khẩu riêng
+        if (foundUser.password && password && foundUser.password !== password) {
+          setError("Mật khẩu không chính xác. Vui lòng kiểm tra lại.");
+          setLoading(false);
+          return;
+        }
+
+        const sessionUser = {
+          id: foundUser.id,
+          email: foundUser.email,
+          name: foundUser.name,
+          role: foundUser.role,
+          title: foundUser.title || (foundUser.role === "ADMIN" ? "Chủ nhiệm CLB" : "HLV Quốc gia"),
+          branchId: foundUser.branchId,
+        };
+        localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+
+        if (foundUser.role === "ADMIN") {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/coach/classes");
+        }
+        return;
+      }
+
+      // 2. Fallback nhận diện theo từ khóa email
+      if (email.toLowerCase().includes("admin")) {
         const user = {
           id: "user-admin",
           email: "admin@kttll.vn",
@@ -42,7 +76,7 @@ export default function LoginPage() {
         };
         localStorage.setItem("kttll_user", JSON.stringify(user));
         router.push("/admin/dashboard");
-      } else {
+      } else if (email.toLowerCase().includes("hlv")) {
         const isCoach2 = email.includes("hlv2");
         const user = {
           id: isCoach2 ? "user-coach-2" : "user-coach-1",
@@ -53,6 +87,9 @@ export default function LoginPage() {
         };
         localStorage.setItem("kttll_user", JSON.stringify(user));
         router.push("/coach/classes");
+      } else {
+        setError("Không tìm thấy tài khoản với email này. Vui lòng kiểm tra lại hoặc đăng ký tài khoản HLV mới.");
+        setLoading(false);
       }
     }, 400);
   };
@@ -296,8 +333,23 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Registration Link for New Coaches */}
+          <div className="mt-6 rounded-2xl bg-white p-4 text-center shadow-soft border border-slate-200/80">
+            <p className="text-xs text-slate-600">
+              Bạn là Huấn luyện viên mới gia nhập CLB?
+            </p>
+            <Link
+              href="/register"
+              className="mt-2 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+            >
+              <UserPlus className="h-4 w-4 text-brand-primary" />
+              <span>Đăng Ký Tài Khoản HLV Ngay</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
           {/* System note */}
-          <div className="mt-8 rounded-xl bg-slate-100/80 p-3 text-center text-[11px] text-slate-500 border border-slate-200">
+          <div className="mt-6 rounded-xl bg-slate-100/80 p-3 text-center text-[11px] text-slate-500 border border-slate-200">
             Hệ thống hỗ trợ cơ chế lưu trữ kép Supabase PostgreSQL & Local Dev Fallback. Sẵn sàng cấu hình biến môi trường và deploy lên Vercel.
           </div>
         </div>

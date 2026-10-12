@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   GraduationCap,
@@ -19,15 +19,53 @@ import {
   Sparkles,
   Edit2,
   Trash2,
+  MoreVertical,
+  Camera,
+  Phone,
+  Copy,
+  Info,
+  User,
+  HelpCircle,
 } from "lucide-react";
 import { dataStore, ClassroomData, StudentData } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
+import { getStudentAvatarUrl } from "@/lib/chess-avatars";
+import { StudentProfileModal } from "@/components/student-profile-modal";
+import { StudentContextMenu, ContextMenuPosition } from "@/components/student-context-menu";
 
 export default function CoachClassesPage() {
   const [classes, setClasses] = useState<ClassroomData[]>(dataStore.classes);
   const [students, setStudents] = useState<StudentData[]>(dataStore.students);
   const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || "");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Toast notification
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Student Profile Modal State
+  const [profileStudent, setProfileStudent] = useState<StudentData | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Custom Context Menu State
+  const [contextMenuStudent, setContextMenuStudent] = useState<StudentData | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState<ContextMenuPosition | null>(null);
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+
+  // Inline Editing State
+  const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
+  const [inlineForm, setInlineForm] = useState({
+    fullName: "",
+    birthYear: 2018,
+    parentName: "",
+    parentPhone: "",
+    eloRating: 1000,
+    customFee: "",
+    notes: "",
+  });
 
   // Modal State: Thêm học viên mới
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -68,6 +106,95 @@ export default function CoachClassesPage() {
         s.parentPhone.includes(searchTerm))
   );
 
+  // Xử lý mở Hồ sơ học viên
+  const handleOpenProfile = (student: StudentData) => {
+    setProfileStudent(student);
+    setIsProfileOpen(true);
+  };
+
+  // Cập nhật học sinh từ Modal Profile
+  const handleStudentUpdated = (updated: StudentData) => {
+    setStudents([...dataStore.students]);
+    setProfileStudent(updated);
+    showToast(`Đã cập nhật hồ sơ học viên ${updated.fullName}!`);
+  };
+
+  // Context Menu: Bấm chuột phải
+  const handleContextMenu = (e: React.MouseEvent, student: StudentData) => {
+    e.preventDefault();
+    setContextMenuStudent(student);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setIsContextMenuOpen(true);
+  };
+
+  // Context Menu: Bấm vào nút "..." tinh gọn
+  const handleMoreButtonClick = (e: React.MouseEvent, student: StudentData) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setContextMenuStudent(student);
+    setContextMenuPos({ x: rect.left - 180, y: rect.bottom + 6 });
+    setIsContextMenuOpen(true);
+  };
+
+  // Bắt đầu sửa nhanh trực tiếp (Inline Editing)
+  const handleStartInlineEdit = (student: StudentData) => {
+    setInlineEditingId(student.id);
+    setInlineForm({
+      fullName: student.fullName,
+      birthYear: student.birthYear,
+      parentName: student.parentName,
+      parentPhone: student.parentPhone,
+      eloRating: student.eloRating,
+      customFee: student.customFeePerSession ? String(student.customFeePerSession) : "",
+      notes: student.notes || "",
+    });
+  };
+
+  // Lưu chỉnh sửa nhanh
+  const handleSaveInlineEdit = (studentId: string) => {
+    if (!inlineForm.fullName.trim()) {
+      alert("Họ tên học viên không được để trống!");
+      return;
+    }
+    const updated = dataStore.updateStudent(studentId, {
+      fullName: inlineForm.fullName.trim(),
+      birthYear: Number(inlineForm.birthYear) || 2018,
+      parentName: inlineForm.parentName.trim(),
+      parentPhone: inlineForm.parentPhone.trim(),
+      eloRating: Number(inlineForm.eloRating) || 1000,
+      customFeePerSession: inlineForm.customFee.trim() ? Number(inlineForm.customFee) : undefined,
+      notes: inlineForm.notes.trim(),
+    });
+
+    if (updated) {
+      setStudents([...dataStore.students]);
+      setInlineEditingId(null);
+      showToast(`Đã lưu thay đổi học viên ${updated.fullName}!`);
+    }
+  };
+
+  // Hủy chỉnh sửa nhanh
+  const handleCancelInlineEdit = () => {
+    setInlineEditingId(null);
+  };
+
+  // Cài đặt đơn giá học phí riêng
+  const handleSetCustomFee = (student: StudentData) => {
+    const current = student.customFeePerSession ?? selectedClass?.feePerSession;
+    const input = window.prompt(
+      `Cài đặt học phí riêng (ưu đãi/học bổng) cho học viên "${student.fullName}":\n(Nhập số tiền VNĐ/buổi, hoặc để trống để dùng giá lớp chuẩn)`,
+      current ? String(current) : ""
+    );
+
+    if (input !== null) {
+      const parsed = parseFloat(input.trim());
+      dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
+      setStudents([...dataStore.students]);
+      showToast(`Đã cập nhật học phí cho học viên ${student.fullName}!`);
+    }
+  };
+
+  // Thêm học viên mới vào lớp
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStudentName || !newParentPhone) return;
@@ -87,10 +214,10 @@ export default function CoachClassesPage() {
       customFeePerSession: newCustomFee ? Number(newCustomFee) : undefined,
     };
 
-    dataStore.students.push(newStudent);
-    dataStore.recalculateAllInvoices(10, 2026);
+    dataStore.addStudent(newStudent);
     setStudents([...dataStore.students]);
     setIsAddStudentOpen(false);
+    showToast(`Đã thêm học viên mới ${newStudent.fullName} vào lớp!`);
 
     // Reset form
     setNewStudentName("");
@@ -100,6 +227,7 @@ export default function CoachClassesPage() {
     setNewCustomFee("");
   };
 
+  // Tạo lớp mới
   const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClassName) return;
@@ -116,10 +244,12 @@ export default function CoachClassesPage() {
     };
 
     dataStore.classes.push(newCls);
+    dataStore.saveToLocalStorage();
     setClasses([...dataStore.classes]);
     setSelectedClassId(newCls.id);
     setIsCreateClassOpen(false);
     setNewClassName("");
+    showToast(`Đã tạo lớp học mới: ${newCls.name}!`);
   };
 
   const openEditClassModal = () => {
@@ -146,6 +276,7 @@ export default function CoachClassesPage() {
 
     setClasses([...dataStore.classes]);
     setIsEditClassOpen(false);
+    showToast(`Đã cập nhật thông tin lớp học!`);
   };
 
   const handleDeleteClass = () => {
@@ -156,44 +287,53 @@ export default function CoachClassesPage() {
       setClasses(remainingClasses);
       setSelectedClassId(remainingClasses[0]?.id || "");
       setIsEditClassOpen(false);
+      showToast(`Đã xóa lớp học!`);
     }
   };
 
-  const handleRemoveStudentFromClass = (studentId: string, studentName: string) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${studentName}" khỏi lớp này không?`)) {
-      const student = dataStore.students.find((s) => s.id === studentId);
-      if (student) {
-        student.classIds = student.classIds.filter((cid) => cid !== selectedClass.id);
-        dataStore.recalculateAllInvoices(10, 2026);
-        setStudents([...dataStore.students]);
-      }
+  const handleRemoveStudentFromClass = (student: StudentData) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi lớp này không?`)) {
+      student.classIds = student.classIds.filter((cid) => cid !== selectedClass.id);
+      dataStore.recalculateAllInvoices(10, 2026);
+      dataStore.saveToLocalStorage();
+      setStudents([...dataStore.students]);
+      showToast(`Đã xóa học viên ${student.fullName} khỏi lớp!`);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
+      {/* Toast notification floating popup */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-5">
+          <CheckCircle2 className="h-4 w-4 text-brand-primary" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Top Banner Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
             Lớp Học Của Tôi
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Quản lý thông tin học viên, lịch học và đơn giá theo nguyên tắc Thực học - Thực trả.
+            Quản lý hồ sơ học viên, ảnh đại diện, điểm danh và học phí theo nguyên tắc Thực học - Thực trả.
           </p>
         </div>
 
+        {/* Streamlined Top Actions */}
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsCreateClassOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Tạo Lớp Mới</span>
           </button>
           <button
             onClick={() => setIsAddStudentOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+            className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover transition-colors"
           >
             <UserPlus className="h-4 w-4" />
             <span>Thêm Học Viên</span>
@@ -202,7 +342,7 @@ export default function CoachClassesPage() {
       </div>
 
       {/* Class Selector Carousel Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {classes.map((cls) => {
           const isSelected = cls.id === selectedClass?.id;
           const branch = dataStore.branches.find((b) => b.id === cls.branchId);
@@ -219,13 +359,15 @@ export default function CoachClassesPage() {
               }`}
             >
               <div className="flex items-start justify-between">
-                <span className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${
-                  cls.level === "Đội tuyển"
-                    ? "bg-purple-100 text-purple-700"
-                    : cls.level === "Nâng cao"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}>
+                <span
+                  className={`rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${
+                    cls.level === "Đội tuyển"
+                      ? "bg-purple-100 text-purple-700"
+                      : cls.level === "Nâng cao"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-emerald-100 text-emerald-800"
+                  }`}
+                >
                   {cls.level}
                 </span>
                 <span className="text-xs font-bold text-slate-500">
@@ -233,27 +375,27 @@ export default function CoachClassesPage() {
                 </span>
               </div>
 
-              <h3 className="mt-3 text-base font-bold text-slate-900 line-clamp-1">
+              <h3 className="mt-2.5 text-sm font-bold text-slate-900 line-clamp-1">
                 {cls.name}
               </h3>
 
-              <div className="mt-2.5 space-y-1.5 text-xs text-slate-600">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <div className="mt-2 space-y-1 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 truncate">
+                  <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                   <span className="truncate">{branch?.name || "Cơ sở Hà Nội"}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                <div className="flex items-center gap-1.5 truncate">
+                  <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                   <span className="truncate">{cls.schedule}</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold text-brand-primary">
-                  <DollarSign className="h-3.5 w-3.5" />
+                  <DollarSign className="h-3.5 w-3.5 flex-shrink-0" />
                   <span>{formatCurrencyVND(cls.feePerSession)} / buổi</span>
                 </div>
               </div>
 
               {isSelected && (
-                <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-bold text-brand-primary">
+                <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-bold text-brand-primary">
                   <span>Đang xem chi tiết</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </div>
@@ -278,7 +420,10 @@ export default function CoachClassesPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                {branchInfo?.name} • {selectedClass.schedule} • Đơn giá: {formatCurrencyVND(selectedClass.feePerSession)}/buổi
+                {branchInfo?.name} • {selectedClass.schedule} • Đơn giá:{" "}
+                <span className="font-bold text-slate-800">
+                  {formatCurrencyVND(selectedClass.feePerSession)}/buổi
+                </span>
               </p>
             </div>
           </div>
@@ -288,7 +433,7 @@ export default function CoachClassesPage() {
               onClick={openEditClassModal}
               className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
             >
-              <Edit2 className="h-4 w-4 text-brand-primary" />
+              <Edit2 className="h-3.5 w-3.5 text-brand-primary" />
               <span>Sửa Thông Tin Lớp</span>
             </button>
 
@@ -312,100 +457,331 @@ export default function CoachClassesPage() {
       )}
 
       {/* Student List in Selected Class */}
-      <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80">
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              Danh Sách Học Viên ({classStudents.length})
-            </h3>
-            <p className="text-xs text-slate-500">
-              Học viên thuộc lớp {selectedClass?.name}
-            </p>
+      <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80 overflow-hidden">
+        {/* Table Top Controls & Tips */}
+        <div className="border-b border-slate-100 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Danh Sách Học Viên ({classStudents.length})
+                </h3>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                  Lớp {selectedClass?.name}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Nhấp chuột phải vào bất kỳ học viên nào để mở menu thao tác nhanh. Nhấp đúp vào dòng để sửa trực tiếp.
+              </p>
+            </div>
+
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Tìm theo tên, SĐT phụ huynh..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs focus:border-brand-primary focus:bg-white focus:outline-none"
+              />
+            </div>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo tên, SĐT phụ huynh..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs focus:border-brand-primary focus:bg-white focus:outline-none"
-            />
+          {/* Quick Tip Banner */}
+          <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50/70 p-2.5 text-[11px] font-medium text-emerald-900 border border-emerald-200/60">
+            <Sparkles className="h-4 w-4 text-brand-primary flex-shrink-0" />
+            <span>
+              <strong>Thao tác tinh gọn:</strong> Click vào ảnh đại diện để xem Hồ sơ & tải ảnh mới. Nhấp chuột phải (hoặc bấm nút ···) để mở menu thao tác mà không cần nhiều nút bấm rườm rà.
+            </span>
           </div>
         </div>
 
-        {/* Students Table */}
+        {/* Students Table with Direct Inline Editing & Context Menu */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
               <tr>
                 <th className="px-4 py-3">Mã HV</th>
-                <th className="px-4 py-3">Họ và Tên</th>
+                <th className="px-4 py-3">Học Viên</th>
                 <th className="px-4 py-3">Năm Sinh</th>
                 <th className="px-4 py-3">Phụ Huynh</th>
                 <th className="px-4 py-3">Số Điện Thoại</th>
                 <th className="px-4 py-3">Hệ Số Elo</th>
                 <th className="px-4 py-3">Học Phí / Buổi</th>
                 <th className="px-4 py-3">Ghi Chú HLV</th>
-                <th className="px-4 py-3 text-right">Thao Tác</th>
+                <th className="px-4 py-3 text-center">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {classStudents.map((std) => (
-                <tr key={std.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="px-4 py-3 font-mono font-bold text-slate-700">
-                    {std.code}
-                  </td>
-                  <td className="px-4 py-3 font-bold text-slate-900">
-                    {std.fullName}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {std.birthYear} ({new Date().getFullYear() - std.birthYear} tuổi)
-                  </td>
-                  <td className="px-4 py-3 font-medium text-slate-800">
-                    {std.parentName}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-slate-600">
-                    {std.parentPhone}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 font-bold text-amber-700 border border-amber-200">
-                      ★ {std.eloRating}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {std.customFeePerSession !== undefined && std.customFeePerSession !== null ? (
-                      <div>
-                        <span className="font-bold text-slate-900">{formatCurrencyVND(std.customFeePerSession)}</span>
-                        <span className="ml-1 rounded bg-amber-50 px-1.5 py-0.2 text-[9px] font-bold text-amber-700 border border-amber-200">
-                          Giá riêng
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-slate-600 font-medium">
-                        {formatCurrencyVND(selectedClass?.feePerSession || 150000)}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500 italic">
-                    {std.notes || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleRemoveStudentFromClass(std.id, std.fullName)}
-                      title="Xóa học viên khỏi lớp này"
-                      className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+              {classStudents.map((std, idx) => {
+                const isEditing = inlineEditingId === std.id;
+                const avatarUrl = std.avatar || getStudentAvatarUrl(std.avatar, std.fullName, idx);
+
+                if (isEditing) {
+                  /* Inline Editing Row */
+                  return (
+                    <tr
+                      key={std.id}
+                      className="bg-amber-50/60 border-2 border-brand-primary transition-all animate-fade-in"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      <td className="px-4 py-2 font-mono font-bold text-slate-700">
+                        {std.code}
+                      </td>
+
+                      {/* Name input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          required
+                          value={inlineForm.fullName}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, fullName: e.target.value })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          placeholder="Họ và tên..."
+                          className="w-full rounded-lg border border-brand-primary bg-white px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Birth Year input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          value={inlineForm.birthYear}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, birthYear: Number(e.target.value) })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-brand-primary focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Parent Name input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          value={inlineForm.parentName}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, parentName: e.target.value })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          placeholder="Phụ huynh..."
+                          className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-brand-primary focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Parent Phone input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="tel"
+                          value={inlineForm.parentPhone}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, parentPhone: e.target.value })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          placeholder="0912..."
+                          className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-mono focus:border-brand-primary focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Elo rating input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          value={inlineForm.eloRating}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, eloRating: Number(e.target.value) })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-amber-700 focus:border-brand-primary focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Custom Fee input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          value={inlineForm.customFee}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, customFee: e.target.value })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          placeholder="Giá riêng..."
+                          className="w-28 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold focus:border-brand-primary focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Notes input */}
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          value={inlineForm.notes}
+                          onChange={(e) =>
+                            setInlineForm({ ...inlineForm, notes: e.target.value })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
+                            if (e.key === "Escape") handleCancelInlineEdit();
+                          }}
+                          placeholder="Ghi chú HLV..."
+                          className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-brand-primary focus:outline-none"
+                        />
+                      </td>
+
+                      {/* Action buttons on inline edit */}
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveInlineEdit(std.id)}
+                            title="Lưu (Enter)"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-colors"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelInlineEdit}
+                            title="Hủy bỏ (Esc)"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                /* Standard Student Row */
+                return (
+                  <tr
+                    key={std.id}
+                    onContextMenu={(e) => handleContextMenu(e, std)}
+                    onDoubleClick={() => handleStartInlineEdit(std)}
+                    className="hover:bg-slate-50/90 transition-colors group cursor-default select-none"
+                  >
+                    {/* Mã học viên */}
+                    <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                      {std.code}
+                    </td>
+
+                    {/* Avatar + Họ và tên (Click to open Profile Modal) */}
+                    <td className="px-4 py-3">
+                      <div
+                        onClick={() => handleOpenProfile(std)}
+                        className="flex items-center gap-2.5 cursor-pointer group-hover:text-brand-primary"
+                        title="Click để xem & chỉnh sửa hồ sơ học viên"
+                      >
+                        <div className="relative h-9 w-9 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 group-hover:ring-brand-primary transition-all flex-shrink-0">
+                          <img
+                            src={avatarUrl}
+                            alt={std.fullName}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 group-hover:text-brand-primary transition-colors">
+                            {std.fullName}
+                          </p>
+                          <span className="text-[10px] text-slate-400">
+                            {std.currentLevel}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Năm sinh & Tuổi */}
+                    <td className="px-4 py-3 text-slate-600">
+                      {std.birthYear} ({new Date().getFullYear() - std.birthYear} tuổi)
+                    </td>
+
+                    {/* Phụ huynh */}
+                    <td className="px-4 py-3 font-medium text-slate-800">
+                      {std.parentName}
+                    </td>
+
+                    {/* Số điện thoại */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 font-mono text-slate-700">
+                        <span>{std.parentPhone}</span>
+                        <a
+                          href={`tel:${std.parentPhone}`}
+                          title="Gọi cho phụ huynh"
+                          className="opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all"
+                        >
+                          <Phone className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </td>
+
+                    {/* Hệ số Elo */}
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 font-bold text-amber-700 border border-amber-200">
+                        ★ {std.eloRating}
+                      </span>
+                    </td>
+
+                    {/* Học phí / Buổi */}
+                    <td className="px-4 py-3">
+                      {std.customFeePerSession !== undefined && std.customFeePerSession !== null ? (
+                        <div>
+                          <span className="font-bold text-slate-900">
+                            {formatCurrencyVND(std.customFeePerSession)}
+                          </span>
+                          <span className="ml-1 rounded bg-amber-50 px-1.5 py-0.2 text-[9px] font-bold text-amber-700 border border-amber-200">
+                            Giá riêng
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-600 font-medium">
+                          {formatCurrencyVND(selectedClass?.feePerSession || 150000)}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Ghi chú */}
+                    <td className="px-4 py-3 text-slate-500 italic max-w-[150px] truncate">
+                      {std.notes || "—"}
+                    </td>
+
+                    {/* 1 Nút bấm tinh gọn duy nhất "..." mở Context Menu */}
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={(e) => handleMoreButtonClick(e, std)}
+                        title="Tùy chọn khác (Chuột phải)"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+
               {classStudents.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-slate-400">
-                    Không tìm thấy học viên nào phù hợp.
+                  <td colSpan={9} className="py-10 text-center text-slate-400">
+                    Không tìm thấy học viên nào phù hợp trong lớp này.
                   </td>
                 </tr>
               )}
@@ -413,6 +789,28 @@ export default function CoachClassesPage() {
           </table>
         </div>
       </div>
+
+      {/* Custom Context Menu on Right Click or "..." trigger */}
+      <StudentContextMenu
+        student={contextMenuStudent}
+        position={contextMenuPos}
+        isOpen={isContextMenuOpen}
+        onClose={() => setIsContextMenuOpen(false)}
+        onViewProfile={handleOpenProfile}
+        onStartInlineEdit={handleStartInlineEdit}
+        onChangeAvatar={handleOpenProfile}
+        onSetCustomFee={handleSetCustomFee}
+        onRemoveFromClass={handleRemoveStudentFromClass}
+      />
+
+      {/* Student Profile Modal with Real Image Upload */}
+      <StudentProfileModal
+        student={profileStudent}
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onUpdate={handleStudentUpdated}
+        currentClass={selectedClass}
+      />
 
       {/* Modal: Thêm Học Viên */}
       {isAddStudentOpen && (
@@ -465,32 +863,18 @@ export default function CoachClassesPage() {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Họ tên Phụ huynh</label>
+                <label className="font-bold text-slate-700">Tên phụ huynh</label>
                 <input
                   type="text"
                   value={newParentName}
                   onChange={(e) => setNewParentName(e.target.value)}
-                  placeholder="VD: Nguyễn Văn Toàn"
+                  placeholder="VD: Nguyễn Văn Hùng"
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">
-                  Học phí riêng (VNĐ/buổi)
-                </label>
-                <input
-                  type="number"
-                  step="10000"
-                  value={newCustomFee}
-                  onChange={(e) => setNewCustomFee(e.target.value)}
-                  placeholder={`Để trống nếu áp dụng giá lớp (${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi)`}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700">Số điện thoại Phụ huynh (Nhận Zalo) *</label>
+                <label className="font-bold text-slate-700">Số điện thoại phụ huynh *</label>
                 <input
                   type="tel"
                   required
@@ -502,29 +886,42 @@ export default function CoachClassesPage() {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Ghi chú đặc điểm cờ vua</label>
-                <textarea
-                  rows={2}
+                <label className="font-bold text-slate-700">
+                  Đơn giá học phí riêng (để trống nếu dùng giá lớp)
+                </label>
+                <input
+                  type="number"
+                  value={newCustomFee}
+                  onChange={(e) => setNewCustomFee(e.target.value)}
+                  placeholder={`Mặc định: ${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi`}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Ghi chú của HLV</label>
+                <input
+                  type="text"
                   value={newStudentNotes}
                   onChange={(e) => setNewStudentNotes(e.target.value)}
-                  placeholder="VD: Đã biết chơi cơ bản, thích giải cờ thế..."
+                  placeholder="VD: Mới vào học, rất hào hứng..."
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-5 flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAddStudentOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  className="rounded-xl bg-brand-primary px-5 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
                 >
-                  Lưu Học Viên
+                  Thêm Vào Lớp
                 </button>
               </div>
             </form>
@@ -554,7 +951,7 @@ export default function CoachClassesPage() {
                   required
                   value={newClassName}
                   onChange={(e) => setNewClassName(e.target.value)}
-                  placeholder="VD: Cờ vua Khám Phá - K03"
+                  placeholder="VD: Cờ vua Cơ Bản - K09"
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>
@@ -574,7 +971,7 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Cơ sở</label>
+                  <label className="font-bold text-slate-700">Cơ sở đào tạo</label>
                   <select
                     value={newClassBranch}
                     onChange={(e) => setNewClassBranch(e.target.value)}
@@ -593,9 +990,10 @@ export default function CoachClassesPage() {
                 <label className="font-bold text-slate-700">Lịch học</label>
                 <input
                   type="text"
+                  required
                   value={newClassSchedule}
                   onChange={(e) => setNewClassSchedule(e.target.value)}
-                  placeholder="VD: Thứ 3 & Thứ 6 (18:00 - 19:30)"
+                  placeholder="VD: Thứ 4 & Thứ 7 (18:00 - 19:30)"
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>
@@ -604,23 +1002,25 @@ export default function CoachClassesPage() {
                 <label className="font-bold text-slate-700">Đơn giá học phí / 1 buổi (VNĐ)</label>
                 <input
                   type="number"
+                  step="10000"
+                  required
                   value={newClassFee}
                   onChange={(e) => setNewClassFee(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
                 />
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-5 flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsCreateClassOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  className="rounded-xl bg-brand-primary px-5 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
                 >
                   Tạo Lớp
                 </button>
@@ -630,14 +1030,12 @@ export default function CoachClassesPage() {
         </div>
       )}
 
-      {/* Modal Sửa Toàn Bộ Thông Tin Lớp Học */}
-      {isEditClassOpen && selectedClass && (
+      {/* Modal: Sửa Thông Tin Lớp */}
+      {isEditClassOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Sửa Thông Tin Lớp: {selectedClass.name}
-              </h3>
+              <h3 className="text-base font-bold text-slate-900">Sửa Thông Tin Lớp Học</h3>
               <button
                 onClick={() => setIsEditClassOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -660,7 +1058,7 @@ export default function CoachClassesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Trình độ / Cấp độ *</label>
+                  <label className="font-bold text-slate-700">Trình độ</label>
                   <select
                     value={editClassLevel}
                     onChange={(e) => setEditClassLevel(e.target.value)}
@@ -673,7 +1071,7 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Cơ sở</label>
+                  <label className="font-bold text-slate-700">Cơ sở đào tạo</label>
                   <select
                     value={editClassBranch}
                     onChange={(e) => setEditClassBranch(e.target.value)}

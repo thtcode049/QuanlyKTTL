@@ -1,0 +1,463 @@
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  ShieldCheck,
+  UserCheck,
+  Lock,
+  Mail,
+  User,
+  Phone,
+  Award,
+  Building2,
+  Wallet,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
+  GraduationCap,
+  ChevronLeft,
+} from "lucide-react";
+import { dataStore } from "@/lib/data-store";
+
+export default function RegisterCoachPage() {
+  const router = useRouter();
+
+  // Form Fields
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [title, setTitle] = useState("HLV Quốc gia");
+  const [elo, setElo] = useState("2000");
+  const [experience, setExperience] = useState("3 năm");
+  const [branchId, setBranchId] = useState("branch-1");
+  const [bankName, setBankName] = useState("MBBank");
+  const [bankAccount, setBankAccount] = useState("");
+  const [accountHolder, setAccountHolder] = useState("");
+  const [bio, setBio] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const branches = dataStore.branches;
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // Validate
+    if (!name.trim()) {
+      setError("Vui lòng nhập họ và tên của Huấn luyện viên");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setError("Vui lòng nhập địa chỉ email hợp lệ");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+    if (!phone.trim()) {
+      setError("Vui lòng nhập số điện thoại liên hệ");
+      return;
+    }
+
+    // Check if email already exists
+    const existing = dataStore.users.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase()
+    );
+    if (existing) {
+      setError("Email này đã được đăng ký trong hệ thống. Vui lòng đăng nhập.");
+      return;
+    }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      try {
+        const coach = dataStore.registerCoach({
+          name: name.startsWith("HLV") || name.startsWith("GM") || name.startsWith("IM") ? name : `HLV ${name}`,
+          email,
+          phone,
+          password,
+          title,
+          elo: parseInt(elo) || 2000,
+          experience,
+          branchId,
+          baseRate: 200000,
+          bankName,
+          bankAccount,
+          accountHolder: accountHolder.toUpperCase() || name.toUpperCase(),
+          bio,
+        });
+
+        // Đăng nhập tự động
+        const sessionUser = {
+          id: coach.id,
+          name: coach.name,
+          email: coach.email,
+          role: "COACH",
+          title: coach.title,
+          branchId: coach.branchId,
+        };
+        localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/coach/classes");
+        }, 1200);
+      } catch (err) {
+        setError("Đã xảy ra lỗi trong quá trình tạo tài khoản. Vui lòng thử lại.");
+        setLoading(false);
+      }
+    }, 600);
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col lg:flex-row bg-[#F8FAF9]">
+      {/* Left Chess Showcase Panel */}
+      <div className="relative hidden w-full flex-col justify-between overflow-hidden bg-[#161616] p-10 text-white lg:flex lg:w-5/12 xl:w-4/12">
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#00B18A_1px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-primary/20 blur-3xl" />
+        <div className="absolute -left-24 -bottom-24 h-96 w-96 rounded-full bg-brand-secondary/20 blur-3xl" />
+
+        {/* Top brand */}
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div className="relative h-12 w-12 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-brand-primary flex items-center justify-center overflow-hidden">
+            <img
+              src="/logo.png"
+              alt="Logo CLB Kiện Tướng Tương Lai"
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <div>
+            <h1 className="text-lg font-black tracking-tight uppercase text-white">
+              Kiện Tướng Tương Lai
+            </h1>
+            <p className="text-xs font-semibold text-brand-primary">
+              Chess Management System • HLV Portal
+            </p>
+          </div>
+        </div>
+
+        {/* Middle message */}
+        <div className="relative z-10 my-auto py-10">
+          <span className="rounded-full bg-brand-primary/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand-primary border border-brand-primary/30">
+            Gia Nhập Ban Huấn Luyện
+          </span>
+          <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+            Đào Tạo Thế Hệ Kỳ Thủ Tương Lai
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-300">
+            Hệ thống quản lý chuyên biệt cho Huấn luyện viên cờ vua: Điểm danh 1 chạm, theo dõi tiến độ Elo học sinh, nhận thù lao minh bạch 50% học phí thực dạy + 30% hoa hồng tài liệu.
+          </p>
+
+          <div className="mt-8 space-y-3.5">
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Minh Bạch Thu Nhập</p>
+                <p className="text-slate-400">Tự động tính thù lao theo ca dạy và số học viên có mặt thực tế</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Hồ Sơ Kỳ Thủ Trực Quan</p>
+                <p className="text-slate-400">Đánh giá 4 kỹ năng cờ vua và lưu ảnh hồ sơ từng học viên</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom footer link */}
+        <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400">
+          <span>© 2026 CLB Cờ Vua Kiện Tướng Tương Lai</span>
+          <Link href="/login" className="text-brand-primary hover:underline">
+            Đã có tài khoản? Đăng nhập
+          </Link>
+        </div>
+      </div>
+
+      {/* Right Register Form */}
+      <div className="flex flex-1 flex-col justify-center p-6 sm:p-10 lg:p-14 overflow-y-auto">
+        <div className="mx-auto w-full max-w-2xl">
+          {/* Top navigation back to Login */}
+          <div className="mb-6 flex items-center justify-between">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Quay lại trang Đăng nhập</span>
+            </Link>
+
+            <span className="text-xs text-slate-500">
+              Đã có tài khoản?{" "}
+              <Link href="/login" className="font-bold text-brand-primary hover:underline">
+                Đăng nhập
+              </Link>
+            </span>
+          </div>
+
+          <div className="mb-6">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+              Đăng Ký Huấn Luyện Viên
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-slate-600">
+              Điền đầy đủ thông tin chuyên môn của bạn để tham gia giảng dạy tại CLB Kiện Tướng Tương Lai.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-700 border border-rose-200">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 animate-bounce" />
+              <span>Đăng ký thành công! Đang chuyển hướng bạn vào không gian làm việc HLV...</span>
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-6">
+            {/* Section 1: Thông tin cá nhân & tài khoản */}
+            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                <User className="h-4 w-4 text-brand-primary" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  1. Thông tin cá nhân & Tài khoản đăng nhập
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700">Họ và tên HLV *</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="VD: Nguyễn Văn Anh"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Email đăng nhập *</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hlv.nguyenvananh@kttll.vn"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Mật khẩu *</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Tối thiểu 6 ký tự"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Nhập lại mật khẩu *</label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Xác nhận mật khẩu"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700">Số điện thoại liên hệ *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0912.xxx.xxx"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Chuyên môn cờ vua & Cơ sở công tác */}
+            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                <Award className="h-4 w-4 text-brand-secondary" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  2. Chuyên môn cờ vua & Cơ sở công tác
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700">Danh hiệu / Học vị cờ vua</label>
+                  <select
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
+                  >
+                    <option value="HLV Quốc gia">HLV Quốc gia</option>
+                    <option value="Đại Kiện Tướng Quốc Tế (GM)">Đại Kiện Tướng Quốc Tế (GM)</option>
+                    <option value="Kiện Tướng Quốc Tế (IM)">Kiện Tướng Quốc Tế (IM)</option>
+                    <option value="Kiện Tướng FIDE (FM)">Kiện Tướng FIDE (FM)</option>
+                    <option value="HLV Cờ Vua Cấp 1">HLV Cờ Vua Cấp 1</option>
+                    <option value="Kiện Tướng Quốc Gia">Kiện Tướng Quốc Gia</option>
+                    <option value="VĐV Đội Tuyển Tỉnh/Thành">VĐV Đội Tuyển Tỉnh/Thành</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Hệ số Elo cờ vua</label>
+                  <input
+                    type="number"
+                    value={elo}
+                    onChange={(e) => setElo(e.target.value)}
+                    placeholder="VD: 2150"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Kinh nghiệm giảng dạy</label>
+                  <input
+                    type="text"
+                    value={experience}
+                    onChange={(e) => setExperience(e.target.value)}
+                    placeholder="VD: 3 năm, 5 năm..."
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Cơ sở giảng dạy chính</label>
+                  <select
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700">Tiểu sử & Triết lý giảng dạy</label>
+                  <textarea
+                    rows={2}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Giới thiệu ngắn về phương pháp huấn luyện cờ vua, thành tích thi đấu..."
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Thông tin nhận thù lao */}
+            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                <Wallet className="h-4 w-4 text-emerald-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  3. Tài khoản nhận thù lao (50% học phí + 30% sách)
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700">Tên ngân hàng</label>
+                  <select
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
+                  >
+                    <option value="MBBank">MBBank (Quân Đội)</option>
+                    <option value="Vietcombank">Vietcombank</option>
+                    <option value="Techcombank">Techcombank</option>
+                    <option value="BIDV">BIDV</option>
+                    <option value="ACB">ACB</option>
+                    <option value="TPBank">TPBank</option>
+                    <option value="VPBank">VPBank</option>
+                    <option value="Agribank">Agribank</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Số tài khoản</label>
+                  <input
+                    type="text"
+                    value={bankAccount}
+                    onChange={(e) => setBankAccount(e.target.value)}
+                    placeholder="0987654321"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Chủ tài khoản (In hoa)</label>
+                  <input
+                    type="text"
+                    value={accountHolder}
+                    onChange={(e) => setAccountHolder(e.target.value.toUpperCase())}
+                    placeholder="NGUYEN VAN ANH"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading || success}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 transition-all hover:bg-brand-primary-hover active:scale-[0.98] disabled:opacity-50"
+              >
+                {loading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <>
+                    <span>Hoàn Tất Đăng Ký & Bắt Đầu Giảng Dạy</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

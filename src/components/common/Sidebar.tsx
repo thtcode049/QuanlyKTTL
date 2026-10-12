@@ -55,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   const adminNav = [
     { name: "Tổng quan Doanh thu", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Cơ sở & Lớp học", href: "/admin/branches", icon: Building2 },
+    { name: "Hồ sơ Học viên", href: "/coach/students", icon: UserCheck },
     { name: "Đội ngũ HLV", href: "/admin/coaches", icon: Users },
     { name: "Thu nhập & Lương HLV", href: "/admin/payroll", icon: Wallet },
     { name: "Cài đặt VietQR & Zalo", href: "/admin/settings", icon: Settings },
@@ -62,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
   const coachNav = [
     { name: "Lớp học của tôi", href: "/coach/classes", icon: GraduationCap },
+    { name: "Hồ sơ Học viên", href: "/coach/students", icon: UserCheck },
     { name: "Điểm danh buổi học", href: "/coach/attendance", icon: CheckSquare },
     { name: "Tổng kết & Học phí", href: "/coach/invoices", icon: FileSpreadsheet },
     { name: "Đánh giá kỳ thủ", href: "/coach/evaluations", icon: Award },

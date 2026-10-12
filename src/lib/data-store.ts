@@ -16,10 +16,20 @@ export interface UserData {
   name: string;
   email: string;
   phone: string;
+  password?: string;
   role: 'ADMIN' | 'COACH';
   branchId?: string;
   baseRate: number; // 200.000đ/ca
   title?: string;
+  experience?: string; // Số năm kinh nghiệm / Thành tích
+  bio?: string; // Giới thiệu / triết lý dạy
+  bankAccount?: string; // STK nhận thù lao
+  bankName?: string; // Tên ngân hàng
+  accountHolder?: string; // Chủ tài khoản
+  elo?: number; // Hệ số Elo cờ vua của HLV
+  fideId?: string; // FIDE ID
+  avatar?: string; // Ảnh chân dung
+  createdAt?: string;
 }
 
 export interface ClassroomData {
@@ -38,6 +48,7 @@ export interface StudentData {
   code: string; // VD: HS001
   fullName: string;
   birthYear: number;
+  gender?: 'Nam' | 'Nữ';
   parentName: string;
   parentPhone: string;
   currentLevel: string;
@@ -45,6 +56,11 @@ export interface StudentData {
   notes?: string;
   classIds: string[];
   customFeePerSession?: number; // Đơn giá học phí riêng theo từng học viên (ưu đãi, học bổng hoặc kèm riêng)
+  avatar?: string; // Ảnh profile học viên (base64 hoặc URL)
+  address?: string; // Địa chỉ nhà
+  school?: string; // Trường học
+  joinDate?: string; // Ngày nhập học (YYYY-MM-DD)
+  status?: 'ACTIVE' | 'PAUSED' | 'DROPPED'; // Trạng thái học tập
 }
 
 export interface AttendanceRecordData {
@@ -601,6 +617,61 @@ class InMemoryDataStore {
   constructor() {
     this.normalizeCoachData();
     this.recalculateAllInvoices(10, 2026);
+    this.loadFromLocalStorage();
+  }
+
+  // Tự động lưu dữ liệu vào localStorage trên trình duyệt để không bị mất khi F5
+  public saveToLocalStorage() {
+    if (typeof window === "undefined") return;
+    try {
+      const payload = {
+        users: this.users,
+        classes: this.classes,
+        students: this.students,
+        branches: this.branches,
+        bankConfig: this.bankConfig,
+      };
+      localStorage.setItem("kttll_datastore", JSON.stringify(payload));
+    } catch (e) {
+      console.warn("Không thể lưu kttll_datastore vào localStorage", e);
+    }
+  }
+
+  // Tự động nạp dữ liệu từ localStorage
+  public loadFromLocalStorage() {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("kttll_datastore");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.users && Array.isArray(data.users)) {
+        data.users.forEach((u: UserData) => {
+          const idx = this.users.findIndex((x) => x.id === u.id || x.email === u.email);
+          if (idx >= 0) this.users[idx] = { ...this.users[idx], ...u };
+          else this.users.push(u);
+        });
+      }
+      if (data.students && Array.isArray(data.students)) {
+        data.students.forEach((s: StudentData) => {
+          const idx = this.students.findIndex((x) => x.id === s.id);
+          if (idx >= 0) this.students[idx] = { ...this.students[idx], ...s };
+          else this.students.push(s);
+        });
+      }
+      if (data.classes && Array.isArray(data.classes)) {
+        data.classes.forEach((c: ClassroomData) => {
+          const idx = this.classes.findIndex((x) => x.id === c.id);
+          if (idx >= 0) this.classes[idx] = { ...this.classes[idx], ...c };
+          else this.classes.push(c);
+        });
+      }
+      if (data.bankConfig) {
+        this.bankConfig = { ...this.bankConfig, ...data.bankConfig };
+      }
+      this.recalculateAllInvoices(10, 2026);
+    } catch (e) {
+      console.warn("Không thể đọc kttll_datastore từ localStorage", e);
+    }
   }
 
   // Chuẩn hóa dữ liệu HLV mẫu và danh sách cơ sở
@@ -652,9 +723,41 @@ class InMemoryDataStore {
     const coach = this.users.find((u) => u.id === coachId);
     if (coach) {
       Object.assign(coach, data);
+      this.saveToLocalStorage();
       return coach;
     }
     return null;
+  }
+
+  // Đăng ký Huấn luyện viên mới
+  public registerCoach(data: Omit<UserData, "id" | "role"> & { password?: string }) {
+    const coachId = `user-coach-${Date.now()}`;
+    const newCoach: UserData = {
+      ...data,
+      id: coachId,
+      role: "COACH",
+      baseRate: data.baseRate || 200000,
+      title: data.title || "HLV Quốc gia",
+      createdAt: new Date().toISOString(),
+    };
+    this.users.push(newCoach);
+
+    // Tự động tạo 1 lớp học mẫu cho HLV mới tại cơ sở đã chọn
+    const branchId = newCoach.branchId || "branch-1";
+    const newClass: ClassroomData = {
+      id: `class-${Date.now()}`,
+      name: `Cờ vua Cơ Bản - Lớp ${newCoach.name.replace(/^(HLV|GM|IM|FM)\s*/, "")}`,
+      level: "Nhập môn",
+      feePerSession: 160000,
+      schedule: "Thứ 3 & Thứ 6 (18:00 - 19:30)",
+      branchId,
+      coachId: newCoach.id,
+      isActive: true,
+    };
+    this.classes.push(newClass);
+
+    this.saveToLocalStorage();
+    return newCoach;
   }
 
   // Cập nhật thông tin toàn diện của Lớp học
@@ -665,6 +768,7 @@ class InMemoryDataStore {
       if (data.feePerSession !== undefined) {
         this.recalculateAllInvoices(10, 2026);
       }
+      this.saveToLocalStorage();
       return cls;
     }
     return null;
@@ -675,6 +779,7 @@ class InMemoryDataStore {
     const branch = this.branches.find((b) => b.id === branchId);
     if (branch) {
       Object.assign(branch, data);
+      this.saveToLocalStorage();
       return branch;
     }
     return null;
@@ -683,6 +788,7 @@ class InMemoryDataStore {
   // Xóa cơ sở đào tạo
   public deleteBranch(branchId: string) {
     this.branches = this.branches.filter((b) => b.id !== branchId);
+    this.saveToLocalStorage();
     return true;
   }
 
@@ -694,19 +800,44 @@ class InMemoryDataStore {
       s.classIds = s.classIds.filter((cid) => cid !== classId);
     });
     this.recalculateAllInvoices(10, 2026);
+    this.saveToLocalStorage();
     return true;
   }
 
   // Xóa huấn luyện viên
   public deleteCoach(coachId: string) {
     this.users = this.users.filter((u) => u.id !== coachId);
+    this.saveToLocalStorage();
     return true;
+  }
+
+  // Thêm học viên mới
+  public addStudent(student: StudentData) {
+    this.students.push(student);
+    this.recalculateAllInvoices(10, 2026);
+    this.saveToLocalStorage();
+    return student;
+  }
+
+  // Cập nhật thông tin học viên (hỗ trợ inline editing & đổi ảnh avatar)
+  public updateStudent(studentId: string, data: Partial<StudentData>) {
+    const student = this.students.find((s) => s.id === studentId);
+    if (student) {
+      Object.assign(student, data);
+      if (data.customFeePerSession !== undefined) {
+        this.recalculateAllInvoices(10, 2026);
+      }
+      this.saveToLocalStorage();
+      return student;
+    }
+    return null;
   }
 
   // Xóa học viên
   public deleteStudent(studentId: string) {
     this.students = this.students.filter((s) => s.id !== studentId);
     this.recalculateAllInvoices(10, 2026);
+    this.saveToLocalStorage();
     return true;
   }
 
@@ -843,6 +974,7 @@ class InMemoryDataStore {
         student.customFeePerSession = customFeePerSession;
       }
       this.recalculateAllInvoices(10, 2026);
+      this.saveToLocalStorage();
     }
   }
 
@@ -859,6 +991,7 @@ class InMemoryDataStore {
           rec.bookTitle = bookTitle;
           rec.bookPrice = bookPrice;
         }
+        this.saveToLocalStorage();
       }
     }
   }

@@ -18,6 +18,7 @@ import {
   History,
 } from "lucide-react";
 import { dataStore, AttendanceSessionData, ClassroomData, StudentData } from "@/lib/data-store";
+import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import confetti from "canvas-confetti";
 
 function AttendanceContent() {
@@ -397,9 +398,11 @@ function AttendanceContent() {
               >
                 {/* Student Info */}
                 <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-                    {index + 1}
-                  </div>
+                  <img
+                    src={getStudentAvatarUrl(std.avatar, std.fullName, index)}
+                    alt={std.fullName}
+                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200 flex-shrink-0 shadow-sm"
+                  />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-slate-900">
@@ -408,8 +411,8 @@ function AttendanceContent() {
                       <span className="font-mono text-[11px] font-semibold text-slate-400">
                         ({std.code})
                       </span>
-                      <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-bold text-slate-600">
-                        Elo {std.eloRating}
+                      <span className="rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
+                        ★ {std.eloRating}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500">
