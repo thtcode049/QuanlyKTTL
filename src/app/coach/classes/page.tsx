@@ -43,22 +43,28 @@ export default function CoachClassesPage() {
   // Tải thông tin tài khoản HLV hiện tại từ localStorage
   useEffect(() => {
     let coachId = "user-coach-1";
+    let isAdmin = false;
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
+        if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    // Lọc danh sách lớp học của riêng HLV này (tài khoản mới đăng ký sẽ không có lớp mẫu của người khác)
-    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    // Lọc danh sách lớp học của riêng HLV này (nếu là Admin thì hiển thị toàn bộ lớp)
+    const myClasses = isAdmin
+      ? dataStore.classes
+      : dataStore.classes.filter((c) => c.coachId === coachId);
     setClasses(myClasses);
     setSelectedClassId(myClasses[0]?.id || "");
 
     const myClassIds = myClasses.map((c) => c.id);
-    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+    const myStudents = isAdmin
+      ? dataStore.students
+      : dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
     setStudents(myStudents);
   }, []);
 

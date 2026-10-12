@@ -54,6 +54,7 @@ export default function LoginPage() {
           role: foundUser.role,
           title: foundUser.title || (foundUser.role === "ADMIN" ? "Chủ nhiệm CLB" : "HLV Quốc gia"),
           branchId: foundUser.branchId,
+          hasAdminAccess: !!foundUser.hasAdminAccess,
         };
         localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
 
@@ -73,17 +74,21 @@ export default function LoginPage() {
           name: "Ban Chủ Nhiệm CLB",
           role: "ADMIN",
           title: "Chủ nhiệm toàn bộ cơ sở",
+          hasAdminAccess: true,
         };
         localStorage.setItem("kttll_user", JSON.stringify(user));
         router.push("/admin/dashboard");
       } else if (email.toLowerCase().includes("hlv")) {
         const isCoach2 = email.includes("hlv2");
+        const coachId = isCoach2 ? "user-coach-2" : "user-coach-1";
+        const dbCoach = dataStore.users.find((u) => u.id === coachId);
         const user = {
-          id: isCoach2 ? "user-coach-2" : "user-coach-1",
+          id: coachId,
           email: isCoach2 ? "hlv2@kttll.vn" : "hlv1@kttll.vn",
           name: isCoach2 ? "HLV Trần Huyền Trang" : "GM Bùi Vinh",
           role: "COACH",
           title: isCoach2 ? "HLV Quốc gia" : "Đại Kiện Tướng Quốc Tế",
+          hasAdminAccess: !!dbCoach?.hasAdminAccess,
         };
         localStorage.setItem("kttll_user", JSON.stringify(user));
         router.push("/coach/classes");
@@ -104,30 +109,35 @@ export default function LoginPage() {
         name: "Ban Chủ Nhiệm CLB",
         role: "ADMIN",
         title: "Chủ nhiệm toàn bộ cơ sở",
+        hasAdminAccess: true,
       };
       localStorage.setItem("kttll_user", JSON.stringify(user));
       router.push("/admin/dashboard");
     } else if (role === "COACH1") {
       setEmail("hlv1@kttll.vn");
       setPassword("coach123");
+      const dbCoach = dataStore.users.find((u) => u.id === "user-coach-1");
       const user = {
         id: "user-coach-1",
         email: "hlv1@kttll.vn",
         name: "GM Bùi Vinh",
         role: "COACH",
         title: "Đại Kiện Tướng Quốc Tế",
+        hasAdminAccess: !!dbCoach?.hasAdminAccess,
       };
       localStorage.setItem("kttll_user", JSON.stringify(user));
       router.push("/coach/classes");
     } else {
       setEmail("hlv2@kttll.vn");
       setPassword("coach123");
+      const dbCoach = dataStore.users.find((u) => u.id === "user-coach-2");
       const user = {
         id: "user-coach-2",
         email: "hlv2@kttll.vn",
         name: "HLV Trần Huyền Trang",
         role: "COACH",
         title: "HLV Quốc gia",
+        hasAdminAccess: !!dbCoach?.hasAdminAccess,
       };
       localStorage.setItem("kttll_user", JSON.stringify(user));
       router.push("/coach/classes");

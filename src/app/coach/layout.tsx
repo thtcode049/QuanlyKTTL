@@ -9,27 +9,21 @@ export default function CoachLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [coachName, setCoachName] = useState("GM Bùi Vinh");
-  const [coachTitle, setCoachTitle] = useState("Đại Kiện Tướng Quốc Tế");
+  const [coachName, setCoachName] = useState("");
+  const [coachTitle, setCoachTitle] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.role === "COACH") {
-          const fixedName = (u.name || "GM Bùi Vinh").replace(/ĐKT/g, "GM");
-          const fixedTitle = (u.title || "Đại Kiện Tướng Quốc Tế")
-            .replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "")
-            .replace(/ĐKT/g, "GM")
-            .trim() || "Đại Kiện Tướng Quốc Tế";
-          setCoachName(fixedName);
-          setCoachTitle(fixedTitle);
-        } else {
-          // Nếu đang lưu tài khoản Admin nhưng đang vào trang HLV
-          setCoachName("GM Bùi Vinh");
-          setCoachTitle("Đại Kiện Tướng Quốc Tế");
-        }
+        const name = (u.name || (u.role === "ADMIN" ? "Ban Quản Trị CLB" : "Huấn luyện viên")).replace(/ĐKT/g, "GM");
+        const title = (u.title || (u.role === "ADMIN" ? "Quản trị toàn bộ cơ sở" : "HLV Quốc gia"))
+          .replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "")
+          .replace(/ĐKT/g, "GM")
+          .trim();
+        setCoachName(name);
+        setCoachTitle(title || (u.role === "ADMIN" ? "Quản trị toàn bộ cơ sở" : "HLV Quốc gia"));
       } catch (e) {
         // use default
       }

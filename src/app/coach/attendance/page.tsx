@@ -38,16 +38,20 @@ function AttendanceContent() {
   // Tải lớp học của riêng HLV hiện tại
   useEffect(() => {
     let coachId = "user-coach-1";
+    let isAdmin = false;
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
+        if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    const myClasses = isAdmin
+      ? dataStore.classes
+      : dataStore.classes.filter((c) => c.coachId === coachId);
     setClasses(myClasses);
     const paramClassId = searchParams.get("classId");
     if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {

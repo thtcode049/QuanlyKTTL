@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar } from "lucide-react";
+import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft } from "lucide-react";
+import { dataStore } from "@/lib/data-store";
 
 interface HeaderProps {
   userRole: "ADMIN" | "COACH";
@@ -13,34 +14,35 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle }) => {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        const dbUser = dataStore.users.find((x) => x.id === u.id);
+        setCurrentUser(dbUser ? { ...u, ...dbUser } : u);
+      } catch (e) {}
+    }
+  }, [userRole]);
 
   const handleLogout = () => {
     localStorage.removeItem("kttll_user");
     router.push("/login");
   };
 
+  // Chỉ tài khoản có role ADMIN hoặc được Admin cấp quyền (hasAdminAccess) mới có thể chuyển đổi
+  const canAccessAdmin = currentUser?.role === "ADMIN" || currentUser?.hasAdminAccess === true;
+
   const handleSwitchRole = () => {
+    if (!canAccessAdmin) return;
+
     if (userRole === "ADMIN") {
-      // Chuyển sang vai trò HLV
-      const coachUser = {
-        id: "user-coach-1",
-        name: "GM Bùi Vinh",
-        email: "hlv1@kttll.vn",
-        role: "COACH",
-        title: "Đại Kiện Tướng Quốc Tế",
-      };
-      localStorage.setItem("kttll_user", JSON.stringify(coachUser));
+      // Chuyển sang giao diện HLV (giữ nguyên tài khoản hiện tại, không đổi sang ai khác)
       router.push("/coach/classes");
     } else {
-      // Chuyển sang vai trò Admin
-      const adminUser = {
-        id: "user-admin",
-        name: "Ban Quản Trị CLB",
-        email: "admin@kttll.vn",
-        role: "ADMIN",
-        title: "Quản trị toàn bộ 7 cơ sở",
-      };
-      localStorage.setItem("kttll_user", JSON.stringify(adminUser));
+      // Chuyển sang giao diện Admin (giữ nguyên tài khoản hiện tại)
       router.push("/admin/branches");
     }
   };
@@ -53,31 +55,29 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
   }).format(new Date());
 
   const getDisplayName = () => {
-    if (userRole === "ADMIN") {
-      if (!userName || userName.includes("HLV") || userName.includes("Bùi Vinh")) {
-        return "Ban Quản Trị CLB";
-      }
-      return userName.replace(/ĐKT/g, "GM");
-    } else {
-      if (!userName || userName.includes("Ban Quản") || userName.includes("Ban Chủ")) {
-        return "GM Bùi Vinh";
-      }
+    if (currentUser?.name) {
+      return currentUser.name.replace(/ĐKT/g, "GM");
+    }
+    if (userName) {
       return userName.replace(/ĐKT/g, "GM");
     }
+    return userRole === "ADMIN" ? "Ban Quản Trị CLB" : "Huấn luyện viên";
   };
 
   const getDisplayTitle = () => {
-    if (userRole === "ADMIN") {
-      if (!userTitle || userTitle.includes("Kiện Tướng") || userTitle.includes("HLV")) {
-        return "Quản trị toàn bộ 7 cơ sở";
-      }
-      return userTitle.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
-    } else {
-      if (!userTitle || userTitle.includes("Quản trị") || userTitle.includes("Cơ sở")) {
-        return "Đại Kiện Tướng Quốc Tế";
-      }
+    if (currentUser?.role === "ADMIN") {
+      return "Quản trị toàn bộ cơ sở";
+    }
+    if (currentUser?.hasAdminAccess) {
+      return `${currentUser?.title || "HLV Quốc gia"} • Có quyền Admin`;
+    }
+    if (currentUser?.title) {
+      return currentUser.title.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
+    }
+    if (userTitle) {
       return userTitle.replace(/\s*\/?\s*Trưởng ban Chuyên môn/gi, "").replace(/ĐKT/g, "GM").trim();
     }
+    return userRole === "ADMIN" ? "Quản trị CLB" : "HLV Quốc gia";
   };
 
   return (
@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
 
-        {/* User Badge - Đảm bảo phân biệt rạch ròi ADMIN và HLV */}
+        {/* User Badge */}
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-3 border border-slate-200/70">
           <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-white shadow-sm ${
             userRole === "ADMIN" ? "bg-slate-900" : "bg-brand-primary"
@@ -126,14 +126,32 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           </div>
         </div>
 
-        {/* Role Switcher Demo */}
-        <button
-          onClick={handleSwitchRole}
-          className="hidden rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-brand-primary hover:text-white transition-colors md:block"
-          title="Chuyển đổi vai trò và đồng bộ thông tin"
-        >
-          Đổi sang {userRole === "ADMIN" ? "HLV" : "Admin"}
-        </button>
+        {/* Nút chuyển đổi vai trò: CHỈ hiển thị nếu có quyền Admin */}
+        {canAccessAdmin && (
+          <button
+            onClick={handleSwitchRole}
+            className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 md:px-3 md:py-2 text-xs font-bold transition-all shadow-sm ${
+              userRole === "ADMIN"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                : "bg-slate-900 text-white hover:bg-slate-800"
+            }`}
+            title={userRole === "ADMIN" ? "Chuyển sang giao diện HLV" : "Chuyển sang trang Quản trị"}
+          >
+            {userRole === "ADMIN" ? (
+              <>
+                <UserCheck className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Giao Diện HLV</span>
+                <span className="sm:hidden">HLV</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Đến Trang Quản Trị</span>
+                <span className="sm:hidden">Admin</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* Logout */}
         <button

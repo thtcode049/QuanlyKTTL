@@ -31,18 +31,24 @@ export default function CoachEvaluationsPage() {
   // Tải danh sách học viên của riêng HLV hiện tại
   React.useEffect(() => {
     let coachId = "user-coach-1";
+    let isAdmin = false;
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
+        if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    const myClasses = isAdmin
+      ? dataStore.classes
+      : dataStore.classes.filter((c) => c.coachId === coachId);
     const myClassIds = myClasses.map((c) => c.id);
-    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+    const myStudents = isAdmin
+      ? dataStore.students
+      : dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
     setStudents(myStudents);
     setSelectedStudentId(myStudents[0]?.id || "");
   }, []);

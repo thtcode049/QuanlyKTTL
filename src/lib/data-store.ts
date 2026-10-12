@@ -30,6 +30,7 @@ export interface UserData {
   fideId?: string; // FIDE ID
   avatar?: string; // Ảnh chân dung
   createdAt?: string;
+  hasAdminAccess?: boolean; // Cho phép HLV truy cập trang Quản trị (Admin) khi được Admin cấp quyền
 }
 
 export interface ClassroomData {
@@ -189,6 +190,7 @@ export const initialUsers: UserData[] = [
     role: "ADMIN",
     baseRate: 0,
     title: "Chủ nhiệm CLB",
+    hasAdminAccess: true,
   },
   {
     id: "user-coach-1",
@@ -199,6 +201,7 @@ export const initialUsers: UserData[] = [
     branchId: "branch-1",
     baseRate: 250000,
     title: "Đại Kiện Tướng Quốc Tế",
+    hasAdminAccess: true,
   },
   {
     id: "user-coach-2",
@@ -209,6 +212,7 @@ export const initialUsers: UserData[] = [
     branchId: "branch-3",
     baseRate: 200000,
     title: "HLV Quốc gia",
+    hasAdminAccess: false,
   },
 ];
 
@@ -750,6 +754,17 @@ class InMemoryDataStore {
     const coach = this.users.find((u) => u.id === coachId);
     if (coach) {
       Object.assign(coach, data);
+      this.saveToLocalStorage();
+      return coach;
+    }
+    return null;
+  }
+
+  // Cấp hoặc thu hồi quyền truy cập Admin cho Huấn luyện viên
+  public setCoachAdminAccess(coachId: string, hasAccess: boolean) {
+    const coach = this.users.find((u) => u.id === coachId);
+    if (coach) {
+      coach.hasAdminAccess = hasAccess;
       this.saveToLocalStorage();
       return coach;
     }
