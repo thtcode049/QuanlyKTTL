@@ -9,6 +9,8 @@ export async function POST(request: Request) {
       email,
       password,
       phone,
+      role = "COACH",
+      adminSecretCode,
       title,
       elo,
       experience,
@@ -28,6 +30,18 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+
+    // Nếu đăng ký vai trò ADMIN, kiểm tra mã xác thực quản trị viên
+    const isAdmin = role === "ADMIN";
+    if (isAdmin) {
+      const validCodes = ["KTTLL2026", "ADMIN2026", "admin123"];
+      if (adminSecretCode && !validCodes.includes(adminSecretCode.trim())) {
+        return NextResponse.json(
+          { error: "Mã xác thực Quản trị viên (Admin Secret Code) không chính xác." },
+          { status: 400 }
+        );
+      }
+    }
 
     // Kiểm tra email đã tồn tại trong DB chưa
     const existingUser = await prisma.user.findUnique({
@@ -56,10 +70,11 @@ export async function POST(request: Request) {
       }
     }
 
-    const formattedName =
-      name.startsWith("HLV") || name.startsWith("GM") || name.startsWith("IM")
-        ? name.trim()
-        : `HLV ${name.trim()}`;
+    const formattedName = isAdmin
+      ? name.trim()
+      : name.startsWith("HLV") || name.startsWith("GM") || name.startsWith("IM")
+      ? name.trim()
+      : `HLV ${name.trim()}`;
 
     // Tạo User thật trong Database Supabase PostgreSQL
     const newUser = await prisma.user.create({
@@ -68,31 +83,33 @@ export async function POST(request: Request) {
         email: cleanEmail,
         phone: phone.trim(),
         passwordHash: password, // Mật khẩu của người dùng
-        role: "COACH",
-        title: title || "HLV Quốc gia",
-        experience: experience || "3 năm",
+        role: isAdmin ? "ADMIN" : "COACH",
+        title: title || (isAdmin ? "Chủ nhiệm CLB" : "HLV Quốc gia"),
+        experience: experience || (isAdmin ? "Ban Quản Trị" : "3 năm"),
         bio: bio || "",
         bankAccount: bankAccount || "",
         bankName: bankName || "MBBank",
         accountHolder: (accountHolder || name).toUpperCase().trim(),
-        elo: elo ? parseInt(elo) : 2000,
+        elo: elo ? parseInt(elo) : (isAdmin ? undefined : 2000),
         branchId: validBranchId,
-        baseRate: 200000,
-        hasAdminAccess: false,
+        baseRate: isAdmin ? 0 : 200000,
+        hasAdminAccess: isAdmin ? true : false,
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Đăng ký tài khoản Huấn luyện viên thành công!",
+      message: isAdmin
+        ? "Đăng ký tài khoản Ban Quản Trị CLB thành công!"
+        : "Đăng ký tài khoản Huấn luyện viên thành công!",
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
-        title: newUser.title || "HLV Quốc gia",
+        title: newUser.title,
         branchId: newUser.branchId,
-        hasAdminAccess: false,
+        hasAdminAccess: isAdmin ? true : false,
       },
     });
   } catch (error: any) {
