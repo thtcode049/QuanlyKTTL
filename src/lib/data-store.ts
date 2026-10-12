@@ -756,7 +756,7 @@ class InMemoryDataStore {
     return null;
   }
 
-  // Đăng ký Huấn luyện viên mới
+  // Đăng ký Huấn luyện viên mới (Hoàn toàn sạch dữ liệu mẫu, không tạo lớp hoặc học sinh ảo)
   public registerCoach(data: Omit<UserData, "id" | "role"> & { password?: string }) {
     const coachId = `user-coach-${Date.now()}`;
     const newCoach: UserData = {
@@ -769,22 +769,48 @@ class InMemoryDataStore {
     };
     this.users.push(newCoach);
 
-    // Tự động tạo 1 lớp học mẫu cho HLV mới tại cơ sở đã chọn
-    const branchId = newCoach.branchId || "branch-1";
-    const newClass: ClassroomData = {
-      id: `class-${Date.now()}`,
-      name: `Cờ vua Cơ Bản - Lớp ${newCoach.name.replace(/^(HLV|GM|IM|FM)\s*/, "")}`,
-      level: "Nhập môn",
-      feePerSession: 160000,
-      schedule: "Thứ 3 & Thứ 6 (18:00 - 19:30)",
-      branchId,
-      coachId: newCoach.id,
-      isActive: true,
-    };
-    this.classes.push(newClass);
-
+    // Không tự động tạo lớp học mẫu hay học viên mẫu để tài khoản người dùng mới đăng ký hoàn toàn sạch sẽ.
     this.saveToLocalStorage();
     return newCoach;
+  }
+
+  // Dọn dẹp toàn bộ dữ liệu mẫu (các lớp học, học sinh, điểm danh, hóa đơn mẫu)
+  public cleanDemoData() {
+    const demoClassIds = ["class-1", "class-2", "class-3", "class-4"];
+    const demoStudentIds = initialStudents.map((s) => s.id);
+    const demoSessionIds = initialSessions.map((s) => s.id);
+
+    this.classes = this.classes.filter(
+      (c) => !demoClassIds.includes(c.id) && !c.id.startsWith("class-demo")
+    );
+    this.students = this.students.filter((s) => !demoStudentIds.includes(s.id));
+    this.sessions = this.sessions.filter(
+      (sess) => !demoSessionIds.includes(sess.id) && !demoClassIds.includes(sess.classId)
+    );
+    this.evaluations = this.evaluations.filter((ev) => !demoStudentIds.includes(ev.studentId));
+    this.invoices = this.invoices.filter(
+      (inv) => !demoClassIds.includes(inv.classId) && !demoStudentIds.includes(inv.studentId)
+    );
+
+    this.saveToLocalStorage();
+  }
+
+  // Khôi phục lại dữ liệu mẫu cho mục đích demo
+  public restoreDemoData() {
+    initialClasses.forEach((ic) => {
+      if (!this.classes.some((c) => c.id === ic.id)) this.classes.push(ic);
+    });
+    initialStudents.forEach((is) => {
+      if (!this.students.some((s) => s.id === is.id)) this.students.push(is);
+    });
+    initialSessions.forEach((isess) => {
+      if (!this.sessions.some((s) => s.id === isess.id)) this.sessions.push(isess);
+    });
+    initialEvaluations.forEach((iev) => {
+      if (!this.evaluations.some((e) => e.id === iev.id)) this.evaluations.push(iev);
+    });
+    this.recalculateAllInvoices(10, 2026);
+    this.saveToLocalStorage();
   }
 
   // Cập nhật thông tin toàn diện của Lớp học
@@ -1046,3 +1072,31 @@ if (!globalStore.__kttllStore) {
 }
 
 export const dataStore = globalStore.__kttllStore;
+
+/**
+ * Kiểm tra xem tài khoản có phải là tài khoản mẫu/demo của hệ thống hay không
+ */
+export function isDemoCoach(coachId?: string): boolean {
+  if (!coachId) return false;
+  return coachId === "user-coach-1" || coachId === "user-coach-2" || coachId === "user-admin";
+}
+
+/**
+ * Lấy danh sách lớp học của riêng Huấn luyện viên
+ * Đối với tài khoản người dùng mới đăng ký: chỉ hiển thị các lớp do chính HLV đó tạo, không bị lẫn lớp mẫu
+ */
+export function getCoachClasses(coachId?: string): ClassroomData[] {
+  if (!coachId) return [];
+  return dataStore.classes.filter((c) => c.coachId === coachId);
+}
+
+/**
+ * Lấy danh sách học viên của riêng Huấn luyện viên
+ * Đối với tài khoản người dùng mới đăng ký: chỉ hiển thị học viên trong các lớp của HLV đó
+ */
+export function getCoachStudents(coachId?: string): StudentData[] {
+  if (!coachId) return [];
+  const coachClasses = getCoachClasses(coachId);
+  const classIds = coachClasses.map((c) => c.id);
+  return dataStore.students.filter((s) => s.classIds.some((cid) => classIds.includes(cid)));
+}

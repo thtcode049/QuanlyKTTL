@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -26,11 +26,32 @@ import { StudentProfileModal } from "@/components/student-profile-modal";
 import { StudentContextMenu, ContextMenuPosition } from "@/components/student-context-menu";
 
 export default function StudentsDirectoryPage() {
-  const [students, setStudents] = useState<StudentData[]>(dataStore.students);
+  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [coachClasses, setCoachClasses] = useState<any[]>([]);
+  const [students, setStudents] = useState<StudentData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClass, setFilterClass] = useState("ALL");
   const [filterLevel, setFilterLevel] = useState("ALL");
   const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
+
+  // Tải danh sách lớp và học viên của riêng HLV này
+  useEffect(() => {
+    let coachId = "user-coach-1";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+      } catch (e) {}
+    }
+    setCurrentCoachId(coachId);
+
+    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    setCoachClasses(myClasses);
+    const myClassIds = myClasses.map((c) => c.id);
+    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+    setStudents(myStudents);
+  }, []);
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -48,7 +69,7 @@ export default function StudentsDirectoryPage() {
   const [contextMenuPos, setContextMenuPos] = useState<ContextMenuPosition | null>(null);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
 
-  const classes = dataStore.classes;
+  const classes = coachClasses;
 
   const filteredStudents = students.filter((s) => {
     const matchSearch =
@@ -69,7 +90,8 @@ export default function StudentsDirectoryPage() {
   };
 
   const handleStudentUpdated = (updated: StudentData) => {
-    setStudents([...dataStore.students]);
+    const myClassIds = coachClasses.map((c) => c.id);
+    setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
     setSelectedStudent(updated);
     showToast(`Đã cập nhật hồ sơ học viên ${updated.fullName}!`);
   };
@@ -92,7 +114,8 @@ export default function StudentsDirectoryPage() {
   const handleRemoveStudent = (student: StudentData) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi hệ thống không?`)) {
       dataStore.deleteStudent(student.id);
-      setStudents([...dataStore.students]);
+      const myClassIds = coachClasses.map((c) => c.id);
+      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã xóa học viên ${student.fullName}!`);
     }
   };
@@ -106,7 +129,8 @@ export default function StudentsDirectoryPage() {
     if (input !== null) {
       const parsed = parseFloat(input.trim());
       dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
-      setStudents([...dataStore.students]);
+      const myClassIds = coachClasses.map((c) => c.id);
+      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã cập nhật học phí học viên ${student.fullName}!`);
     }
   };
@@ -216,9 +240,30 @@ export default function StudentsDirectoryPage() {
         </div>
       </div>
 
-      {/* Grid View */}
-      {viewMode === "GRID" && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {students.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
+            <Users className="h-8 w-8" />
+          </div>
+          <h2 className="mt-4 text-lg font-black text-slate-900">
+            Chưa có hồ sơ học viên nào
+          </h2>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+            Hệ thống đã tự động lọc bỏ toàn bộ dữ liệu học sinh mẫu đối với tài khoản thực của bạn. Hãy vào mục Lớp Học để tạo lớp và ghi danh học sinh thực tế.
+          </p>
+          <Link
+            href="/coach/classes"
+            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+          >
+            <GraduationCap className="h-4 w-4" />
+            <span>Đi Đến Quản Lý Lớp Học & Thêm Học Viên</span>
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* Grid View */}
+          {viewMode === "GRID" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredStudents.map((std, idx) => {
             const avatarUrl = std.avatar || getStudentAvatarUrl(std.avatar, std.fullName, idx);
             const studentClass = classes.find((c) => std.classIds.includes(c.id));
@@ -407,6 +452,8 @@ export default function StudentsDirectoryPage() {
           </div>
         </div>
       )}
+    </>
+  )}
 
       {/* Context Menu on Right Click */}
       <StudentContextMenu

@@ -17,6 +17,7 @@ import {
   Search,
   Edit3,
   X,
+  GraduationCap,
 } from "lucide-react";
 import { dataStore, MonthlyInvoiceData, ClassroomData, StudentData } from "@/lib/data-store";
 import { formatCurrencyVND, generateVietQrUrl } from "@/lib/vietqr";
@@ -27,14 +28,36 @@ import ZaloSimulatorModal from "@/components/zalo-simulator";
 
 function InvoicesContent() {
   const searchParams = useSearchParams();
-  const initialClassId = searchParams.get("classId") || dataStore.classes[0]?.id || "";
 
-  const [classes] = useState<ClassroomData[]>(dataStore.classes);
-  const [selectedClassId, setSelectedClassId] = useState<string>(initialClassId);
+  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [classes, setClasses] = useState<ClassroomData[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<number>(10);
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [invoices, setInvoices] = useState<MonthlyInvoiceData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Tải lớp học của riêng HLV hiện tại
+  useEffect(() => {
+    let coachId = "user-coach-1";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+      } catch (e) {}
+    }
+    setCurrentCoachId(coachId);
+
+    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    setClasses(myClasses);
+    const paramClassId = searchParams.get("classId");
+    if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
+      setSelectedClassId(paramClassId);
+    } else {
+      setSelectedClassId(myClasses[0]?.id || "");
+    }
+  }, [searchParams]);
 
   // Modal VietQR State
   const [vietQrModalOpen, setVietQrModalOpen] = useState(false);
@@ -89,6 +112,10 @@ function InvoicesContent() {
   // Load và tính toán hóa đơn
   const reloadInvoices = () => {
     dataStore.recalculateAllInvoices(selectedMonth, selectedYear);
+    if (!selectedClass) {
+      setInvoices([]);
+      return;
+    }
     const filtered = dataStore.invoices.filter(
       (inv) => inv.classId === selectedClass?.id && inv.month === selectedMonth && inv.year === selectedYear
     );
@@ -97,7 +124,7 @@ function InvoicesContent() {
 
   useEffect(() => {
     reloadInvoices();
-  }, [selectedClassId, selectedMonth, selectedYear]);
+  }, [selectedClassId, selectedMonth, selectedYear, classes]);
 
   // Tìm các buổi học của lớp trong tháng để lấy danh sách ngày có mặt
   const classSessions = dataStore.sessions.filter((sess) => {
@@ -258,16 +285,37 @@ function InvoicesContent() {
         </div>
       </div>
 
-      {/* Filter and Class selector */}
-      <div className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 sm:grid-cols-4">
-        {/* Lớp */}
-        <div className="sm:col-span-2">
-          <label className="text-xs font-bold text-slate-700">Lớp học</label>
-          <select
-            value={selectedClassId}
-            onChange={(e) => setSelectedClassId(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+      {classes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
+            <DollarSign className="h-8 w-8" />
+          </div>
+          <h2 className="mt-4 text-lg font-black text-slate-900">
+            Bạn chưa có lớp học nào để tổng kết học phí
+          </h2>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+            Hệ thống không hiển thị hóa đơn học phí mẫu đối với tài khoản thật của bạn. Vui lòng tạo lớp học và điểm danh học sinh để sinh hóa đơn theo nguyên tắc Thực học - Thực trả.
+          </p>
+          <a
+            href="/coach/classes"
+            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
           >
+            <GraduationCap className="h-4 w-4" />
+            <span>Đến Quản Lý Lớp Học</span>
+          </a>
+        </div>
+      ) : (
+        <>
+          {/* Filter and Class selector */}
+          <div className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 sm:grid-cols-4">
+            {/* Lớp */}
+            <div className="sm:col-span-2">
+              <label className="text-xs font-bold text-slate-700">Lớp học</label>
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+              >
             {classes.map((cls) => (
               <option key={cls.id} value={cls.id}>
                 {cls.name} ({cls.level}) — {cls.schedule}
@@ -481,10 +529,20 @@ function InvoicesContent() {
                   </tr>
                 );
               })}
+
+              {filteredInvoices.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                    Chưa có dữ liệu học phí cho lớp này trong tháng {selectedMonth}/{selectedYear}. Khi HLV thực hiện điểm danh học viên, hệ thống sẽ tự động tính học phí theo nguyên tắc Thực học - Thực trả.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
+    </>
+  )}
 
       {/* Modal Điều Chỉnh Học Phí Riêng Học Viên */}
       {editingStudentFee && (

@@ -23,10 +23,10 @@ import confetti from "canvas-confetti";
 
 function AttendanceContent() {
   const searchParams = useSearchParams();
-  const initialClassId = searchParams.get("classId") || dataStore.classes[0]?.id || "";
 
-  const [classes] = useState<ClassroomData[]>(dataStore.classes);
-  const [selectedClassId, setSelectedClassId] = useState<string>(initialClassId);
+  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [classes, setClasses] = useState<ClassroomData[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [sessionDate, setSessionDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
@@ -35,11 +35,33 @@ function AttendanceContent() {
   );
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
+  // Tải lớp học của riêng HLV hiện tại
+  useEffect(() => {
+    let coachId = "user-coach-1";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+      } catch (e) {}
+    }
+    setCurrentCoachId(coachId);
+
+    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    setClasses(myClasses);
+    const paramClassId = searchParams.get("classId");
+    if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
+      setSelectedClassId(paramClassId);
+    } else {
+      setSelectedClassId(myClasses[0]?.id || "");
+    }
+  }, [searchParams]);
+
   // Danh sách học viên của lớp
   const selectedClass = classes.find((c) => c.id === selectedClassId) || classes[0];
-  const classStudents = dataStore.students.filter((s) =>
-    s.classIds.includes(selectedClass?.id || "")
-  );
+  const classStudents = selectedClass
+    ? dataStore.students.filter((s) => s.classIds.includes(selectedClass.id))
+    : [];
 
   // State điểm danh hiện tại: studentId -> { status, note, hasBook, bookTitle, bookPrice }
   const [records, setRecords] = useState<
@@ -300,12 +322,33 @@ function AttendanceContent() {
         </div>
       )}
 
-      {/* Session Configuration Card */}
-      <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {/* Chọn Lớp */}
-          <div>
-            <label className="text-xs font-bold text-slate-700">Lớp học cần điểm danh</label>
+      {classes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
+            <CheckSquare className="h-8 w-8" />
+          </div>
+          <h2 className="mt-4 text-lg font-black text-slate-900">
+            Bạn chưa có lớp học nào để điểm danh
+          </h2>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+            Hệ thống không hiển thị dữ liệu mẫu đối với tài khoản thật của bạn. Vui lòng tạo lớp học đầu tiên và thêm học viên để bắt đầu điểm danh.
+          </p>
+          <a
+            href="/coach/classes"
+            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Tạo Lớp Học Mới</span>
+          </a>
+        </div>
+      ) : (
+        <>
+          {/* Session Configuration Card */}
+          <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {/* Chọn Lớp */}
+              <div>
+                <label className="text-xs font-bold text-slate-700">Lớp học cần điểm danh</label>
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
@@ -576,6 +619,8 @@ function AttendanceContent() {
           })}
         </div>
       </div>
+    </>
+  )}
     </div>
   );
 }

@@ -495,6 +495,63 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
+        {/* Quản lý & Dọn Dẹp Dữ Liệu Mẫu */}
+        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Trash2 className="h-5 w-5 text-rose-500" />
+            <h2 className="text-sm font-bold text-slate-900">
+              Quản Trị Dữ Liệu Mẫu & Khởi Tạo Môi Trường Thật
+            </h2>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs">
+            <div className="max-w-xl text-slate-500 leading-relaxed">
+              <p>
+                <strong>Dọn sạch dữ liệu mẫu:</strong> Xóa toàn bộ 4 lớp học mẫu (K01, K02, N01, DT01), 25 học sinh thử nghiệm và các lượt điểm danh mẫu. Giữ nguyên 8 cơ sở CLB và các tài khoản HLV thật đã đăng ký.
+              </p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Thao tác này đưa toàn bộ hệ thống về trạng thái trắng chuẩn để bắt đầu triển khai giảng dạy thực tế.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Bạn có chắc chắn muốn XÓA TOÀN BỘ dữ liệu mẫu (các lớp K01-DT01, 25 học sinh mẫu và điểm danh thử nghiệm) không?\n\nChỉ giữ lại các tài khoản HLV thật và 8 cơ sở CLB."
+                    )
+                  ) {
+                    dataStore.cleanDemoData();
+                    alert("Đã xóa sạch toàn bộ dữ liệu mẫu! Hệ thống đã sẵn sàng cho dữ liệu thật.");
+                    window.location.reload();
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-4 py-2.5 font-bold text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Xóa Sạch Dữ Liệu Mẫu</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("Khôi phục lại dữ liệu mẫu cho mục đích demo?")) {
+                    dataStore.restoreDemoData();
+                    alert("Đã khôi phục lại dữ liệu mẫu!");
+                    window.location.reload();
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span>Nạp Lại Dữ Liệu Demo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Submit */}
         <div className="flex justify-end">
           <button

@@ -20,12 +20,32 @@ import EvaluationStars from "@/components/evaluation-stars";
 import confetti from "canvas-confetti";
 
 export default function CoachEvaluationsPage() {
-  const [students, setStudents] = useState<StudentData[]>(dataStore.students);
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || "");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Tải danh sách học viên của riêng HLV hiện tại
+  React.useEffect(() => {
+    let coachId = "user-coach-1";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+      } catch (e) {}
+    }
+    setCurrentCoachId(coachId);
+
+    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    const myClassIds = myClasses.map((c) => c.id);
+    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+    setStudents(myStudents);
+    setSelectedStudentId(myStudents[0]?.id || "");
+  }, []);
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId) || students[0];
 
@@ -139,12 +159,33 @@ export default function CoachEvaluationsPage() {
         </div>
       )}
 
-      {/* Main Grid: Student List Left - Detail Rating Right */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column: Student Selector */}
-        <div className="rounded-2xl bg-white p-4 shadow-soft border border-slate-200/80 lg:col-span-4">
-          <div className="mb-3">
-            <h3 className="text-sm font-bold text-slate-900">Danh Sách Kỳ Thủ ({students.length})</h3>
+      {students.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
+            <Award className="h-8 w-8" />
+          </div>
+          <h2 className="mt-4 text-lg font-black text-slate-900">
+            Chưa có học viên nào để đánh giá chuyên môn
+          </h2>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+            Hệ thống không hiển thị dữ liệu học sinh mẫu đối với tài khoản thật của bạn. Vui lòng tạo lớp học và thêm học sinh để bắt đầu theo dõi tiến độ và đánh giá kỹ năng cờ vua.
+          </p>
+          <a
+            href="/coach/classes"
+            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span>Đến Quản Lý Lớp Học</span>
+          </a>
+        </div>
+      ) : (
+        <>
+          {/* Main Grid: Student List Left - Detail Rating Right */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left Column: Student Selector */}
+            <div className="rounded-2xl bg-white p-4 shadow-soft border border-slate-200/80 lg:col-span-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-bold text-slate-900">Danh Sách Kỳ Thủ ({students.length})</h3>
             <div className="relative mt-2">
               <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
@@ -307,6 +348,8 @@ export default function CoachEvaluationsPage() {
           )}
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 }

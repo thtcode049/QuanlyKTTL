@@ -16,9 +16,20 @@ import { formatCurrencyVND } from "@/lib/vietqr";
 export default function CoachPayrollPage() {
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
+  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
 
-  // Lấy dữ liệu của HLV GM Bùi Vinh (user-coach-1)
-  const currentCoach = dataStore.users.find((u) => u.id === "user-coach-1");
+  React.useEffect(() => {
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) setCurrentCoachId(u.id);
+      } catch (e) {}
+    }
+  }, []);
+
+  // Lấy dữ liệu của HLV đang đăng nhập
+  const currentCoach = dataStore.users.find((u) => u.id === currentCoachId) || dataStore.users.find((u) => u.role === "COACH");
   const coachClasses = dataStore.classes.filter((c) => c.coachId === currentCoach?.id);
   const coachClassIds = coachClasses.map((c) => c.id);
 

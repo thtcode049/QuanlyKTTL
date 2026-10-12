@@ -34,10 +34,33 @@ import { StudentProfileModal } from "@/components/student-profile-modal";
 import { StudentContextMenu, ContextMenuPosition } from "@/components/student-context-menu";
 
 export default function CoachClassesPage() {
-  const [classes, setClasses] = useState<ClassroomData[]>(dataStore.classes);
-  const [students, setStudents] = useState<StudentData[]>(dataStore.students);
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || "");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [classes, setClasses] = useState<ClassroomData[]>([]);
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Tải thông tin tài khoản HLV hiện tại từ localStorage
+  useEffect(() => {
+    let coachId = "user-coach-1";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+      } catch (e) {}
+    }
+    setCurrentCoachId(coachId);
+
+    // Lọc danh sách lớp học của riêng HLV này (tài khoản mới đăng ký sẽ không có lớp mẫu của người khác)
+    const myClasses = dataStore.classes.filter((c) => c.coachId === coachId);
+    setClasses(myClasses);
+    setSelectedClassId(myClasses[0]?.id || "");
+
+    const myClassIds = myClasses.map((c) => c.id);
+    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+    setStudents(myStudents);
+  }, []);
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -215,7 +238,9 @@ export default function CoachClassesPage() {
     };
 
     dataStore.addStudent(newStudent);
-    setStudents([...dataStore.students]);
+    const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+    const myClassIds = myClasses.map((c) => c.id);
+    setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
     setIsAddStudentOpen(false);
     showToast(`Đã thêm học viên mới ${newStudent.fullName} vào lớp!`);
 
@@ -239,13 +264,14 @@ export default function CoachClassesPage() {
       feePerSession: parseFloat(newClassFee) || 160000,
       schedule: newClassSchedule,
       branchId: newClassBranch,
-      coachId: "user-coach-1",
+      coachId: currentCoachId,
       isActive: true,
     };
 
     dataStore.classes.push(newCls);
     dataStore.saveToLocalStorage();
-    setClasses([...dataStore.classes]);
+    const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+    setClasses(myClasses);
     setSelectedClassId(newCls.id);
     setIsCreateClassOpen(false);
     setNewClassName("");
@@ -274,7 +300,8 @@ export default function CoachClassesPage() {
       feePerSession: parseFloat(editClassFee) || selectedClass.feePerSession,
     });
 
-    setClasses([...dataStore.classes]);
+    const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+    setClasses(myClasses);
     setIsEditClassOpen(false);
     showToast(`Đã cập nhật thông tin lớp học!`);
   };
@@ -283,9 +310,11 @@ export default function CoachClassesPage() {
     if (!selectedClass) return;
     if (window.confirm(`Bạn có chắc chắn muốn xóa lớp học "${selectedClass.name}" không?`)) {
       dataStore.deleteClass(selectedClass.id);
-      const remainingClasses = [...dataStore.classes];
+      const remainingClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
       setClasses(remainingClasses);
       setSelectedClassId(remainingClasses[0]?.id || "");
+      const myClassIds = remainingClasses.map((c) => c.id);
+      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       setIsEditClassOpen(false);
       showToast(`Đã xóa lớp học!`);
     }
@@ -296,7 +325,9 @@ export default function CoachClassesPage() {
       student.classIds = student.classIds.filter((cid) => cid !== selectedClass.id);
       dataStore.recalculateAllInvoices(10, 2026);
       dataStore.saveToLocalStorage();
-      setStudents([...dataStore.students]);
+      const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+      const myClassIds = myClasses.map((c) => c.id);
+      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã xóa học viên ${student.fullName} khỏi lớp!`);
     }
   };
@@ -341,69 +372,91 @@ export default function CoachClassesPage() {
         </div>
       </div>
 
-      {/* Class Selector Carousel Cards */}
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-        {classes.map((cls) => {
-          const isSelected = cls.id === selectedClass?.id;
-          const branch = dataStore.branches.find((b) => b.id === cls.branchId);
-          const studentCount = dataStore.students.filter((s) => s.classIds.includes(cls.id)).length;
+      {classes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
+            <GraduationCap className="h-8 w-8" />
+          </div>
+          <h2 className="mt-4 text-lg font-black text-slate-900">
+            Chào mừng Huấn luyện viên mới!
+          </h2>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+            Tài khoản của bạn đã được kích hoạt thành công và hoàn toàn sạch sẽ, không có bất kỳ dữ liệu mẫu hay học sinh ảo nào. Hãy bắt đầu bằng cách tạo lớp học đầu tiên của bạn để quản lý học sinh và cơ sở.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsCreateClassOpen(true)}
+            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Tạo Lớp Học Đầu Tiên</span>
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Class Selector Carousel Cards */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+            {classes.map((cls) => {
+              const isSelected = cls.id === selectedClass?.id;
+              const branch = dataStore.branches.find((b) => b.id === cls.branchId);
+              const studentCount = dataStore.students.filter((s) => s.classIds.includes(cls.id)).length;
 
-          return (
-            <div
-              key={cls.id}
-              onClick={() => setSelectedClassId(cls.id)}
-              className={`cursor-pointer rounded-2xl p-4 transition-all duration-200 ${
-                isSelected
-                  ? "bg-white shadow-card ring-2 ring-brand-primary border border-brand-primary/30"
-                  : "bg-white/80 shadow-soft hover:bg-white border border-slate-200/80"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <span
-                  className={`rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${
-                    cls.level === "Đội tuyển"
-                      ? "bg-purple-100 text-purple-700"
-                      : cls.level === "Nâng cao"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-emerald-100 text-emerald-800"
+              return (
+                <div
+                  key={cls.id}
+                  onClick={() => setSelectedClassId(cls.id)}
+                  className={`cursor-pointer rounded-2xl p-4 transition-all duration-200 ${
+                    isSelected
+                      ? "bg-white shadow-card ring-2 ring-brand-primary border border-brand-primary/30"
+                      : "bg-white/80 shadow-soft hover:bg-white border border-slate-200/80"
                   }`}
                 >
-                  {cls.level}
-                </span>
-                <span className="text-xs font-bold text-slate-500">
-                  {studentCount} Học viên
-                </span>
-              </div>
+                  <div className="flex items-start justify-between">
+                    <span
+                      className={`rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${
+                        cls.level === "Đội tuyển"
+                          ? "bg-purple-100 text-purple-700"
+                          : cls.level === "Nâng cao"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      {cls.level}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      {studentCount} Học viên
+                    </span>
+                  </div>
 
-              <h3 className="mt-2.5 text-sm font-bold text-slate-900 line-clamp-1">
-                {cls.name}
-              </h3>
+                  <h3 className="mt-2.5 text-sm font-bold text-slate-900 line-clamp-1">
+                    {cls.name}
+                  </h3>
 
-              <div className="mt-2 space-y-1 text-xs text-slate-600">
-                <div className="flex items-center gap-1.5 truncate">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                  <span className="truncate">{branch?.name || "Cơ sở Hà Nội"}</span>
-                </div>
-                <div className="flex items-center gap-1.5 truncate">
-                  <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                  <span className="truncate">{cls.schedule}</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-bold text-brand-primary">
-                  <DollarSign className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>{formatCurrencyVND(cls.feePerSession)} / buổi</span>
-                </div>
-              </div>
+                  <div className="mt-2 space-y-1 text-xs text-slate-600">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                      <span className="truncate">{branch?.name || "Cơ sở Hà Nội"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                      <span className="truncate">{cls.schedule}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 font-bold text-brand-primary">
+                      <DollarSign className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span>{formatCurrencyVND(cls.feePerSession)} / buổi</span>
+                    </div>
+                  </div>
 
-              {isSelected && (
-                <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-bold text-brand-primary">
-                  <span>Đang xem chi tiết</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  {isSelected && (
+                    <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-bold text-brand-primary">
+                      <span>Đang xem chi tiết</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
 
       {/* Selected Class Action Header */}
       {selectedClass && (
@@ -780,8 +833,20 @@ export default function CoachClassesPage() {
 
               {classStudents.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-10 text-center text-slate-400">
-                    Không tìm thấy học viên nào phù hợp trong lớp này.
+                  <td colSpan={9} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Users className="h-8 w-8 text-slate-300 mb-2" />
+                      <p className="text-xs font-bold text-slate-700">Lớp học này chưa có học viên nào</p>
+                      <p className="text-[11px] text-slate-400 mt-1">Bấm "Thêm Học Viên" ở góc trên để ghi danh học sinh thực tế vào lớp.</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddStudentOpen(true)}
+                        className="mt-3 flex items-center gap-1.5 rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        <span>Thêm Học Viên Vào Lớp</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -789,6 +854,8 @@ export default function CoachClassesPage() {
           </table>
         </div>
       </div>
+    </>
+  )}
 
       {/* Custom Context Menu on Right Click or "..." trigger */}
       <StudentContextMenu
