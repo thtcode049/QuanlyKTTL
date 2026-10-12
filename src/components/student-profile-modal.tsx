@@ -20,10 +20,51 @@ import {
   ShieldAlert,
   ChevronRight,
   Sparkles,
+  Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 import { StudentData, ClassroomData, dataStore } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import { CHESS_AVATARS, getStudentAvatarUrl } from "@/lib/chess-avatars";
+
+// Tối ưu hóa nén ảnh từ camera/thư viện điện thoại tránh tràn bộ nhớ localStorage
+const compressImage = (file: File, maxDim = 600, quality = 0.82): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(reader.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => reject(new Error("Lỗi đọc file ảnh"));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Lỗi tải file"));
+    reader.readAsDataURL(file);
+  });
+};
 
 interface StudentProfileModalProps {
   student: StudentData | null;
@@ -40,7 +81,9 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   onUpdate,
   currentClass,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -94,24 +137,24 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Vui lòng chọn ảnh dung lượng dưới 5MB");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64Url = reader.result as string;
-      setAvatar(base64Url);
+    try {
+      setIsUploading(true);
+      const compressedBase64 = await compressImage(file, 600, 0.82);
+      setAvatar(compressedBase64);
       // Cập nhật ngay lập tức vào student
-      const updated = dataStore.updateStudent(student.id, { avatar: base64Url });
+      const updated = dataStore.updateStudent(student.id, { avatar: compressedBase64 });
       if (updated) onUpdate(updated);
-    };
-    reader.readAsDataURL(file);
+      setShowAvatarPicker(false);
+    } catch (err) {
+      alert("Không thể xử lý ảnh này. Vui lòng thử lại với ảnh khác.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
   };
 
   const handleSelectPresetAvatar = (dataUri: string) => {
@@ -157,18 +200,26 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   const evaluation = dataStore.evaluations.find((ev) => ev.studentId === student.id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Header Cover Banner */}
         <div className="relative bg-gradient-to-r from-[#161616] via-[#1F332E] to-[#00B18A] p-6 text-white flex-shrink-0">
           {/* Subtle chess watermark */}
           <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
+          {/* Nút Đóng X lớn, dễ bấm trên cả điện thoại và máy tính */}
           <button
+            type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white/80 hover:bg-black/50 hover:text-white transition-colors"
+            aria-label="Đóng hồ sơ"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/80 active:bg-black active:scale-90 transition-all shadow-xl border border-white/30 cursor-pointer touch-manipulation"
           >
-            <X className="h-4 w-4" />
+            <X className="h-6 w-6 text-white stroke-[2.5]" />
           </button>
 
           <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end gap-5">
@@ -180,16 +231,22 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   alt={student.fullName}
                   className="h-full w-full object-cover rounded-xl bg-slate-50"
                 />
+                {isUploading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-xl text-white">
+                    <Loader2 className="h-6 w-6 animate-spin text-brand-primary" />
+                    <span className="text-[10px] font-bold mt-1">Đang lưu...</span>
+                  </div>
+                )}
               </div>
 
               {/* Upload & Choose preset button overlay */}
               <button
                 type="button"
                 onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                title="Thay đổi ảnh đại diện học viên"
-                className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-primary text-white shadow-lg ring-2 ring-white hover:bg-brand-primary-hover transition-all"
+                title="Thay đổi ảnh học viên (Chụp ảnh / Thư viện)"
+                className="absolute -bottom-2 -right-2 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-brand-primary text-white shadow-xl ring-2 ring-white hover:bg-brand-primary-hover active:scale-95 transition-all cursor-pointer"
               >
-                <Camera className="h-4 w-4" />
+                <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
 
@@ -245,37 +302,66 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
           </div>
         </div>
 
-        {/* Hidden File Input for Real Photo Upload */}
+        {/* Input chụp ảnh trực tiếp từ camera điện thoại */}
         <input
-          ref={fileInputRef}
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleImageSelected}
+        />
+
+        {/* Input chọn ảnh từ thư viện ảnh điện thoại / máy tính */}
+        <input
+          ref={galleryInputRef}
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={handleFileUpload}
+          onChange={handleImageSelected}
         />
 
-        {/* Avatar Preset Drawer Picker */}
+        {/* Avatar Drawer Picker */}
         {showAvatarPicker && (
-          <div className="bg-slate-900 text-white p-4 border-b border-slate-800 animate-fade-in flex-shrink-0">
+          <div className="bg-slate-900 text-white p-4 sm:p-5 border-b border-slate-800 animate-fade-in flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-400" />
                 <span className="text-xs font-bold uppercase tracking-wider text-white">
-                  Chọn ảnh đại diện cho học viên
+                  Đổi ảnh đại diện học viên
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm"
+                onClick={() => setShowAvatarPicker(false)}
+                className="text-slate-400 hover:text-white p-1"
               >
-                <Upload className="h-3.5 w-3.5" />
-                <span>Tải ảnh từ máy tính</span>
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-400 mb-2.5">
-              Hoặc chọn một trong các hình tượng cờ vua đặc trưng:
+            {/* Hai nút hành động: Chụp từ camera hoặc Chọn từ thư viện */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3.5">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-primary-hover active:scale-98 transition-all cursor-pointer"
+              >
+                <Camera className="h-4 w-4" />
+                <span>Chụp Ảnh Trực Tiếp Từ Camera</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20 active:scale-98 border border-white/15 transition-all cursor-pointer"
+              >
+                <ImageIcon className="h-4 w-4 text-emerald-400" />
+                <span>Chọn Từ Thư Viện Ảnh</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-2">
+              Hoặc chọn một trong các linh vật cờ vua có sẵn:
             </p>
 
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -289,9 +375,9 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   <img
                     src={item.dataUri}
                     alt={item.name}
-                    className="h-12 w-12 rounded-xl object-contain shadow-sm"
+                    className="h-11 w-11 rounded-xl object-contain shadow-sm"
                   />
-                  <span className="mt-1.5 text-[10px] font-bold text-slate-300 group-hover:text-white truncate">
+                  <span className="mt-1 text-[10px] font-bold text-slate-300 group-hover:text-white truncate">
                     {item.name}
                   </span>
                 </button>
@@ -666,16 +752,13 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-3.5 flex-shrink-0">
-          <span className="text-[11px] text-slate-500">
+        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-3 flex-shrink-0">
+          <span className="text-[11px] text-slate-400 font-medium">
             Hồ sơ lưu trữ tại CLB Kiện Tướng Tương Lai
           </span>
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 transition-colors"
-          >
-            Đóng Hồ Sơ
-          </button>
+          <span className="text-[11px] font-mono text-slate-400 font-semibold">
+            {student.code}
+          </span>
         </div>
       </div>
     </div>
