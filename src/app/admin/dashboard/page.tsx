@@ -115,7 +115,7 @@ export default function AdminDashboardPage() {
             Tổng Quan Doanh Thu & Vận Hành
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Hệ thống đào tạo cờ vua đa cơ sở • Chuẩn hóa công thức Thực học - Thực trả.
+            Hệ thống đào tạo cờ vua đa cơ sở • CLB Kiện Tướng Tương Lai.
           </p>
         </div>
 

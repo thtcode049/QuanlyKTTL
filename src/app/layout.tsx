@@ -3,7 +3,15 @@ import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: "Quản Lý CLB Cờ Vua Kiện Tướng Tương Lai (KTTLL)",
-  description: "Hệ thống quản lý CLB Cờ vua Kiện Tướng Tương Lai - Chuẩn hóa quy tắc Thực học Thực trả",
+  description: "Hệ thống quản lý CLB Cờ vua Kiện Tướng Tương Lai",
+  openGraph: {
+    title: "Quản Lý CLB Cờ Vua Kiện Tướng Tương Lai (KTTLL)",
+    description: "Hệ thống quản lý CLB Cờ vua Kiện Tướng Tương Lai",
+    url: "https://quanlikttl.vercel.app",
+    siteName: "CLB Cờ Vua Kiện Tướng Tương Lai",
+    locale: "vi_VN",
+    type: "website",
+  },
   icons: {
     icon: "https://kientuongtuonglai.com/wp-content/uploads/2024/08/cropped-favicon-1-192x192.webp",
     apple: "https://kientuongtuonglai.com/wp-content/uploads/2024/08/cropped-favicon-1-192x192.webp",
