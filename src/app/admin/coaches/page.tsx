@@ -158,7 +158,7 @@ export default function AdminCoachesPage() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+          className="flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover w-full sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Thêm HLV Mới</span>
@@ -166,7 +166,7 @@ export default function AdminCoachesPage() {
       </div>
 
       {/* Coaches Cards Grid */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {coaches.map((coach) => {
           const branch = dataStore.branches.find((b) => b.id === coach.branchId);
           const coachClasses = dataStore.classes.filter((c) => c.coachId === coach.id);
@@ -177,11 +177,11 @@ export default function AdminCoachesPage() {
           return (
             <div
               key={coach.id}
-              className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80 transition-all hover:shadow-card"
+              className="rounded-2xl bg-white p-4 sm:p-6 shadow-soft border border-slate-200/80 transition-all hover:shadow-card"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-brand-primary font-black text-xl">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-brand-primary font-black text-xl flex-shrink-0">
                     ♞
                   </div>
                   <div>
@@ -198,7 +198,7 @@ export default function AdminCoachesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 sm:pt-0">
                   <button
                     onClick={() => handleToggleAdminAccess(coach)}
                     className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all shadow-sm ${
@@ -209,7 +209,7 @@ export default function AdminCoachesPage() {
                     title={coach.hasAdminAccess ? "Thu hồi quyền quản trị Admin" : "Cấp quyền quản trị Admin"}
                   >
                     <ShieldCheck className="h-3.5 w-3.5" />
-                    <span>{coach.hasAdminAccess ? "Hạ quyền Admin" : "Cấp quyền Admin"}</span>
+                    <span>{coach.hasAdminAccess ? "Hạ Admin" : "Cấp Admin"}</span>
                   </button>
                   <button
                     onClick={() => openEditModal(coach)}

@@ -230,10 +230,10 @@ export default function AdminBranchesAndClassesPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsBranchModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 text-center"
           >
             <Plus className="h-4 w-4" />
             <span>Thêm Cơ Sở</span>
@@ -245,7 +245,7 @@ export default function AdminBranchesAndClassesPage() {
               }
               setIsCreateClassOpen(true);
             }}
-            className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover text-center"
           >
             <Plus className="h-4 w-4" />
             <span>Thêm Lớp Mới</span>
@@ -258,19 +258,19 @@ export default function AdminBranchesAndClassesPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
             <Building2 className="h-4 w-4 text-brand-primary" />
-            <span>Hệ Thống Cơ Sở (Bấm để xem các lớp tại cơ sở đó)</span>
+            <span>Hệ Thống Cơ Sở (Vuốt/Bấm để lọc)</span>
           </h2>
           <span className="text-xs text-slate-500 font-medium">
             Tổng cộng: <strong>{branches.length} cơ sở</strong>
           </span>
         </div>
 
-        {/* Grid Chọn Cơ Sở: 8 thẻ (1 Tất cả + 7 cơ sở) phân bổ đều 4 cột */}
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Grid Chọn Cơ Sở: vuốt ngang trên mobile, grid trên desktop */}
+        <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5 overflow-x-auto pb-2 scrollbar-none snap-x">
           {/* Card: Tất Cả Cơ Sở */}
           <div
             onClick={() => setSelectedBranchId("all")}
-            className={`cursor-pointer rounded-2xl p-4 transition-all duration-200 border text-left ${
+            className={`min-w-[190px] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink cursor-pointer rounded-2xl p-4 transition-all duration-200 border text-left ${
               selectedBranchId === "all"
                 ? "bg-brand-primary text-white shadow-card ring-2 ring-brand-primary border-brand-primary"
                 : "bg-white text-slate-800 shadow-soft hover:border-brand-primary/50 border-slate-200/80"
@@ -313,7 +313,7 @@ export default function AdminBranchesAndClassesPage() {
               <div
                 key={b.id}
                 onClick={() => setSelectedBranchId(b.id)}
-                className={`group cursor-pointer rounded-2xl p-4 transition-all duration-200 border text-left relative ${
+                className={`min-w-[210px] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink group cursor-pointer rounded-2xl p-4 transition-all duration-200 border text-left relative ${
                   isSelected
                     ? "bg-white shadow-card ring-2 ring-brand-primary border-brand-primary"
                     : "bg-white shadow-soft hover:shadow-md hover:border-slate-300 border-slate-200/80"

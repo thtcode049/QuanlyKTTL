@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import Sidebar from "@/components/common/Sidebar";
 import Header from "@/components/common/Header";
+import BottomNav from "@/components/common/BottomNav";
 import { dataStore } from "@/lib/data-store";
 
 export default function AdminLayout({
@@ -87,7 +88,8 @@ export default function AdminLayout({
       <Sidebar userRole="ADMIN" />
       <div className="flex flex-1 flex-col overflow-x-hidden">
         <Header userRole="ADMIN" userName={adminName} userTitle={adminTitle} />
-        <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 md:pb-8">{children}</main>
+        <BottomNav userRole="ADMIN" />
       </div>
     </div>
   );

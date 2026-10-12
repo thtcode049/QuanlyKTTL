@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft } from "lucide-react";
+import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft, Menu } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
 
 interface HeaderProps {
@@ -30,6 +30,10 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
   const handleLogout = () => {
     localStorage.removeItem("kttll_user");
     router.push("/login");
+  };
+
+  const handleToggleMobileMenu = () => {
+    window.dispatchEvent(new CustomEvent("toggle-mobile-sidebar"));
   };
 
   // Chỉ tài khoản có role ADMIN hoặc được Admin cấp quyền (hasAdminAccess) mới có thể chuyển đổi
@@ -81,19 +85,31 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur-md sm:px-4 md:px-6">
       {/* Left info & Breadcrumb */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Mobile Menu Toggle Button */}
+        <button
+          type="button"
+          onClick={handleToggleMobileMenu}
+          aria-label="Mở menu"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all md:hidden cursor-pointer"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex">
           <Calendar className="h-4 w-4 text-brand-primary" />
           <span className="capitalize">{todayStr}</span>
         </div>
         <div className="hidden h-4 w-px bg-slate-200 sm:block" />
-        <span className="text-xs font-semibold text-slate-700">CLB Cờ Vua Kiện Tướng Tương Lai</span>
+        <span className="text-xs font-bold text-slate-800 line-clamp-1 max-w-[130px] sm:max-w-none">
+          CLB Kiện Tướng Tương Lai
+        </span>
       </div>
 
       {/* Right controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Web CLB link */}
         <a
           href="https://kientuongtuonglai.com/"
@@ -106,8 +122,8 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
         </a>
 
         {/* User Badge */}
-        <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-3 border border-slate-200/70">
-          <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-white shadow-sm ${
+        <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-2.5 sm:pr-3 border border-slate-200/70">
+          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg font-bold text-white shadow-sm ${
             userRole === "ADMIN" ? "bg-slate-900" : "bg-brand-primary"
           }`}>
             {userRole === "ADMIN" ? (
@@ -116,11 +132,11 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
               <UserCheck className="h-4 w-4" />
             )}
           </div>
-          <div className="text-left leading-tight">
-            <p className="text-xs font-bold text-slate-800">
+          <div className="text-left leading-tight max-w-[90px] sm:max-w-[160px]">
+            <p className="text-xs font-bold text-slate-800 truncate">
               {getDisplayName()}
             </p>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-slate-500 truncate hidden sm:block">
               {getDisplayTitle()}
             </p>
           </div>

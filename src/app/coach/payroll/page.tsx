@@ -134,57 +134,57 @@ export default function CoachPayrollPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {/* Card 1: Số ca dạy */}
-        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-          <p className="text-xs font-semibold text-slate-500">Số Ca Dạy Đã Hoàn Thành</p>
-          <p className="mt-1.5 text-3xl font-black text-slate-900">
-            {totalSessions} <span className="text-base font-medium text-slate-500">ca</span>
+        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-500">Số Ca Dạy Đã Hoàn Thành</p>
+          <p className="mt-1 text-2xl sm:text-3xl font-black text-slate-900">
+            {totalSessions} <span className="text-sm sm:text-base font-medium text-slate-500">ca</span>
           </p>
-          <p className="mt-1 text-[11px] text-slate-400">
-            Phụ trách {coachClasses.length} lớp học đang hoạt động
+          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-400">
+            Phụ trách {coachClasses.length} lớp học
           </p>
         </div>
 
         {/* Card 2: 50% Học Phí */}
-        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-500">50% Học Phí Các Lớp</p>
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-brand-primary border border-emerald-200">
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500">50% Học Phí Lớp</p>
+            <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-primary border border-emerald-200">
               50%
             </span>
           </div>
-          <p className="mt-1.5 text-2xl font-black text-brand-primary">
+          <p className="mt-1 text-xl sm:text-2xl font-black text-brand-primary">
             {formatCurrencyVND(tuitionCommission)}
           </p>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Từ tổng {formatCurrencyVND(totalTuition)} học phí
+          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
+            Tổng: {formatCurrencyVND(totalTuition)}
           </p>
         </div>
 
         {/* Card 3: 30% Tiền Sách */}
-        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-500">30% Tiền Sách Phát</p>
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500">30% Tiền Sách</p>
+            <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
               30%
             </span>
           </div>
-          <p className="mt-1.5 text-2xl font-black text-amber-600">
+          <p className="mt-1 text-xl sm:text-2xl font-black text-amber-600">
             {formatCurrencyVND(bookCommission)}
           </p>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Từ {totalBooksCount} cuốn ({formatCurrencyVND(totalBookRevenue)})
+          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
+            {totalBooksCount} cuốn ({formatCurrencyVND(totalBookRevenue)})
           </p>
         </div>
 
         {/* Card 4: Tổng Thu Nhập HLV */}
-        <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 shadow-soft text-white">
-          <p className="text-xs font-semibold text-slate-300">Tổng Thu Nhập HLV Tháng {month}</p>
-          <p className="mt-1.5 text-3xl font-black text-brand-secondary">
+        <div className="col-span-2 lg:col-span-1 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 sm:p-5 shadow-soft text-white">
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-300">Tổng Thu Nhập Tháng {month}</p>
+          <p className="mt-1 text-2xl sm:text-3xl font-black text-brand-secondary">
             {formatCurrencyVND(totalIncome)}
           </p>
-          <p className="mt-1 text-[11px] text-slate-300">
+          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-300">
             = {formatCurrencyVND(tuitionCommission)} + {formatCurrencyVND(bookCommission)}
           </p>
         </div>
@@ -201,7 +201,46 @@ export default function CoachPayrollPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Thẻ danh sách từng lớp */}
+        <div className="block sm:hidden divide-y divide-slate-100">
+          {classBreakdowns.map((b) => (
+            <div key={b.class.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h4 className="font-black text-slate-900 text-sm">{b.class.name}</h4>
+                  <p className="text-xs text-slate-500">{b.branch?.name} • {b.class.schedule}</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 whitespace-nowrap">
+                  {b.studentCount} HV
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">50% Học phí</span>
+                  <span className="font-bold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</span>
+                  <span className="text-[10px] text-slate-400 block">/ {formatCurrencyVND(b.tuition)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">30% Tiền sách ({b.booksCount})</span>
+                  <span className="font-bold text-amber-700">{formatCurrencyVND(b.bookCommission)}</span>
+                  <span className="text-[10px] text-slate-400 block">/ {formatCurrencyVND(b.bookRevenue)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                <span className="font-medium text-slate-500">Tổng thu nhập lớp:</span>
+                <span className="text-base font-black text-slate-900">{formatCurrencyVND(b.totalIncome)}</span>
+              </div>
+            </div>
+          ))}
+          {classBreakdowns.length === 0 && (
+            <p className="py-6 text-center text-xs text-slate-400">Chưa có lớp nào</p>
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
               <tr>
@@ -251,7 +290,63 @@ export default function CoachPayrollPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Thẻ danh sách ca dạy */}
+        <div className="block sm:hidden divide-y divide-slate-100">
+          {coachSessions.map((sess, idx) => {
+            const cls = dataStore.classes.find((c) => c.id === sess.classId);
+            const branch = dataStore.branches.find((b) => b.id === cls?.branchId);
+            const pCount = sess.records.filter((r) => r.status === "PRESENT").length;
+
+            const booksInSess = sess.records.filter((r) => r.bookPrice && r.bookPrice > 0);
+            const sessBookPrice = booksInSess.reduce((sum, r) => sum + (r.bookPrice || 0), 0);
+            const sessBookCommission = Math.round(sessBookPrice * 0.3);
+
+            return (
+              <div key={sess.id} className="p-4 space-y-2 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 text-sm">#{idx + 1} {cls?.name}</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-brand-primary border border-emerald-200">
+                        {pCount} HV có mặt
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {new Date(sess.date).toLocaleDateString("vi-VN", {
+                        weekday: "short",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })} • {branch?.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-2.5 space-y-1.5">
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Chủ đề: </span>
+                    <span className="font-medium text-slate-800 italic">{sess.topic}</span>
+                  </div>
+
+                  {booksInSess.length > 0 && (
+                    <div className="pt-1 border-t border-slate-200/60">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-amber-800">📖 {booksInSess.map((b) => b.bookTitle).join(", ")}</span>
+                        <span className="font-bold text-amber-700">+{formatCurrencyVND(sessBookCommission)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {coachSessions.length === 0 && (
+            <p className="py-6 text-center text-xs text-slate-400">Chưa có ca dạy nào trong tháng này.</p>
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
               <tr>

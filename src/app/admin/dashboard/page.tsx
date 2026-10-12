@@ -154,70 +154,70 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Primary KPI Metrics */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {/* Doanh thu tổng */}
-        <div className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+        <div className="relative overflow-hidden rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Doanh Thu Toàn Bộ (Thực học)</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-brand-primary">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500">Doanh Thu Toàn Bộ</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 text-brand-primary">
               <DollarSign className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-slate-900">
             {formatCurrencyVND(totalRevenue)}
           </p>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>+15.2% so với tháng trước</span>
+          <div className="mt-1 flex items-center gap-1 text-[11px] sm:text-xs text-emerald-600 font-semibold truncate">
+            <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+            <span>+15.2% tháng trước</span>
           </div>
         </div>
 
         {/* Tỷ lệ đã thanh toán */}
-        <div className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+        <div className="relative overflow-hidden rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Đã Thu Học Phí</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500">Đã Thu Học Phí</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
               <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-brand-primary">
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-brand-primary">
             {formatCurrencyVND(paidRevenue)}
           </p>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-            <span>Tiến độ thu: <strong>{paymentRate}%</strong></span>
-            <span className="font-semibold text-amber-600">Nợ: {formatCurrencyVND(pendingRevenue)}</span>
+          <div className="mt-1 flex items-center justify-between text-[10px] sm:text-xs text-slate-500">
+            <span>Thu: <strong>{paymentRate}%</strong></span>
+            <span className="font-semibold text-amber-600 truncate">Nợ: {formatCurrencyVND(pendingRevenue)}</span>
           </div>
         </div>
 
         {/* Tỷ lệ chuyên cần */}
-        <div className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+        <div className="relative overflow-hidden rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Tỷ Lệ Chuyên Cần</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500">Tỷ Lệ Chuyên Cần</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
               <Clock className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-slate-900">
             {attendanceRate}%
           </p>
-          <p className="mt-2 text-xs text-slate-500">
-            Học viên tham gia tích cực các buổi học
+          <p className="mt-1 text-[10px] sm:text-xs text-slate-500">
+            Đúng lịch giảng dạy
           </p>
         </div>
 
         {/* Học viên & Lớp học */}
-        <div className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
+        <div className="relative overflow-hidden rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Học Viên Hoạt Động</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500">Học Viên Hoạt Động</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <Users className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">
-            {activeStudentsCount} <span className="text-sm font-semibold text-slate-500">kỳ thủ</span>
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-slate-900">
+            {activeStudentsCount} <span className="text-xs sm:text-sm font-semibold text-slate-500">HV</span>
           </p>
-          <p className="mt-2 text-xs text-slate-500">
-            Phân bố trong <strong>{activeClassesCount} lớp</strong> • <strong>{coachesCount} HLV</strong>
+          <p className="mt-1 text-[10px] sm:text-xs text-slate-500 truncate">
+            {activeClassesCount} lớp • {coachesCount} HLV
           </p>
         </div>
       </div>
@@ -373,7 +373,52 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Thẻ hoá đơn di động */}
+        <div className="block sm:hidden divide-y divide-slate-100">
+          {filteredInvoices.slice(0, 10).map((inv) => {
+            const student = dataStore.students.find((s) => s.id === inv.studentId);
+            const cls = dataStore.classes.find((c) => c.id === inv.classId);
+
+            return (
+              <div key={inv.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="font-mono text-[10px] font-bold text-slate-400 block">{inv.invoiceCode}</span>
+                    <h4 className="font-bold text-slate-900 text-sm">{student?.fullName}</h4>
+                    <p className="text-xs text-slate-500">{cls?.name}</p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${
+                    inv.status === "PAID"
+                      ? "bg-emerald-100 text-brand-primary"
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {inv.status === "PAID" ? "Đã thanh toán" : "Chờ đóng"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl">
+                  <span className="text-slate-600 font-medium">Buổi có mặt: <strong>{inv.presentCount} buổi</strong></span>
+                  <span className="font-black text-slate-900 text-sm">{formatCurrencyVND(inv.totalAmount)}</span>
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    onClick={() => togglePaymentStatus(inv.id)}
+                    className="w-full rounded-xl bg-slate-100 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 active:scale-98 text-center"
+                  >
+                    Đổi trạng thái sang: {inv.status === "PAID" ? "Chờ đóng" : "Đã thu tiền"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredInvoices.length === 0 && (
+            <p className="py-6 text-center text-xs text-slate-400">Không có dữ liệu đối soát</p>
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
               <tr>

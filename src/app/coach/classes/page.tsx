@@ -401,7 +401,7 @@ export default function CoachClassesPage() {
       ) : (
         <>
           {/* Class Selector Carousel Cards */}
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
             {classes.map((cls) => {
               const isSelected = cls.id === selectedClass?.id;
               const branch = dataStore.branches.find((b) => b.id === cls.branchId);
@@ -411,7 +411,7 @@ export default function CoachClassesPage() {
                 <div
                   key={cls.id}
                   onClick={() => setSelectedClassId(cls.id)}
-                  className={`cursor-pointer rounded-2xl p-4 transition-all duration-200 ${
+                  className={`cursor-pointer rounded-2xl p-4 transition-all duration-200 min-w-[240px] sm:min-w-0 flex-shrink-0 sm:flex-shrink ${
                     isSelected
                       ? "bg-white shadow-card ring-2 ring-brand-primary border border-brand-primary/30"
                       : "bg-white/80 shadow-soft hover:bg-white border border-slate-200/80"
@@ -466,19 +466,19 @@ export default function CoachClassesPage() {
 
       {/* Selected Class Action Header */}
       {selectedClass && (
-        <div className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary text-white font-black text-xl shadow-md shadow-brand-primary/20">
+            <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-brand-primary text-white font-black text-xl shadow-md shadow-brand-primary/20 flex-shrink-0">
               ♞
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-slate-900">{selectedClass.name}</h2>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">{selectedClass.name}</h2>
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
                   {selectedClass.level}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 {branchInfo?.name} • {selectedClass.schedule} • Đơn giá:{" "}
                 <span className="font-bold text-slate-800">
                   {formatCurrencyVND(selectedClass.feePerSession)}/buổi
@@ -487,10 +487,10 @@ export default function CoachClassesPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
               onClick={openEditClassModal}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+              className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
             >
               <Edit2 className="h-3.5 w-3.5 text-brand-primary" />
               <span>Sửa Thông Tin Lớp</span>
@@ -498,15 +498,15 @@ export default function CoachClassesPage() {
 
             <Link
               href={`/coach/attendance?classId=${selectedClass.id}`}
-              className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-primary-hover"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-primary-hover"
             >
               <Calendar className="h-4 w-4" />
-              <span>Điểm Danh Buổi Mới</span>
+              <span>Điểm Danh</span>
             </Link>
 
             <Link
               href={`/coach/invoices?classId=${selectedClass.id}`}
-              className="flex items-center gap-1.5 rounded-xl bg-brand-secondary px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-secondary-hover"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-secondary px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-secondary-hover"
             >
               <DollarSign className="h-4 w-4" />
               <span>Tổng Kết Học Phí</span>
@@ -555,8 +555,147 @@ export default function CoachClassesPage() {
           </div>
         </div>
 
-        {/* Students Table with Direct Inline Editing & Context Menu */}
-        <div className="overflow-x-auto">
+        {/* Mobile Student Cards List (< sm) */}
+        <div className="block sm:hidden divide-y divide-slate-100">
+          {classStudents.map((std, idx) => {
+            const avatarUrl = std.avatar || getStudentAvatarUrl(std.avatar, std.fullName, idx);
+            const isEditing = inlineEditingId === std.id;
+
+            if (isEditing) {
+              return (
+                <div key={std.id} className="p-3.5 bg-amber-50/80 border-l-4 border-brand-primary space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-slate-800">{std.code}</span>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">Đang sửa</span>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600">Họ và tên</label>
+                    <input
+                      type="text"
+                      value={inlineForm.fullName}
+                      onChange={(e) => setInlineForm({ ...inlineForm, fullName: e.target.value })}
+                      className="w-full mt-0.5 rounded-lg border border-brand-primary bg-white px-2 py-1.5 text-xs font-bold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600">Năm sinh</label>
+                      <input
+                        type="number"
+                        value={inlineForm.birthYear}
+                        onChange={(e) => setInlineForm({ ...inlineForm, birthYear: Number(e.target.value) })}
+                        className="w-full mt-0.5 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600">SĐT Phụ huynh</label>
+                      <input
+                        type="tel"
+                        value={inlineForm.parentPhone}
+                        onChange={(e) => setInlineForm({ ...inlineForm, parentPhone: e.target.value })}
+                        className="w-full mt-0.5 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleCancelInlineEdit}
+                      className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-600"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveInlineEdit(std.id)}
+                      className="px-3 py-1.5 rounded-lg bg-brand-primary text-xs font-bold text-white shadow-sm"
+                    >
+                      Lưu
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={std.id}
+                onContextMenu={(e) => handleContextMenu(e, std)}
+                onClick={() => handleOpenProfile(std)}
+                className="p-3.5 bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative h-11 w-11 flex-shrink-0">
+                      <img
+                        src={avatarUrl}
+                        alt={std.fullName}
+                        className="h-full w-full rounded-xl object-cover ring-1 ring-slate-200 shadow-sm"
+                      />
+                      <span className="absolute -bottom-1 -right-1 rounded bg-amber-100 px-1 text-[9px] font-black text-amber-800 border border-amber-300">
+                        ★{std.eloRating}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-xs font-bold text-slate-900 truncate">{std.fullName}</h4>
+                        <span className="font-mono text-[10px] text-slate-400 font-semibold flex-shrink-0">
+                          {std.code}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        PH: {std.parentName}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => handleStartInlineEdit(std)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-brand-primary hover:text-white transition-colors"
+                      title="Sửa nhanh"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleMoreButtonClick(e, std)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                      title="Tùy chọn khác"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between border-t border-slate-50 pt-2 text-[11px]">
+                  <a
+                    href={`tel:${std.parentPhone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 font-mono font-bold text-brand-primary bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                  >
+                    <Phone className="h-3 w-3" />
+                    <span>{std.parentPhone}</span>
+                  </a>
+                  <span className="font-bold text-slate-700">
+                    {formatCurrencyVND(std.customFeePerSession ?? selectedClass.feePerSession)}/buổi
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+
+          {classStudents.length === 0 && (
+            <div className="p-8 text-center text-slate-400 text-xs">
+              <Users className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              Chưa có học viên nào trong lớp.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table (sm and up) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
               <tr>

@@ -189,11 +189,11 @@ export default function StudentsDirectoryPage() {
           </div>
 
           {/* Filters & View Switcher */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap sm:items-center gap-2">
             <select
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:border-brand-primary focus:bg-white focus:outline-none"
+              className="w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:border-brand-primary focus:bg-white focus:outline-none"
             >
               <option value="ALL">Tất cả lớp học</option>
               {classes.map((cls) => (
@@ -203,36 +203,38 @@ export default function StudentsDirectoryPage() {
               ))}
             </select>
 
-            <select
-              value={filterLevel}
-              onChange={(e) => setFilterLevel(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:border-brand-primary focus:bg-white focus:outline-none"
-            >
-              <option value="ALL">Tất cả trình độ</option>
-              <option value="Vỡ lòng">Vỡ lòng</option>
-              <option value="Nhập môn">Nhập môn</option>
-              <option value="Nâng cao">Nâng cao</option>
-              <option value="Đội tuyển">Đội tuyển</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
+                className="flex-1 sm:flex-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:border-brand-primary focus:bg-white focus:outline-none"
+              >
+                <option value="ALL">Tất cả trình độ</option>
+                <option value="Vỡ lòng">Vỡ lòng</option>
+                <option value="Nhập môn">Nhập môn</option>
+                <option value="Nâng cao">Nâng cao</option>
+                <option value="Đội tuyển">Đội tuyển</option>
+              </select>
 
-            {/* View Mode Switcher */}
-            <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/60">
-              <button
-                onClick={() => setViewMode("GRID")}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                  viewMode === "GRID" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                Thẻ Profile
-              </button>
-              <button
-                onClick={() => setViewMode("LIST")}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                  viewMode === "LIST" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                Danh Sách
-              </button>
+              {/* View Mode Switcher */}
+              <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/60">
+                <button
+                  onClick={() => setViewMode("GRID")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                    viewMode === "GRID" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  Thẻ Profile
+                </button>
+                <button
+                  onClick={() => setViewMode("LIST")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                    viewMode === "LIST" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  Danh Sách
+                </button>
+              </div>
             </div>
           </div>
         </div>

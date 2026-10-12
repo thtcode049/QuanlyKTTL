@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/common/Sidebar";
 import Header from "@/components/common/Header";
+import BottomNav from "@/components/common/BottomNav";
 
 export default function CoachLayout({
   children,
@@ -35,7 +36,8 @@ export default function CoachLayout({
       <Sidebar userRole="COACH" />
       <div className="flex flex-1 flex-col overflow-x-hidden">
         <Header userRole="COACH" userName={coachName} userTitle={coachTitle} />
-        <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 md:pb-8">{children}</main>
+        <BottomNav userRole="COACH" />
       </div>
     </div>
   );

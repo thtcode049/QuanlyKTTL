@@ -297,16 +297,16 @@ function AttendanceContent() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={setAllPresent}
-            className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 text-center"
           >
             Tất cả [Có mặt]
           </button>
           <button
             onClick={handleSaveAttendance}
-            className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95"
+            className="flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 text-center"
           >
             <Save className="h-4 w-4" />
             <span>Lưu Điểm Danh</span>
@@ -490,28 +490,28 @@ function AttendanceContent() {
                     </label>
 
                     {records[std.id]?.hasBook && (
-                      <div className="flex flex-wrap items-center gap-1.5 animate-fade-in">
+                      <div className="flex flex-wrap items-center gap-1.5 animate-fade-in w-full sm:w-auto">
                         <input
                           type="text"
                           value={records[std.id]?.bookTitle || ""}
                           onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
                           placeholder="Tên sách (VD: Sách Cờ vua Vỡ lòng)..."
-                          className="w-48 rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
+                          className="flex-1 min-w-[150px] sm:w-48 rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
                         />
-                        <div className="relative">
+                        <div className="relative flex-1 min-w-[100px] sm:w-28">
                           <input
                             type="number"
                             step="10000"
                             value={records[std.id]?.bookPrice || 0}
                             onChange={(e) => handleBookPriceChange(std.id, Number(e.target.value))}
                             placeholder="Giá sách"
-                            className="w-28 rounded-xl border border-amber-300 bg-amber-50/40 py-1.5 pl-2.5 pr-6 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                            className="w-full rounded-xl border border-amber-300 bg-amber-50/40 py-1.5 pl-2.5 pr-6 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                           />
                           <span className="pointer-events-none absolute right-2 top-1.5 text-[10px] font-bold text-slate-400">
                             đ
                           </span>
                         </div>
-                        <span className="text-[11px] font-bold text-emerald-600">
+                        <span className="text-[11px] font-bold text-emerald-600 whitespace-nowrap">
                           (+30%: {Math.round((records[std.id]?.bookPrice || 0) * 0.3).toLocaleString("vi-VN")} đ)
                         </span>
                       </div>

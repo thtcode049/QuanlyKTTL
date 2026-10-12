@@ -42,7 +42,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     } catch (e) {
       // bỏ qua nếu SSR
     }
+
+    const handleToggleMobile = () => setMobileOpen((prev) => !prev);
+    window.addEventListener("toggle-mobile-sidebar", handleToggleMobile);
+    return () => window.removeEventListener("toggle-mobile-sidebar", handleToggleMobile);
   }, []);
+
+  // Tự động đóng menu khi chuyển trang
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -108,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
             </div>
 
             {/* Nút Thu Gọn Menu 1 NÚT ICON NHỎ GỌN DUY NHẤT (Không tốn không gian) */}
-            {!isMobile && (
+            {!isMobile ? (
               <button
                 onClick={toggleCollapsed}
                 title={isSmall ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
@@ -119,6 +128,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
                 ) : (
                   <PanelLeftClose className="h-4 w-4" />
                 )}
+              </button>
+            ) : (
+              <button
+                onClick={() => setMobileOpen(false)}
+                title="Đóng menu"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>
@@ -206,27 +223,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
   return (
     <>
-      {/* Mobile Trigger Button */}
-      <div className="fixed bottom-5 right-5 z-50 md:hidden">
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary text-white shadow-xl focus:outline-none"
-        >
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </div>
-
       {/* Mobile Drawer Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden animate-fade-in"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 ease-in-out md:hidden shadow-2xl ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out md:hidden shadow-2xl ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
