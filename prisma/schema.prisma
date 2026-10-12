@@ -34,17 +34,25 @@ model Branch {
 }
 
 model User {
-  id           String      @id @default(uuid())
-  name         String
-  email        String      @unique
-  phone        String
-  passwordHash String
-  role         Role        @default(COACH)
-  branchId     String?
-  branch       Branch?     @relation(fields: [branchId], references: [id])
-  classes      Classroom[]
-  baseRate     Float       @default(200000) // Đơn giá thù lao/ca dạy của HLV
-  createdAt    DateTime    @default(now())
+  id             String      @id @default(uuid())
+  name           String
+  email          String      @unique
+  phone          String
+  passwordHash   String
+  role           Role        @default(COACH)
+  title          String?     // Danh hiệu: Đại Kiện Tướng, HLV Quốc Gia, v.v.
+  experience     String?     // Số năm kinh nghiệm / Thành tích
+  bio            String?     // Giới thiệu bản thân
+  bankAccount    String?     // STK nhận thù lao
+  bankName       String?     // Tên ngân hàng
+  accountHolder  String?     // Chủ tài khoản
+  elo            Int?        @default(2000)
+  hasAdminAccess Boolean     @default(false)
+  branchId       String?
+  branch         Branch?     @relation(fields: [branchId], references: [id])
+  classes        Classroom[]
+  baseRate       Float       @default(200000) // Đơn giá thù lao/ca dạy của HLV
+  createdAt      DateTime    @default(now())
 }
 
 model Classroom {

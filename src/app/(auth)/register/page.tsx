@@ -45,7 +45,7 @@ export default function RegisterCoachPage() {
 
   const branches = dataStore.branches;
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -82,44 +82,74 @@ export default function RegisterCoachPage() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      try {
-        const coach = dataStore.registerCoach({
-          name: name.startsWith("HLV") || name.startsWith("GM") || name.startsWith("IM") ? name : `HLV ${name}`,
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
           email,
           phone,
           password,
           title,
-          elo: parseInt(elo) || 2000,
+          elo,
           experience,
           branchId,
-          baseRate: 200000,
           bankName,
           bankAccount,
           accountHolder: accountHolder.toUpperCase() || name.toUpperCase(),
           bio,
-        });
+        }),
+      });
 
-        // Đăng nhập tự động
-        const sessionUser = {
-          id: coach.id,
-          name: coach.name,
-          email: coach.email,
-          role: "COACH",
-          title: coach.title,
-          branchId: coach.branchId,
-        };
-        localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+      const resData = await response.json();
 
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/coach/classes");
-        }, 1200);
-      } catch (err) {
-        setError("Đã xảy ra lỗi trong quá trình tạo tài khoản. Vui lòng thử lại.");
+      if (!response.ok || !resData.success) {
+        setError(resData.error || "Đăng ký không thành công. Vui lòng thử lại.");
         setLoading(false);
+        return;
       }
-    }, 600);
+
+      const createdUser = resData.user;
+
+      // Đồng bộ vào dataStore của phiên hiện tại
+      const coach = dataStore.registerCoach({
+        name: createdUser.name,
+        email: createdUser.email,
+        phone,
+        password,
+        title: createdUser.title,
+        elo: parseInt(elo) || 2000,
+        experience,
+        branchId,
+        baseRate: 200000,
+        bankName,
+        bankAccount,
+        accountHolder: accountHolder.toUpperCase() || name.toUpperCase(),
+        bio,
+      });
+
+      // Đăng nhập tự động
+      const sessionUser = {
+        id: createdUser.id,
+        name: createdUser.name,
+        email: createdUser.email,
+        role: "COACH",
+        title: createdUser.title,
+        branchId: createdUser.branchId,
+        hasAdminAccess: false,
+      };
+      localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/coach/classes");
+      }, 1000);
+    } catch (err: any) {
+      console.error("Lỗi kết nối API:", err);
+      setError("Đã xảy ra lỗi khi kết nối máy chủ. Vui lòng thử lại.");
+      setLoading(false);
+    }
   };
 
   return (

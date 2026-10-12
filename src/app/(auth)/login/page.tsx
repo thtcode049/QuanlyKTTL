@@ -23,24 +23,74 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError("");
 
-    if (!email) {
+    if (!email.trim()) {
       setError("Vui lòng nhập email hoặc chọn tài khoản mẫu phía dưới");
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      // 1. Kiểm tra tài khoản trong dataStore (Bao gồm cả HLV vừa đăng ký)
+
+    try {
+      // 1. Gửi yêu cầu xác thực tới Database API Supabase
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && data.user) {
+        const sessionUser = data.user;
+        localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+
+        // Đồng bộ tài khoản vào dataStore cục bộ để sử dụng ngay trong phiên
+        const ex = dataStore.users.find((u) => u.id === sessionUser.id || u.email.toLowerCase() === sessionUser.email.toLowerCase());
+        if (!ex) {
+          dataStore.users.push({
+            id: sessionUser.id,
+            name: sessionUser.name,
+            email: sessionUser.email,
+            phone: "",
+            role: sessionUser.role,
+            title: sessionUser.title,
+            branchId: sessionUser.branchId,
+            baseRate: 200000,
+            hasAdminAccess: sessionUser.hasAdminAccess,
+          });
+          dataStore.saveToLocalStorage();
+        } else {
+          Object.assign(ex, sessionUser);
+          dataStore.saveToLocalStorage();
+        }
+
+        if (sessionUser.role === "ADMIN") {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/coach/classes");
+        }
+        return;
+      }
+
+      // 2. Nếu API trả về lỗi
+      if (!res.ok) {
+        setError(data.error || "Không tìm thấy tài khoản. Vui lòng kiểm tra lại email và mật khẩu.");
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("Lỗi kết nối API xác thực, đang thử fallback bộ nhớ máy...", err);
+
+      // Fallback offline (trong trường hợp mất kết nối mạng tạm thời)
       const foundUser = dataStore.users.find(
         (u) => u.email.toLowerCase() === email.trim().toLowerCase()
       );
 
       if (foundUser) {
-        // Kiểm tra mật khẩu nếu tài khoản có mật khẩu riêng
         if (foundUser.password && password && foundUser.password !== password) {
           setError("Mật khẩu không chính xác. Vui lòng kiểm tra lại.");
           setLoading(false);
@@ -66,37 +116,9 @@ export default function LoginPage() {
         return;
       }
 
-      // 2. Fallback nhận diện theo từ khóa email
-      if (email.toLowerCase().includes("admin")) {
-        const user = {
-          id: "user-admin",
-          email: "admin@kttll.vn",
-          name: "Ban Chủ Nhiệm CLB",
-          role: "ADMIN",
-          title: "Chủ nhiệm toàn bộ cơ sở",
-          hasAdminAccess: true,
-        };
-        localStorage.setItem("kttll_user", JSON.stringify(user));
-        router.push("/admin/dashboard");
-      } else if (email.toLowerCase().includes("hlv")) {
-        const isCoach2 = email.includes("hlv2");
-        const coachId = isCoach2 ? "user-coach-2" : "user-coach-1";
-        const dbCoach = dataStore.users.find((u) => u.id === coachId);
-        const user = {
-          id: coachId,
-          email: isCoach2 ? "hlv2@kttll.vn" : "hlv1@kttll.vn",
-          name: isCoach2 ? "HLV Trần Huyền Trang" : "GM Bùi Vinh",
-          role: "COACH",
-          title: isCoach2 ? "HLV Quốc gia" : "Đại Kiện Tướng Quốc Tế",
-          hasAdminAccess: !!dbCoach?.hasAdminAccess,
-        };
-        localStorage.setItem("kttll_user", JSON.stringify(user));
-        router.push("/coach/classes");
-      } else {
-        setError("Không tìm thấy tài khoản với email này. Vui lòng kiểm tra lại hoặc đăng ký tài khoản HLV mới.");
-        setLoading(false);
-      }
-    }, 400);
+      setError("Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra kết nối mạng.");
+      setLoading(false);
+    }
   };
 
   const handleQuickLogin = (role: "ADMIN" | "COACH1" | "COACH2") => {

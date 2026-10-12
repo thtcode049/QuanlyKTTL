@@ -19,10 +19,31 @@ import {
 import { dataStore, UserData } from "@/lib/data-store";
 
 export default function AdminCoachesPage() {
-  // Đảm bảo dữ liệu HLV luôn được chuẩn hóa
+  // Đảm bảo dữ liệu HLV luôn được chuẩn hóa và đồng bộ từ Database
   useEffect(() => {
     dataStore.normalizeCoachData();
     setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
+
+    // Đồng bộ danh sách HLV từ Supabase Database
+    fetch("/api/auth/users")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.users && Array.isArray(data.users)) {
+          data.users.forEach((dbUser: UserData) => {
+            const idx = dataStore.users.findIndex(
+              (u) => u.id === dbUser.id || u.email.toLowerCase() === dbUser.email.toLowerCase()
+            );
+            if (idx >= 0) {
+              dataStore.users[idx] = { ...dataStore.users[idx], ...dbUser };
+            } else {
+              dataStore.users.push(dbUser);
+            }
+          });
+          dataStore.saveToLocalStorage();
+          setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
+        }
+      })
+      .catch((err) => console.warn("Lỗi đồng bộ HLV từ DB:", err));
   }, []);
 
   const [coaches, setCoaches] = useState<UserData[]>(
