@@ -365,19 +365,34 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Registration Link for New Coaches */}
-          <div className="mt-6 rounded-2xl bg-white p-4 text-center shadow-soft border border-slate-200/80">
-            <p className="text-xs text-slate-600">
-              Bạn là Huấn luyện viên mới gia nhập CLB?
-            </p>
-            <Link
-              href="/register"
-              className="mt-2 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-all shadow-sm active:scale-95"
-            >
-              <UserPlus className="h-4 w-4 text-brand-primary" />
-              <span>Đăng Ký Tài Khoản HLV Ngay</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+          {/* Registration Box for New Members (Admin & Coach) */}
+          <div className="mt-6 rounded-2xl bg-white p-4.5 shadow-soft border border-slate-200/80">
+            <div className="text-center mb-3">
+              <p className="text-xs font-bold text-slate-800">
+                Chưa có tài khoản tham gia hệ thống?
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Đăng ký tài khoản mới dành cho Huấn luyện viên hoặc Ban Quản Trị CLB
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <Link
+                href="/register?role=coach"
+                className="group flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-2.5 text-xs font-bold text-emerald-800 transition-all hover:bg-brand-primary hover:text-white shadow-sm active:scale-95 text-center"
+              >
+                <UserCheck className="h-4 w-4 text-brand-primary group-hover:text-white transition-colors" />
+                <span>Đăng Ký Huấn Luyện Viên</span>
+              </Link>
+
+              <Link
+                href="/register?role=admin"
+                className="group flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 p-2.5 text-xs font-bold text-white transition-all hover:bg-slate-800 shadow-sm active:scale-95 text-center"
+              >
+                <ShieldCheck className="h-4 w-4 text-brand-secondary" />
+                <span>Đăng Ký Ban Quản Trị</span>
+              </Link>
+            </div>
           </div>
 
           {/* System note */}

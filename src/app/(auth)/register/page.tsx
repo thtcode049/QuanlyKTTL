@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,11 +21,33 @@ import {
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
 
-export default function RegisterCoachPage() {
+export default function RegisterPage() {
   const router = useRouter();
 
   // Form Fields
   const [selectedRole, setSelectedRole] = useState<"COACH" | "ADMIN">("COACH");
+
+  // Read role from query param on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const roleParam = params.get("role");
+      if (roleParam === "admin") {
+        setSelectedRole("ADMIN");
+      } else if (roleParam === "coach") {
+        setSelectedRole("COACH");
+      }
+    }
+  }, []);
+
+  const handleRoleChange = (role: "COACH" | "ADMIN") => {
+    setSelectedRole(role);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("role", role.toLowerCase());
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -176,44 +198,82 @@ export default function RegisterCoachPage() {
               Kiện Tướng Tương Lai
             </h1>
             <p className="text-xs font-semibold text-brand-primary">
-              Chess Management System • HLV Portal
+              Chess Management System • Cổng Đăng Ký CLB
             </p>
           </div>
         </div>
 
         {/* Middle message */}
         <div className="relative z-10 my-auto py-10">
-          <span className="rounded-full bg-brand-primary/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand-primary border border-brand-primary/30">
-            Gia Nhập Ban Huấn Luyện
-          </span>
-          <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
-            Đào Tạo Thế Hệ Kỳ Thủ Tương Lai
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-300">
-            Hệ thống quản lý chuyên biệt cho Huấn luyện viên cờ vua: Điểm danh 1 chạm, theo dõi tiến độ Elo học sinh, nhận thù lao minh bạch 50% học phí thực dạy + 30% hoa hồng tài liệu.
-          </p>
+          {selectedRole === "ADMIN" ? (
+            <>
+              <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-amber-300 border border-amber-500/30">
+                Ban Quản Trị & Điều Hành CLB
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+                Quản Trị Đào Tạo Cờ Vua Đa Cơ Sở
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-slate-300">
+                Hệ thống điều hành thông minh dành cho Ban Chủ Nhiệm: Giám sát toàn diện học viên, quản lý lớp học, đối soát học phí VietQR và tự động hóa tính thù lao Huấn luyện viên.
+              </p>
 
-          <div className="mt-8 space-y-3.5">
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-              <div className="text-xs">
-                <p className="font-bold text-white">Minh Bạch Thu Nhập</p>
-                <p className="text-slate-400">Tự động tính thù lao theo ca dạy và số học viên có mặt thực tế</p>
-              </div>
-            </div>
+              <div className="mt-8 space-y-3.5">
+                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-white">Kiểm Soát Vận Hành Toàn Diện</p>
+                    <p className="text-slate-400">Theo dõi điểm danh, sĩ số và doanh thu các cơ sở theo thời gian thực</p>
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
-                <GraduationCap className="h-5 w-5" />
+                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-white">Đối Soát VietQR & Zalo OA</p>
+                    <p className="text-slate-400">Tự động sinh mã thanh toán Napas và đồng bộ gửi thông báo phụ huynh</p>
+                  </div>
+                </div>
               </div>
-              <div className="text-xs">
-                <p className="font-bold text-white">Hồ Sơ Kỳ Thủ Trực Quan</p>
-                <p className="text-slate-400">Đánh giá 4 kỹ năng cờ vua và lưu ảnh hồ sơ từng học viên</p>
+            </>
+          ) : (
+            <>
+              <span className="rounded-full bg-brand-primary/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand-primary border border-brand-primary/30">
+                Gia Nhập Ban Huấn Luyện
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+                Đào Tạo Thế Hệ Kỳ Thủ Tương Lai
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-slate-300">
+                Hệ thống quản lý chuyên biệt cho Huấn luyện viên cờ vua: Điểm danh 1 chạm, theo dõi tiến độ Elo học sinh, nhận thù lao minh bạch 50% học phí thực dạy + 30% hoa hồng tài liệu.
+              </p>
+
+              <div className="mt-8 space-y-3.5">
+                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-white">Minh Bạch Thu Nhập</p>
+                    <p className="text-slate-400">Tự động tính thù lao theo ca dạy và số học viên có mặt thực tế</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                    <GraduationCap className="h-5 w-5" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-white">Hồ Sơ Kỳ Thủ Trực Quan</p>
+                    <p className="text-slate-400">Đánh giá 4 kỹ năng cờ vua và lưu ảnh hồ sơ từng học viên</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Bottom footer link */}
@@ -250,7 +310,7 @@ export default function RegisterCoachPage() {
           <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
             <button
               type="button"
-              onClick={() => setSelectedRole("COACH")}
+              onClick={() => handleRoleChange("COACH")}
               className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
                 selectedRole === "COACH"
                   ? "bg-white text-slate-900 shadow-sm"
@@ -262,7 +322,7 @@ export default function RegisterCoachPage() {
             </button>
             <button
               type="button"
-              onClick={() => setSelectedRole("ADMIN")}
+              onClick={() => handleRoleChange("ADMIN")}
               className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
                 selectedRole === "ADMIN"
                   ? "bg-white text-slate-900 shadow-sm"
