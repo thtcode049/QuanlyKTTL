@@ -143,8 +143,8 @@ export const VietQrModal: React.FC<VietQrModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-100 my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-transparent animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10 my-auto max-h-[92vh] flex flex-col">
         {/* Header Bar */}
         <div className="flex items-center justify-between bg-gradient-to-r from-brand-primary to-brand-primary-hover px-5 py-4 text-white flex-shrink-0">
           <div className="flex items-center gap-2.5">

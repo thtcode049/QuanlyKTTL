@@ -146,8 +146,8 @@ ${currentPreview.footer}`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200 my-auto max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-transparent animate-fade-in overflow-y-auto">
+      <div className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10 my-auto max-h-[92vh]">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between bg-[#0068FF] px-5 py-3.5 text-white flex-shrink-0">
           <div className="flex items-center gap-2.5">

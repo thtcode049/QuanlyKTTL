@@ -226,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
       {/* Mobile Drawer Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden animate-fade-in"
+          className="fixed inset-0 z-50 bg-transparent md:hidden animate-fade-in"
           onClick={() => setMobileOpen(false)}
         />
       )}

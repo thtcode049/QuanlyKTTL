@@ -201,12 +201,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-transparent animate-fade-in overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Header Cover Banner */}
         <div className="relative bg-gradient-to-r from-[#161616] via-[#1F332E] to-[#00B18A] p-6 text-white flex-shrink-0">
           {/* Subtle chess watermark */}
