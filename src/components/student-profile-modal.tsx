@@ -655,34 +655,55 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
                 {/* Class & Training Card */}
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-soft space-y-3">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                    <Award className="h-4 w-4 text-brand-secondary" />
-                    <h3 className="font-bold text-slate-900">Lớp Học & Cơ Sở</h3>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-brand-secondary" />
+                      <h3 className="font-bold text-slate-900">Lớp Học & Cơ Sở Đào Tạo</h3>
+                    </div>
+                    {dataStore.classes.filter((c) => student.classIds?.includes(c.id)).length > 1 && (
+                      <span className="rounded-full bg-brand-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-brand-primary">
+                        Học {dataStore.classes.filter((c) => student.classIds?.includes(c.id)).length} lớp
+                      </span>
+                    )}
                   </div>
 
-                  <div className="space-y-2 text-slate-700">
-                    <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                      <span className="text-slate-400">Lớp học:</span>
-                      <span className="font-bold text-slate-900">{currentClassInfo?.name}</span>
-                    </div>
+                  <div className="space-y-2.5 text-slate-700">
+                    {dataStore.classes
+                      .filter((c) => student.classIds?.includes(c.id))
+                      .map((cls, idx) => {
+                        const branch = dataStore.branches.find((b) => b.id === cls.branchId);
+                        return (
+                          <div
+                            key={cls.id}
+                            className={`p-2.5 rounded-xl ${
+                              idx === 0 ? "bg-slate-50 border border-slate-200/60" : "bg-emerald-50/50 border border-emerald-200/50"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-900">{cls.name}</span>
+                              <span className="text-[10px] font-bold text-emerald-700">
+                                {student.customFeePerSession
+                                  ? formatCurrencyVND(student.customFeePerSession)
+                                  : formatCurrencyVND(cls.feePerSession)}
+                                /buổi
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                              <span>Lịch: {cls.schedule}</span>
+                              <span className="font-medium">{branch?.name.split("–")[0]?.trim() || "Cơ sở CLB"}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
 
-                    <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                      <span className="text-slate-400">Lịch học:</span>
-                      <span className="font-medium text-slate-800">{currentClassInfo?.schedule}</span>
-                    </div>
+                    {dataStore.classes.filter((c) => student.classIds?.includes(c.id)).length === 0 && (
+                      <p className="text-xs text-slate-400 italic">Chưa xếp lớp học cụ thể</p>
+                    )}
 
-                    <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                      <span className="text-slate-400">Cơ sở:</span>
-                      <span className="font-medium text-slate-800">
-                        {dataStore.branches.find((b) => b.id === currentClassInfo?.branchId)?.name ||
-                          "Cơ sở 1 - Bạch Mai"}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-400">Nguyên tắc:</span>
+                    <div className="flex justify-between items-center pt-1 border-t border-slate-100 text-[11px]">
+                      <span className="text-slate-400">Quy tắc học phí:</span>
                       <span className="rounded bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 text-[10px]">
-                        Thực học - Thực trả
+                        Thực học - Thực trả (Buổi nào học lớp nào tính lớp đó)
                       </span>
                     </div>
                   </div>

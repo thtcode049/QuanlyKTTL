@@ -21,6 +21,128 @@ import { dataStore, AttendanceSessionData, ClassroomData, StudentData } from "@/
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import confetti from "canvas-confetti";
 
+/**
+ * Phân tích chuỗi schedule để lấy mảng thứ trong tuần (0: CN, 1: T2, 2: T3...)
+ * và khoảng thời gian { start: "18:00", end: "19:30" }
+ */
+function parseScheduleInfo(schedule: string) {
+  const days: number[] = [];
+  const lower = (schedule || "").toLowerCase();
+  if (lower.includes("thứ 2") || lower.includes("t2")) days.push(1);
+  if (lower.includes("thứ 3") || lower.includes("t3")) days.push(2);
+  if (lower.includes("thứ 4") || lower.includes("t4")) days.push(3);
+  if (lower.includes("thứ 5") || lower.includes("t5")) days.push(4);
+  if (lower.includes("thứ 6") || lower.includes("t6")) days.push(5);
+  if (lower.includes("thứ 7") || lower.includes("t7")) days.push(6);
+  if (lower.includes("chủ nhật") || lower.includes("cn")) days.push(0);
+
+  const timeMatch = (schedule || "").match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+  const timeRange = timeMatch ? { start: timeMatch[1], end: timeMatch[2] } : null;
+
+  return { days, timeRange };
+}
+
+/**
+ * Tự động tìm ngày buổi học chuẩn theo lịch của lớp:
+ * - Nếu hôm nay là ngày học của lớp -> Trả về hôm nay.
+ * - Nếu hôm nay không phải ngày học -> Tìm ngày học có thứ trùng gần nhất (trong 7 ngày qua hoặc sắp tới).
+ */
+function getSmartSessionDate(schedule: string, targetDate = new Date()): string {
+  const { days } = parseScheduleInfo(schedule);
+  if (days.length === 0) {
+    return targetDate.toISOString().split("T")[0];
+  }
+
+  const currentDay = targetDate.getDay();
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  if (days.includes(currentDay)) {
+    return `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`;
+  }
+
+  // Tìm ngày có thứ khớp gần nhất trong vòng 7 ngày qua
+  for (let diff = 1; diff <= 7; diff++) {
+    const past = new Date(targetDate);
+    past.setDate(past.getDate() - diff);
+    if (days.includes(past.getDay())) {
+      return `${past.getFullYear()}-${pad(past.getMonth() + 1)}-${pad(past.getDate())}`;
+    }
+  }
+
+  return `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`;
+}
+
+/**
+ * Kiểm tra trạng thái giờ học hôm nay
+ */
+function getTodayScheduleStatus(schedule: string) {
+  const { days, timeRange } = parseScheduleInfo(schedule);
+  const now = new Date();
+  const todayDay = now.getDay();
+
+  if (!days.includes(todayDay)) {
+    return { status: "NOT_TODAY" as const, message: "Hôm nay không có lịch học của lớp này" };
+  }
+
+  if (!timeRange) {
+    return { status: "HAPPENING" as const, message: "Hôm nay có lịch học của lớp" };
+  }
+
+  const [startHour, startMin] = timeRange.start.split(":").map(Number);
+  const [endHour, endMin] = timeRange.end.split(":").map(Number);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = startHour * 60 + startMin;
+  const endMinutes = endHour * 60 + endMin;
+
+  if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+    return {
+      status: "HAPPENING" as const,
+      message: `Đang trong giờ học (${timeRange.start} - ${timeRange.end})`,
+    };
+  } else if (currentMinutes < startMinutes) {
+    return {
+      status: "UPCOMING" as const,
+      message: `Ca học hôm nay sắp diễn ra (${timeRange.start} - ${timeRange.end})`,
+    };
+  } else {
+    return {
+      status: "PAST" as const,
+      message: `Ca học hôm nay (${timeRange.start} - ${timeRange.end}) đã kết thúc`,
+    };
+  }
+}
+
+/**
+ * Sinh danh sách tất cả các ngày học trong tháng rơi đúng vào lịch của lớp
+ */
+function getMonthlyClassDates(schedule: string, targetDate = new Date()) {
+  const { days } = parseScheduleInfo(schedule);
+  if (days.length === 0) return [];
+
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const todayStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`;
+
+  const dayNames = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  const list: { dateStr: string; label: string; isToday: boolean }[] = [];
+
+  for (let d = 1; d <= totalDays; d++) {
+    const cur = new Date(year, month, d);
+    if (days.includes(cur.getDay())) {
+      const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+      list.push({
+        dateStr,
+        label: `${dayNames[cur.getDay()]} (${pad(d)}/${pad(month + 1)})`,
+        isToday: dateStr === todayStr,
+      });
+    }
+  }
+
+  return list;
+}
+
 function AttendanceContent() {
   const searchParams = useSearchParams();
 
@@ -35,7 +157,7 @@ function AttendanceContent() {
   );
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  // Tải lớp học của riêng HLV hiện tại
+  // Tải lớp học và tự động nhảy đến lớp có lịch hôm nay / buổi học đúng thứ
   useEffect(() => {
     let coachId = "user-coach-1";
     let isAdmin = false;
@@ -53,11 +175,24 @@ function AttendanceContent() {
       ? dataStore.classes
       : dataStore.classes.filter((c) => c.coachId === coachId);
     setClasses(myClasses);
+
     const paramClassId = searchParams.get("classId");
+    let targetClass: ClassroomData | undefined;
+
     if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
-      setSelectedClassId(paramClassId);
+      targetClass = myClasses.find((c) => c.id === paramClassId);
     } else {
-      setSelectedClassId(myClasses[0]?.id || "");
+      // Ưu tiên tự động chọn lớp có lịch học HÔM NAY
+      const todayDay = new Date().getDay();
+      const todayClass = myClasses.find((c) => parseScheduleInfo(c.schedule).days.includes(todayDay));
+      targetClass = todayClass || myClasses[0];
+    }
+
+    if (targetClass) {
+      setSelectedClassId(targetClass.id);
+      // Tự động nhảy đến ngày học đúng thứ của lớp
+      const smartDate = getSmartSessionDate(targetClass.schedule);
+      setSessionDate(smartDate);
     }
   }, [searchParams]);
 
@@ -284,6 +419,19 @@ function AttendanceContent() {
     .filter((s) => s.classId === selectedClass?.id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const handleSelectClass = (classId: string) => {
+    setSelectedClassId(classId);
+    const target = classes.find((c) => c.id === classId);
+    if (target) {
+      const smartDate = getSmartSessionDate(target.schedule);
+      setSessionDate(smartDate);
+    }
+  };
+
+  const scheduleStatus = getTodayScheduleStatus(selectedClass?.schedule || "");
+  const monthlyDates = getMonthlyClassDates(selectedClass?.schedule || "");
+  const todayStr = new Date().toISOString().split("T")[0];
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -347,50 +495,163 @@ function AttendanceContent() {
         </div>
       ) : (
         <>
+          {/* Smart Schedule Status Indicator Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-brand-primary">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    Lịch học cố định của lớp:
+                  </span>
+                  <span className="rounded-lg bg-emerald-500/20 px-2.5 py-0.5 text-xs font-extrabold text-emerald-400 border border-emerald-500/30">
+                    {selectedClass?.schedule}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-300 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                  <span>
+                    Hệ thống tự động nhảy đến buổi học đúng thứ & giờ học theo lịch của lớp.
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              {scheduleStatus.status === "HAPPENING" ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-black text-white shadow-sm animate-pulse">
+                  <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+                  {scheduleStatus.message}
+                </span>
+              ) : scheduleStatus.status === "UPCOMING" ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/20 border border-blue-400/30 px-3 py-1.5 text-xs font-bold text-blue-300">
+                  <Clock className="h-3.5 w-3.5" />
+                  {scheduleStatus.message}
+                </span>
+              ) : scheduleStatus.status === "PAST" ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  {scheduleStatus.message}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-300">
+                  <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                  {scheduleStatus.message}
+                </span>
+              )}
+
+              {/* Nút 1 chạm quay về buổi hôm nay nếu hôm nay có lịch */}
+              {scheduleStatus.status !== "NOT_TODAY" && sessionDate !== todayStr && (
+                <button
+                  type="button"
+                  onClick={() => setSessionDate(todayStr)}
+                  className="rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm transition-all"
+                >
+                  Về Ca Hôm Nay
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Schedule Session Picker (Các buổi học chuẩn theo lịch trong tháng) */}
+          {monthlyDates.length > 0 && (
+            <div className="rounded-2xl bg-white p-3.5 shadow-soft border border-slate-200/80">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-brand-primary" />
+                  <span>Các buổi học theo lịch trong tháng của lớp ({monthlyDates.length} buổi):</span>
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Chạm vào ngày để nhảy ngay đến buổi học đó
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                {monthlyDates.map((item) => {
+                  const isSelected = item.dateStr === sessionDate;
+                  const hasData = dataStore.sessions.some(
+                    (s) => s.classId === selectedClass?.id && s.date === item.dateStr
+                  );
+
+                  return (
+                    <button
+                      key={item.dateStr}
+                      type="button"
+                      onClick={() => setSessionDate(item.dateStr)}
+                      className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all shadow-sm ${
+                        isSelected
+                          ? "bg-brand-primary text-white shadow-brand-primary/25 scale-[1.02]"
+                          : hasData
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {hasData && (
+                        <Check className={`h-3.5 w-3.5 ${isSelected ? "text-white" : "text-emerald-600"}`} />
+                      )}
+                      <span>{item.label}</span>
+                      {item.isToday && (
+                        <span
+                          className={`rounded px-1 py-0.2 text-[9px] font-black uppercase ${
+                            isSelected ? "bg-white text-brand-primary" : "bg-emerald-600 text-white"
+                          }`}
+                        >
+                          Hôm nay
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Session Configuration Card */}
           <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {/* Chọn Lớp */}
               <div>
                 <label className="text-xs font-bold text-slate-700">Lớp học cần điểm danh</label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-            >
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name} ({cls.level})
-                </option>
-              ))}
-            </select>
-          </div>
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => handleSelectClass(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                >
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name} ({cls.level})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Chọn Ngày */}
-          <div>
-            <label className="text-xs font-bold text-slate-700">Ngày diễn ra buổi học</label>
-            <div className="relative mt-1.5">
-              <input
-                type="date"
-                value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-              />
+              {/* Chọn Ngày */}
+              <div>
+                <label className="text-xs font-bold text-slate-700">Ngày diễn ra buổi học</label>
+                <div className="relative mt-1.5">
+                  <input
+                    type="date"
+                    value={sessionDate}
+                    onChange={(e) => setSessionDate(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Chủ đề bài học cờ vua */}
+              <div>
+                <label className="text-xs font-bold text-slate-700">Chủ đề bài học cờ vua</label>
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="VD: Khai cuộc Italia, Đòn Ghim, Tàn cuộc Xe..."
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                />
+              </div>
             </div>
-          </div>
-
-          {/* Chủ đề bài học cờ vua */}
-          <div>
-            <label className="text-xs font-bold text-slate-700">Chủ đề bài học cờ vua</label>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="VD: Khai cuộc Italia, Đòn Ghim, Tàn cuộc Xe..."
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-            />
-          </div>
-        </div>
 
         {/* Quick summary bar */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">

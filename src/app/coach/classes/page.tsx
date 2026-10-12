@@ -98,6 +98,8 @@ export default function CoachClassesPage() {
 
   // Modal State: Thêm học viên mới
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [addStudentTab, setAddStudentTab] = useState<"EXISTING" | "NEW">("EXISTING");
+  const [existingSearch, setExistingSearch] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentBirthYear, setNewStudentBirthYear] = useState("2018");
   const [newParentName, setNewParentName] = useState("");
@@ -256,6 +258,23 @@ export default function CoachClassesPage() {
     setNewParentPhone("");
     setNewStudentNotes("");
     setNewCustomFee("");
+  };
+
+  // Ghi danh học viên đã có trong CLB vào lớp học này
+  const handleEnrollExisting = (studentId: string) => {
+    if (!selectedClass) return;
+    const std = dataStore.students.find((s) => s.id === studentId);
+    if (!std) return;
+
+    if (!std.classIds.includes(selectedClass.id)) {
+      const updatedClassIds = [...std.classIds, selectedClass.id];
+      dataStore.updateStudent(std.id, { classIds: updatedClassIds });
+      const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+      const myClassIds = myClasses.map((c) => c.id);
+      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
+      showToast(`Đã thêm học viên "${std.fullName}" vào lớp ${selectedClass.name}!`);
+      setIsAddStudentOpen(false);
+    }
   };
 
   // Tạo lớp mới
@@ -1026,117 +1045,258 @@ export default function CoachClassesPage() {
 
       {/* Modal: Thêm Học Viên */}
       {isAddStudentOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-transparent animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10 my-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Thêm Học Viên Vào Lớp {selectedClass?.name}
-              </h3>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Thêm Học Viên Vào Lớp {selectedClass?.name}
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Chọn học viên đã có trong CLB hoặc tạo mới học viên mới tinh
+                </p>
+              </div>
               <button
                 onClick={() => setIsAddStudentOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateStudent} className="mt-4 space-y-3.5 text-xs">
-              <div>
-                <label className="font-bold text-slate-700">Họ và tên học viên *</label>
-                <input
-                  type="text"
-                  required
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  placeholder="VD: Nguyễn Tuấn Anh"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
+            {/* Dual Tabs Switcher */}
+            <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setAddStudentTab("EXISTING")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
+                  addStudentTab === "EXISTING"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Users className="h-3.5 w-3.5 text-brand-primary" />
+                <span>Học Viên Có Sẵn ({dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length})</span>
+              </button>
 
-              <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setAddStudentTab("NEW")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
+                  addStudentTab === "NEW"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <UserPlus className="h-3.5 w-3.5 text-brand-secondary" />
+                <span>Tạo Mới Học Viên</span>
+              </button>
+            </div>
+
+            {/* TAB 1: Ghi danh học viên đã có sẵn trong CLB */}
+            {addStudentTab === "EXISTING" ? (
+              <div className="mt-4 space-y-3">
                 <div>
-                  <label className="font-bold text-slate-700">Năm sinh</label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={existingSearch}
+                      onChange={(e) => setExistingSearch(e.target.value)}
+                      placeholder="Tìm theo tên học sinh, mã HS, SĐT phụ huynh..."
+                      className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs focus:border-brand-primary focus:outline-none bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    💡 Học sinh tham gia nhiều lớp sẽ dùng chung 1 hồ sơ Elo và thông tin phụ huynh, không bị trùng lặp.
+                  </p>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100">
+                  {dataStore.students
+                    .filter((s) => !s.classIds.includes(selectedClass?.id || ""))
+                    .filter(
+                      (s) =>
+                        s.fullName.toLowerCase().includes(existingSearch.toLowerCase()) ||
+                        s.code.toLowerCase().includes(existingSearch.toLowerCase()) ||
+                        s.parentPhone.includes(existingSearch)
+                    )
+                    .map((std, idx) => {
+                      const enrolledOtherClasses = dataStore.classes.filter((c) =>
+                        std.classIds.includes(c.id)
+                      );
+
+                      return (
+                        <div
+                          key={std.id}
+                          className="pt-2 flex items-center justify-between gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={getStudentAvatarUrl(std.avatar, std.fullName, idx)}
+                              alt={std.fullName}
+                              className="h-9 w-9 rounded-xl object-cover ring-1 ring-slate-200 flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-slate-900 truncate">
+                                  {std.fullName}
+                                </span>
+                                <span className="font-mono text-[10px] text-slate-400">
+                                  ({std.code})
+                                </span>
+                                <span className="rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-700 border border-amber-200">
+                                  ★ {std.eloRating}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 truncate">
+                                PH: {std.parentName} • {std.parentPhone}
+                              </p>
+                              {enrolledOtherClasses.length > 0 && (
+                                <p className="text-[10px] text-brand-primary font-medium truncate">
+                                  Đang học: {enrolledOtherClasses.map((c) => c.name).join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleEnrollExisting(std.id)}
+                            className="flex-shrink-0 flex items-center gap-1 rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover active:scale-95 shadow-sm transition-all"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            <span>Thêm Vào Lớp</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                  {dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length === 0 && (
+                    <div className="py-8 text-center text-xs text-slate-500">
+                      Tất cả học viên trong CLB đã được ghi danh vào lớp này.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* TAB 2: Tạo học viên mới tinh */
+              <form onSubmit={handleCreateStudent} className="mt-4 space-y-3.5 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700">Họ và tên học viên mới *</label>
                   <input
-                    type="number"
-                    value={newStudentBirthYear}
-                    onChange={(e) => setNewStudentBirthYear(e.target.value)}
+                    type="text"
+                    required
+                    value={newStudentName}
+                    onChange={(e) => setNewStudentName(e.target.value)}
+                    placeholder="VD: Nguyễn Tuấn Anh"
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700">Năm sinh</label>
+                    <input
+                      type="number"
+                      value={newStudentBirthYear}
+                      onChange={(e) => setNewStudentBirthYear(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700">Hệ số Elo khởi điểm</label>
+                    <input
+                      type="number"
+                      value={newStudentElo}
+                      onChange={(e) => setNewStudentElo(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="font-bold text-slate-700">Hệ số Elo khởi điểm</label>
+                  <label className="font-bold text-slate-700">Tên phụ huynh</label>
                   <input
-                    type="number"
-                    value={newStudentElo}
-                    onChange={(e) => setNewStudentElo(e.target.value)}
+                    type="text"
+                    value={newParentName}
+                    onChange={(e) => setNewParentName(e.target.value)}
+                    placeholder="VD: Nguyễn Văn Hùng"
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="font-bold text-slate-700">Tên phụ huynh</label>
-                <input
-                  type="text"
-                  value={newParentName}
-                  onChange={(e) => setNewParentName(e.target.value)}
-                  placeholder="VD: Nguyễn Văn Hùng"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
+                <div>
+                  <label className="font-bold text-slate-700">Số điện thoại phụ huynh *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={newParentPhone}
+                    onChange={(e) => setNewParentPhone(e.target.value)}
+                    placeholder="VD: 0912.345.678"
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                  {newParentPhone.trim().length >= 8 &&
+                    dataStore.students.some((s) => s.parentPhone.includes(newParentPhone.trim())) && (
+                      <div className="mt-1.5 rounded-lg bg-amber-50 p-2 text-[11px] text-amber-800 border border-amber-200 flex items-center justify-between">
+                        <span>
+                          ℹ️ Phát hiện SĐT này đã có học viên trong CLB.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExistingSearch(newParentPhone.trim());
+                            setAddStudentTab("EXISTING");
+                          }}
+                          className="font-bold text-brand-primary underline ml-1"
+                        >
+                          Chọn học viên sẵn có
+                        </button>
+                      </div>
+                    )}
+                </div>
 
-              <div>
-                <label className="font-bold text-slate-700">Số điện thoại phụ huynh *</label>
-                <input
-                  type="tel"
-                  required
-                  value={newParentPhone}
-                  onChange={(e) => setNewParentPhone(e.target.value)}
-                  placeholder="VD: 0912.345.678"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
+                <div>
+                  <label className="font-bold text-slate-700">
+                    Đơn giá học phí riêng (để trống nếu dùng giá lớp)
+                  </label>
+                  <input
+                    type="number"
+                    value={newCustomFee}
+                    onChange={(e) => setNewCustomFee(e.target.value)}
+                    placeholder={`Mặc định: ${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi`}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold"
+                  />
+                </div>
 
-              <div>
-                <label className="font-bold text-slate-700">
-                  Đơn giá học phí riêng (để trống nếu dùng giá lớp)
-                </label>
-                <input
-                  type="number"
-                  value={newCustomFee}
-                  onChange={(e) => setNewCustomFee(e.target.value)}
-                  placeholder={`Mặc định: ${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi`}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold"
-                />
-              </div>
+                <div>
+                  <label className="font-bold text-slate-700">Ghi chú của HLV</label>
+                  <input
+                    type="text"
+                    value={newStudentNotes}
+                    onChange={(e) => setNewStudentNotes(e.target.value)}
+                    placeholder="VD: Mới vào học, rất hào hứng..."
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
+                </div>
 
-              <div>
-                <label className="font-bold text-slate-700">Ghi chú của HLV</label>
-                <input
-                  type="text"
-                  value={newStudentNotes}
-                  onChange={(e) => setNewStudentNotes(e.target.value)}
-                  placeholder="VD: Mới vào học, rất hào hứng..."
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
-
-              <div className="mt-5 flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddStudentOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-brand-primary px-5 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                >
-                  Thêm Vào Lớp
-                </button>
-              </div>
-            </form>
+                <div className="mt-5 flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddStudentOpen(false)}
+                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-brand-primary px-5 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  >
+                    Tạo & Thêm Vào Lớp
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

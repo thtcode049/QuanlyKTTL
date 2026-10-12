@@ -332,9 +332,25 @@ export default function StudentsDirectoryPage() {
 
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 text-[11px]">Lớp:</span>
-                      <span className="font-semibold text-slate-700 text-[11px] truncate max-w-[140px]">
-                        {studentClass?.name || "Chưa xếp lớp"}
-                      </span>
+                      <div className="text-right max-w-[150px] truncate">
+                        {classes.filter((c) => std.classIds.includes(c.id)).length > 1 ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-brand-primary text-[11px]">
+                            <span className="rounded bg-brand-primary/10 px-1 py-0.2 text-[10px]">
+                              {classes.filter((c) => std.classIds.includes(c.id)).length} lớp
+                            </span>
+                            <span className="truncate">
+                              {classes
+                                .filter((c) => std.classIds.includes(c.id))
+                                .map((c) => c.name.split("-")[0]?.trim() || c.name)
+                                .join(", ")}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-slate-700 text-[11px] truncate">
+                            {classes.find((c) => std.classIds.includes(c.id))?.name || "Chưa xếp lớp"}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -425,7 +441,21 @@ export default function StudentsDirectoryPage() {
                       </td>
 
                       <td className="px-4 py-3 font-medium text-slate-800">
-                        {studentClass?.name || "Chưa xếp lớp"}
+                        {classes.filter((c) => std.classIds.includes(c.id)).length > 1 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            <span className="rounded bg-brand-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-primary">
+                              {classes.filter((c) => std.classIds.includes(c.id)).length} lớp
+                            </span>
+                            <span className="text-slate-700 text-xs truncate max-w-[160px]">
+                              {classes
+                                .filter((c) => std.classIds.includes(c.id))
+                                .map((c) => c.name.split("-")[0]?.trim() || c.name)
+                                .join(", ")}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>{classes.find((c) => std.classIds.includes(c.id))?.name || "Chưa xếp lớp"}</span>
+                        )}
                       </td>
 
                       <td className="px-4 py-3 text-slate-700">
