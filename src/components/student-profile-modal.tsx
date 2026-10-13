@@ -95,7 +95,6 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [currentLevel, setCurrentLevel] = useState("Nhập môn");
-  const [eloRating, setEloRating] = useState<number>(1000);
   const [school, setSchool] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -111,7 +110,6 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       setParentName(student.parentName || "");
       setParentPhone(student.parentPhone || "");
       setCurrentLevel(student.currentLevel || "Nhập môn");
-      setEloRating(student.eloRating || 1000);
       setSchool(student.school || "");
       setAddress(student.address || "");
       setNotes(student.notes || "");
@@ -173,7 +171,6 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       parentName,
       parentPhone,
       currentLevel,
-      eloRating: Number(eloRating),
       school,
       address,
       notes,
@@ -258,9 +255,6 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 </span>
                 <span className="rounded-lg bg-white/20 px-2 py-0.5 text-[11px] font-bold text-white backdrop-blur-sm">
                   {student.currentLevel}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-lg bg-amber-400/20 px-2 py-0.5 text-[11px] font-extrabold text-amber-300 border border-amber-300/30">
-                  ★ Elo {student.eloRating}
                 </span>
               </div>
 
@@ -453,24 +447,14 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700">Hệ số Elo cờ vua</label>
-                  <input
-                    type="number"
-                    value={eloRating}
-                    onChange={(e) => setEloRating(Number(e.target.value))}
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
-                  />
-                </div>
-
-                <div>
                   <label className="block font-bold text-slate-700">Trình độ hiện tại</label>
                   <select
                     value={currentLevel}
                     onChange={(e) => setCurrentLevel(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white"
                   >
-                    <option value="Vỡ lòng">Vỡ lòng</option>
                     <option value="Nhập môn">Nhập môn</option>
+                    <option value="Cơ bản">Cơ bản</option>
                     <option value="Nâng cao">Nâng cao</option>
                     <option value="Đội tuyển">Đội tuyển</option>
                   </select>
@@ -547,16 +531,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
             /* View Details */
             <>
               {/* Quick Highlight Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
-                    Hệ số Elo
-                  </span>
-                  <p className="text-xl font-black text-amber-600 mt-0.5">
-                    ★ {student.eloRating}
-                  </p>
-                  <span className="text-[10px] text-slate-500">Đánh giá chuẩn FIDE</span>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
                 <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">

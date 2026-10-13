@@ -41,10 +41,15 @@ export default function AdminDashboardPage() {
     refreshInvoices();
   }, [month, year]);
 
-  // Lọc theo cơ sở
+  // Danh sách các lớp học được chia sẻ với Admin
+  const adminClasses = dataStore.classes.filter((c) => c.shareWithAdmin !== false);
+  const adminClassIds = new Set(adminClasses.map((c) => c.id));
+
+  // Lọc theo cơ sở và chỉ lấy lớp được chia sẻ với Admin
   const filteredInvoices = invoices.filter((inv) => {
+    if (!adminClassIds.has(inv.classId)) return false;
     if (selectedBranchId === "ALL") return true;
-    const cls = dataStore.classes.find((c) => c.id === inv.classId);
+    const cls = adminClasses.find((c) => c.id === inv.classId);
     return cls?.branchId === selectedBranchId;
   });
 
@@ -58,7 +63,7 @@ export default function AdminDashboardPage() {
 
   // Tổng số học viên
   const activeStudentsCount = dataStore.students.length;
-  const activeClassesCount = dataStore.classes.length;
+  const activeClassesCount = adminClasses.length;
   const coachesCount = dataStore.users.filter((u) => u.role === "COACH").length;
 
   // Tỷ lệ chuyên cần tháng
@@ -86,7 +91,7 @@ export default function AdminDashboardPage() {
 
   // Doanh thu theo từng cơ sở để vẽ biểu đồ thanh
   const branchRevenueList = dataStore.branches.map((b) => {
-    const bClasses = dataStore.classes.filter((c) => c.branchId === b.id).map((c) => c.id);
+    const bClasses = adminClasses.filter((c) => c.branchId === b.id).map((c) => c.id);
     const bInvoices = invoices.filter((inv) => bClasses.includes(inv.classId));
     const revenue = bInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
     const paid = bInvoices
@@ -325,25 +330,24 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Top Kỳ Thủ Nhí CLB */}
+          {/* Học Viên Tiêu Biểu CLB */}
           <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-3">
               <Award className="h-4 w-4 text-amber-500" />
-              <span>Top Kỳ Thủ Nhí CLB (Theo Elo)</span>
+              <span>Học Viên Tiêu Biểu CLB</span>
             </div>
             <div className="space-y-2">
               {[...dataStore.students]
-                .sort((a, b) => b.eloRating - a.eloRating)
                 .slice(0, 4)
                 .map((std, idx) => (
                   <div key={std.id} className="flex items-center justify-between text-xs py-1 border-b border-slate-50">
                     <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-black text-amber-800">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-black text-brand-primary">
                         {idx + 1}
                       </span>
                       <span className="font-bold text-slate-800">{std.fullName}</span>
                     </div>
-                    <span className="font-black text-amber-700">★ {std.eloRating}</span>
+                    <span className="font-semibold text-slate-500">{std.currentLevel}</span>
                   </div>
                 ))}
             </div>

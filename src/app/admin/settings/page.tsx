@@ -144,7 +144,7 @@ export default function AdminSettingsPage() {
     studentCode: "HS001",
     parentName: "Nguyễn Hoàng Nam",
     parentPhone: "0912.111.222",
-    className: "Cờ vua Vỡ Lòng - K01",
+    className: "Cờ vua Nhập Môn - K01",
     branchName: "Cơ sở 1 - Bạch Mai",
     month: 10,
     year: 2026,

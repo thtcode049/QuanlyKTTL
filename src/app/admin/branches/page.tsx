@@ -32,15 +32,15 @@ import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function AdminBranchesAndClassesPage() {
   const [branches, setBranches] = useState<BranchData[]>(dataStore.branches);
-  const [classes, setClasses] = useState<ClassroomData[]>(dataStore.classes);
+  const [classes, setClasses] = useState<ClassroomData[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all"); // "all" hoặc id cơ sở
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Chuẩn hóa dữ liệu HLV và 7 cơ sở ban đầu
+  // Chuẩn hóa dữ liệu HLV và 8 cơ sở ban đầu
   useEffect(() => {
     dataStore.normalizeCoachData();
     setBranches([...dataStore.branches]);
-    setClasses([...dataStore.classes]);
+    setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
   }, []);
 
   // Modal Cơ sở
@@ -57,7 +57,8 @@ export default function AdminBranchesAndClassesPage() {
   // Modal Lớp Học
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
   const [newClassName, setNewClassName] = useState("");
-  const [newClassLevel, setNewClassLevel] = useState("Vỡ lòng");
+  const [newClassLevel, setNewClassLevel] = useState("Nhập môn");
+  const [newClassCustomLevel, setNewClassCustomLevel] = useState("");
   const [newClassBranchId, setNewClassBranchId] = useState("branch-1");
   const [newClassCoachId, setNewClassCoachId] = useState("user-coach-1");
   const [newClassSchedule, setNewClassSchedule] = useState("Thứ 3 & Thứ 6 (18:00 - 19:30)");
@@ -67,6 +68,7 @@ export default function AdminBranchesAndClassesPage() {
   const [editingClass, setEditingClass] = useState<ClassroomData | null>(null);
   const [editClassName, setEditClassName] = useState("");
   const [editClassLevel, setEditClassLevel] = useState("");
+  const [editClassCustomLevel, setEditClassCustomLevel] = useState("");
   const [editClassBranchId, setEditClassBranchId] = useState("");
   const [editClassCoachId, setEditClassCoachId] = useState("");
   const [editClassSchedule, setEditClassSchedule] = useState("");
@@ -137,7 +139,13 @@ export default function AdminBranchesAndClassesPage() {
   const openEditClassModal = (cls: ClassroomData) => {
     setEditingClass(cls);
     setEditClassName(cls.name);
-    setEditClassLevel(cls.level);
+    if (["Nhập môn", "Cơ bản", "Nâng cao", "Đội tuyển"].includes(cls.level)) {
+      setEditClassLevel(cls.level);
+      setEditClassCustomLevel("");
+    } else {
+      setEditClassLevel("Tùy chỉnh");
+      setEditClassCustomLevel(cls.level);
+    }
     setEditClassBranchId(cls.branchId);
     setEditClassCoachId(cls.coachId);
     setEditClassSchedule(cls.schedule);
@@ -150,9 +158,11 @@ export default function AdminBranchesAndClassesPage() {
     e.preventDefault();
     if (!editingClass) return;
 
+    const finalLevel = editClassLevel === "Tùy chỉnh" ? (editClassCustomLevel.trim() || "Tùy chỉnh") : editClassLevel;
+
     dataStore.updateClass(editingClass.id, {
       name: editClassName,
-      level: editClassLevel,
+      level: finalLevel,
       branchId: editClassBranchId,
       coachId: editClassCoachId,
       schedule: editClassSchedule,
@@ -160,7 +170,7 @@ export default function AdminBranchesAndClassesPage() {
       isActive: editClassIsActive,
     });
 
-    setClasses([...dataStore.classes]);
+    setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
     setEditingClass(null);
   };
 
@@ -169,24 +179,28 @@ export default function AdminBranchesAndClassesPage() {
     e.preventDefault();
     if (!newClassName) return;
 
+    const finalLevel = newClassLevel === "Tùy chỉnh" ? (newClassCustomLevel.trim() || "Tùy chỉnh") : newClassLevel;
+
     const newCls: ClassroomData = {
       id: `class-${Date.now()}`,
       name: newClassName,
-      level: newClassLevel,
+      level: finalLevel,
       feePerSession: parseFloat(newClassFee) || 150000,
       schedule: newClassSchedule,
       branchId: selectedBranchId !== "all" ? selectedBranchId : newClassBranchId,
       coachId: newClassCoachId,
       isActive: true,
+      shareWithAdmin: true,
     };
 
     dataStore.classes.push(newCls);
     dataStore.recalculateAllInvoices(10, 2026);
-    setClasses([...dataStore.classes]);
+    setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
     setIsCreateClassOpen(false);
 
     setNewClassName("");
-    setNewClassLevel("Vỡ lòng");
+    setNewClassLevel("Nhập môn");
+    setNewClassCustomLevel("");
     setNewClassSchedule("Thứ 3 & Thứ 6 (18:00 - 19:30)");
     setNewClassFee("150000");
   };
@@ -210,7 +224,7 @@ export default function AdminBranchesAndClassesPage() {
   const handleDeleteClass = (classId: string, className: string) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa lớp học "${className}" không?`)) {
       dataStore.deleteClass(classId);
-      setClasses([...dataStore.classes]);
+      setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
       if (editingClass?.id === classId) {
         setEditingClass(null);
       }
@@ -579,11 +593,22 @@ export default function AdminBranchesAndClassesPage() {
                     onChange={(e) => setEditClassLevel(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                   >
-                    <option value="Vỡ lòng">Vỡ lòng</option>
                     <option value="Nhập môn">Nhập môn</option>
+                    <option value="Cơ bản">Cơ bản</option>
                     <option value="Nâng cao">Nâng cao</option>
                     <option value="Đội tuyển">Đội tuyển</option>
+                    <option value="Tùy chỉnh">Tùy chỉnh</option>
                   </select>
+                  {editClassLevel === "Tùy chỉnh" && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nhập tên trình độ tùy chỉnh..."
+                      value={editClassCustomLevel}
+                      onChange={(e) => setEditClassCustomLevel(e.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-200 p-2 text-xs focus:border-brand-primary focus:outline-none"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="font-bold text-slate-700">Cơ sở đào tạo *</label>
@@ -719,11 +744,22 @@ export default function AdminBranchesAndClassesPage() {
                     onChange={(e) => setNewClassLevel(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                   >
-                    <option value="Vỡ lòng">Vỡ lòng</option>
                     <option value="Nhập môn">Nhập môn</option>
+                    <option value="Cơ bản">Cơ bản</option>
                     <option value="Nâng cao">Nâng cao</option>
                     <option value="Đội tuyển">Đội tuyển</option>
+                    <option value="Tùy chỉnh">Tùy chỉnh</option>
                   </select>
+                  {newClassLevel === "Tùy chỉnh" && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nhập tên trình độ tùy chỉnh..."
+                      value={newClassCustomLevel}
+                      onChange={(e) => setNewClassCustomLevel(e.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-200 p-2 text-xs focus:border-brand-primary focus:outline-none"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="font-bold text-slate-700">Cơ sở đào tạo *</label>

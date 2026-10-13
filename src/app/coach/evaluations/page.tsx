@@ -76,7 +76,6 @@ export default function CoachEvaluationsPage() {
   const [calculation, setCalculation] = useState(currentEval.calculation);
   const [endgame, setEndgame] = useState(currentEval.endgame);
   const [generalNote, setGeneralNote] = useState(currentEval.generalNote || "");
-  const [elo, setElo] = useState(selectedStudent?.eloRating || 1000);
 
   // Khi đổi học viên, load lại state
   const handleSelectStudent = (std: StudentData) => {
@@ -89,14 +88,9 @@ export default function CoachEvaluationsPage() {
     setCalculation(ev?.calculation || 3);
     setEndgame(ev?.endgame || 3);
     setGeneralNote(ev?.generalNote || "");
-    setElo(std.eloRating);
   };
 
   const handleSaveEvaluation = () => {
-    // Cập nhật Elo cho học viên
-    if (selectedStudent) {
-      selectedStudent.eloRating = elo;
-    }
 
     const existingIndex = dataStore.evaluations.findIndex(
       (e) => e.studentId === selectedStudent?.id && e.month === month && e.year === year
@@ -142,7 +136,7 @@ export default function CoachEvaluationsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
-            Đánh Giá Kỳ Thủ & Hệ Số Elo
+            Đánh Giá Chuyên Môn Kỳ Thủ
           </h1>
           <p className="mt-1 text-xs text-slate-500">
             Theo dõi sự tiến bộ định kỳ: Khai cuộc, Chiến thuật, Tính toán và Tàn cuộc của học sinh.
@@ -161,7 +155,7 @@ export default function CoachEvaluationsPage() {
       {saveSuccess && (
         <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800 border border-emerald-200 animate-fade-in shadow-sm">
           <Check className="h-4 w-4 text-emerald-600" />
-          <span>Đã lưu thành công đánh giá và hệ số Elo cho kỳ thủ {selectedStudent?.fullName}!</span>
+          <span>Đã lưu thành công đánh giá chuyên môn cho kỳ thủ {selectedStudent?.fullName}!</span>
         </div>
       )}
 
@@ -237,10 +231,10 @@ export default function CoachEvaluationsPage() {
                     </div>
                   </div>
 
-                  <span className={`rounded-lg px-2 py-0.5 text-xs font-black ${
-                    isSelected ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"
+                  <span className={`rounded-lg px-2 py-0.5 text-[11px] font-bold ${
+                    isSelected ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700"
                   }`}>
-                    ★ {std.eloRating}
+                    Đánh giá
                   </span>
                 </div>
               );
@@ -272,20 +266,6 @@ export default function CoachEvaluationsPage() {
                     <p className="text-xs text-slate-500">
                       Mã HV: {selectedStudent.code} • Phụ huynh: {selectedStudent.parentName} ({selectedStudent.parentPhone})
                     </p>
-                  </div>
-                </div>
-
-                {/* Elo adjust */}
-                <div className="rounded-xl bg-amber-50 p-3 border border-amber-200/80 text-center">
-                  <span className="text-[10px] font-bold uppercase text-amber-800">Hệ số Elo Nội Bộ</span>
-                  <div className="flex items-center justify-center gap-2 mt-1">
-                    <input
-                      type="number"
-                      value={elo}
-                      onChange={(e) => setElo(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-amber-300 bg-white py-1 text-center text-sm font-black text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    />
-                    <TrendingUp className="h-4 w-4 text-amber-600" />
                   </div>
                 </div>
               </div>

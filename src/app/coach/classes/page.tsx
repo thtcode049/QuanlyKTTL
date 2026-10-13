@@ -54,17 +54,15 @@ export default function CoachClassesPage() {
     }
     setCurrentCoachId(coachId);
 
-    // Lọc danh sách lớp học của riêng HLV này (nếu là Admin thì hiển thị toàn bộ lớp)
+    // Lọc danh sách lớp học của riêng HLV này (nếu là Admin thì hiển thị toàn bộ lớp được chia sẻ)
     const myClasses = isAdmin
-      ? dataStore.classes
+      ? dataStore.classes.filter((c) => c.shareWithAdmin !== false)
       : dataStore.classes.filter((c) => c.coachId === coachId);
     setClasses(myClasses);
     setSelectedClassId(myClasses[0]?.id || "");
 
     const myClassIds = myClasses.map((c) => c.id);
-    const myStudents = isAdmin
-      ? dataStore.students
-      : dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
     setStudents(myStudents);
   }, []);
 
@@ -91,7 +89,6 @@ export default function CoachClassesPage() {
     birthYear: 2018,
     parentName: "",
     parentPhone: "",
-    eloRating: 1000,
     customFee: "",
     notes: "",
   });
@@ -104,7 +101,6 @@ export default function CoachClassesPage() {
   const [newStudentBirthYear, setNewStudentBirthYear] = useState("2018");
   const [newParentName, setNewParentName] = useState("");
   const [newParentPhone, setNewParentPhone] = useState("");
-  const [newStudentElo, setNewStudentElo] = useState("1000");
   const [newStudentNotes, setNewStudentNotes] = useState("");
   const [newCustomFee, setNewCustomFee] = useState("");
 
@@ -112,17 +108,21 @@ export default function CoachClassesPage() {
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
   const [newClassName, setNewClassName] = useState("");
   const [newClassLevel, setNewClassLevel] = useState("Nhập môn");
+  const [newClassCustomLevel, setNewClassCustomLevel] = useState("");
   const [newClassBranch, setNewClassBranch] = useState("branch-1");
   const [newClassSchedule, setNewClassSchedule] = useState("Thứ 4 & Thứ 7 (18:00 - 19:30)");
   const [newClassFee, setNewClassFee] = useState("160000");
+  const [newClassShareWithAdmin, setNewClassShareWithAdmin] = useState(true);
 
   // Modal State: Sửa thông tin lớp
   const [isEditClassOpen, setIsEditClassOpen] = useState(false);
   const [editClassName, setEditClassName] = useState("");
   const [editClassLevel, setEditClassLevel] = useState("Nhập môn");
+  const [editClassCustomLevel, setEditClassCustomLevel] = useState("");
   const [editClassBranch, setEditClassBranch] = useState("branch-1");
   const [editClassSchedule, setEditClassSchedule] = useState("");
   const [editClassFee, setEditClassFee] = useState("");
+  const [editClassShareWithAdmin, setEditClassShareWithAdmin] = useState(true);
 
   const selectedClass = classes.find((c) => c.id === selectedClassId) || classes[0];
   const branchInfo = dataStore.branches.find((b) => b.id === selectedClass?.branchId);
@@ -175,7 +175,6 @@ export default function CoachClassesPage() {
       birthYear: student.birthYear,
       parentName: student.parentName,
       parentPhone: student.parentPhone,
-      eloRating: student.eloRating,
       customFee: student.customFeePerSession ? String(student.customFeePerSession) : "",
       notes: student.notes || "",
     });
@@ -192,7 +191,6 @@ export default function CoachClassesPage() {
       birthYear: Number(inlineForm.birthYear) || 2018,
       parentName: inlineForm.parentName.trim(),
       parentPhone: inlineForm.parentPhone.trim(),
-      eloRating: Number(inlineForm.eloRating) || 1000,
       customFeePerSession: inlineForm.customFee.trim() ? Number(inlineForm.customFee) : undefined,
       notes: inlineForm.notes.trim(),
     });
@@ -239,7 +237,6 @@ export default function CoachClassesPage() {
       parentName: newParentName || "Phụ huynh " + newStudentName,
       parentPhone: newParentPhone,
       currentLevel: selectedClass?.level || "Nhập môn",
-      eloRating: parseInt(newStudentElo) || 1000,
       notes: newStudentNotes,
       classIds: [selectedClass.id],
       customFeePerSession: newCustomFee ? Number(newCustomFee) : undefined,
@@ -282,15 +279,17 @@ export default function CoachClassesPage() {
     e.preventDefault();
     if (!newClassName) return;
 
+    const finalLevel = newClassLevel === "Tùy chỉnh" ? (newClassCustomLevel.trim() || "Tùy chỉnh") : newClassLevel;
     const newCls: ClassroomData = {
       id: `class-${Date.now()}`,
       name: newClassName,
-      level: newClassLevel,
+      level: finalLevel,
       feePerSession: parseFloat(newClassFee) || 160000,
       schedule: newClassSchedule,
       branchId: newClassBranch,
       coachId: currentCoachId,
       isActive: true,
+      shareWithAdmin: newClassShareWithAdmin,
     };
 
     dataStore.classes.push(newCls);
@@ -300,16 +299,24 @@ export default function CoachClassesPage() {
     setSelectedClassId(newCls.id);
     setIsCreateClassOpen(false);
     setNewClassName("");
+    setNewClassCustomLevel("");
     showToast(`Đã tạo lớp học mới: ${newCls.name}!`);
   };
 
   const openEditClassModal = () => {
     if (!selectedClass) return;
     setEditClassName(selectedClass.name);
-    setEditClassLevel(selectedClass.level);
+    if (["Nhập môn", "Cơ bản", "Nâng cao", "Đội tuyển"].includes(selectedClass.level)) {
+      setEditClassLevel(selectedClass.level);
+      setEditClassCustomLevel("");
+    } else {
+      setEditClassLevel("Tùy chỉnh");
+      setEditClassCustomLevel(selectedClass.level);
+    }
     setEditClassBranch(selectedClass.branchId);
     setEditClassSchedule(selectedClass.schedule);
     setEditClassFee(selectedClass.feePerSession.toString());
+    setEditClassShareWithAdmin(selectedClass.shareWithAdmin !== false);
     setIsEditClassOpen(true);
   };
 
@@ -317,12 +324,14 @@ export default function CoachClassesPage() {
     e.preventDefault();
     if (!selectedClass || !editClassName) return;
 
+    const finalLevel = editClassLevel === "Tùy chỉnh" ? (editClassCustomLevel.trim() || "Tùy chỉnh") : editClassLevel;
     dataStore.updateClass(selectedClass.id, {
       name: editClassName,
-      level: editClassLevel,
+      level: finalLevel,
       branchId: editClassBranch,
       schedule: editClassSchedule,
       feePerSession: parseFloat(editClassFee) || selectedClass.feePerSession,
+      shareWithAdmin: editClassShareWithAdmin,
     });
 
     const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
@@ -437,17 +446,24 @@ export default function CoachClassesPage() {
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <span
-                      className={`rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${
-                        cls.level === "Đội tuyển"
-                          ? "bg-purple-100 text-purple-700"
-                          : cls.level === "Nâng cao"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-emerald-100 text-emerald-800"
-                      }`}
-                    >
-                      {cls.level}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span
+                        className={`rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${
+                          cls.level === "Đội tuyển"
+                            ? "bg-purple-100 text-purple-700"
+                            : cls.level === "Nâng cao"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {cls.level}
+                      </span>
+                      {cls.shareWithAdmin === false && (
+                        <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                          🔒 Riêng tư
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs font-bold text-slate-500">
                       {studentCount} Học viên
                     </span>
@@ -496,6 +512,11 @@ export default function CoachClassesPage() {
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
                   {selectedClass.level}
                 </span>
+                {selectedClass.shareWithAdmin === false && (
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                    🔒 Lớp riêng (HLV)
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 {branchInfo?.name} • {selectedClass.schedule} • Đơn giá:{" "}
@@ -651,8 +672,8 @@ export default function CoachClassesPage() {
                         alt={std.fullName}
                         className="h-full w-full rounded-xl object-cover ring-1 ring-slate-200 shadow-sm"
                       />
-                      <span className="absolute -bottom-1 -right-1 rounded bg-amber-100 px-1 text-[9px] font-black text-amber-800 border border-amber-300">
-                        ★{std.eloRating}
+                      <span className="absolute -bottom-1 -right-1 rounded bg-emerald-100 px-1 text-[9px] font-bold text-emerald-800 border border-emerald-300">
+                        {std.currentLevel}
                       </span>
                     </div>
                     <div className="min-w-0">
@@ -723,7 +744,7 @@ export default function CoachClassesPage() {
                 <th className="px-4 py-3">Năm Sinh</th>
                 <th className="px-4 py-3">Phụ Huynh</th>
                 <th className="px-4 py-3">Số Điện Thoại</th>
-                <th className="px-4 py-3">Hệ Số Elo</th>
+                <th className="px-4 py-3">Trình Độ</th>
                 <th className="px-4 py-3">Học Phí / Buổi</th>
                 <th className="px-4 py-3">Ghi Chú HLV</th>
                 <th className="px-4 py-3 text-center">Thao Tác</th>
@@ -813,20 +834,11 @@ export default function CoachClassesPage() {
                         />
                       </td>
 
-                      {/* Elo rating input */}
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          value={inlineForm.eloRating}
-                          onChange={(e) =>
-                            setInlineForm({ ...inlineForm, eloRating: Number(e.target.value) })
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
-                            if (e.key === "Escape") handleCancelInlineEdit();
-                          }}
-                          className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-amber-700 focus:border-brand-primary focus:outline-none"
-                        />
+                      {/* Trình độ */}
+                      <td className="px-3 py-2 font-medium text-slate-600">
+                        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-200">
+                          {std.currentLevel}
+                        </span>
                       </td>
 
                       {/* Custom Fee input */}
@@ -950,10 +962,10 @@ export default function CoachClassesPage() {
                       </div>
                     </td>
 
-                    {/* Hệ số Elo */}
+                    {/* Trình độ */}
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 font-bold text-amber-700 border border-amber-200">
-                        ★ {std.eloRating}
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-200">
+                        {std.currentLevel}
                       </span>
                     </td>
 
@@ -1108,7 +1120,7 @@ export default function CoachClassesPage() {
                     />
                   </div>
                   <p className="mt-1 text-[11px] text-slate-500">
-                    💡 Học sinh tham gia nhiều lớp sẽ dùng chung 1 hồ sơ Elo và thông tin phụ huynh, không bị trùng lặp.
+                    💡 Học sinh tham gia nhiều lớp sẽ dùng chung 1 hồ sơ học viên và thông tin phụ huynh, không bị trùng lặp.
                   </p>
                 </div>
 
@@ -1145,8 +1157,8 @@ export default function CoachClassesPage() {
                                 <span className="font-mono text-[10px] text-slate-400">
                                   ({std.code})
                                 </span>
-                                <span className="rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-700 border border-amber-200">
-                                  ★ {std.eloRating}
+                                <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 border border-emerald-200">
+                                  {std.currentLevel}
                                 </span>
                               </div>
                               <p className="text-[11px] text-slate-500 truncate">
@@ -1194,25 +1206,14 @@ export default function CoachClassesPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-bold text-slate-700">Năm sinh</label>
-                    <input
-                      type="number"
-                      value={newStudentBirthYear}
-                      onChange={(e) => setNewStudentBirthYear(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700">Hệ số Elo khởi điểm</label>
-                    <input
-                      type="number"
-                      value={newStudentElo}
-                      onChange={(e) => setNewStudentElo(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="font-bold text-slate-700">Năm sinh</label>
+                  <input
+                    type="number"
+                    value={newStudentBirthYear}
+                    onChange={(e) => setNewStudentBirthYear(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  />
                 </div>
 
                 <div>
@@ -1336,10 +1337,11 @@ export default function CoachClassesPage() {
                     onChange={(e) => setNewClassLevel(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                   >
-                    <option value="Vỡ lòng">Vỡ lòng</option>
                     <option value="Nhập môn">Nhập môn</option>
+                    <option value="Cơ bản">Cơ bản</option>
                     <option value="Nâng cao">Nâng cao</option>
                     <option value="Đội tuyển">Đội tuyển</option>
+                    <option value="Tùy chỉnh">Tùy chỉnh</option>
                   </select>
                 </div>
                 <div>
@@ -1357,6 +1359,20 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
               </div>
+
+              {newClassLevel === "Tùy chỉnh" && (
+                <div>
+                  <label className="font-bold text-slate-700">Nhập tên trình độ tùy chỉnh *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newClassCustomLevel}
+                    onChange={(e) => setNewClassCustomLevel(e.target.value)}
+                    placeholder="VD: Thi đấu cấp quận, Master U10..."
+                    className="mt-1 w-full rounded-xl border border-brand-primary p-2.5 focus:outline-none text-xs"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="font-bold text-slate-700">Lịch học</label>
@@ -1380,6 +1396,24 @@ export default function CoachClassesPage() {
                   onChange={(e) => setNewClassFee(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
                 />
+              </div>
+
+              {/* Share with Admin Checkbox */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={newClassShareWithAdmin}
+                    onChange={(e) => setNewClassShareWithAdmin(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <span>Chia sẻ quyền quản lý và xem với Ban Quản Trị (Admin)</span>
+                </label>
+                <p className="mt-1 text-[11px] text-slate-500 pl-6">
+                  {newClassShareWithAdmin
+                    ? "Admin có thể xem thông tin lớp, học viên và báo cáo học phí của lớp này."
+                    : "🔒 Lớp riêng tư: Admin sẽ không nhìn thấy lớp này trong danh sách hay báo cáo của Admin."}
+                </p>
               </div>
 
               <div className="mt-5 flex justify-end gap-2 pt-2">
@@ -1436,10 +1470,11 @@ export default function CoachClassesPage() {
                     onChange={(e) => setEditClassLevel(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                   >
-                    <option value="Vỡ lòng">Vỡ lòng</option>
                     <option value="Nhập môn">Nhập môn</option>
+                    <option value="Cơ bản">Cơ bản</option>
                     <option value="Nâng cao">Nâng cao</option>
                     <option value="Đội tuyển">Đội tuyển</option>
+                    <option value="Tùy chỉnh">Tùy chỉnh</option>
                   </select>
                 </div>
                 <div>
@@ -1457,6 +1492,20 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
               </div>
+
+              {editClassLevel === "Tùy chỉnh" && (
+                <div>
+                  <label className="font-bold text-slate-700">Nhập tên trình độ tùy chỉnh *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editClassCustomLevel}
+                    onChange={(e) => setEditClassCustomLevel(e.target.value)}
+                    placeholder="VD: Thi đấu cấp quận, Master U10..."
+                    className="mt-1 w-full rounded-xl border border-brand-primary p-2.5 focus:outline-none text-xs"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="font-bold text-slate-700">Lịch học</label>
@@ -1480,6 +1529,24 @@ export default function CoachClassesPage() {
                   onChange={(e) => setEditClassFee(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
                 />
+              </div>
+
+              {/* Share with Admin Checkbox */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editClassShareWithAdmin}
+                    onChange={(e) => setEditClassShareWithAdmin(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <span>Chia sẻ quyền quản lý và xem với Ban Quản Trị (Admin)</span>
+                </label>
+                <p className="mt-1 text-[11px] text-slate-500 pl-6">
+                  {editClassShareWithAdmin
+                    ? "Admin có thể xem thông tin lớp, học viên và báo cáo học phí của lớp này."
+                    : "🔒 Lớp riêng tư: Admin sẽ không nhìn thấy lớp này trong danh sách hay báo cáo của Admin."}
+                </p>
               </div>
 
               <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">

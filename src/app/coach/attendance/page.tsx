@@ -242,7 +242,7 @@ function AttendanceContent() {
           status: r ? r.status : "PRESENT",
           note: r?.coachNote || "",
           hasBook: !!(r?.bookTitle && r?.bookPrice),
-          bookTitle: r?.bookTitle || "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+          bookTitle: r?.bookTitle || "Sách Cờ Vua Bài Tập",
           bookPrice: r?.bookPrice || 80000,
         };
       });
@@ -252,7 +252,7 @@ function AttendanceContent() {
           status: "PRESENT", // Mặc định [Có mặt] theo đặc tả
           note: "",
           hasBook: false,
-          bookTitle: "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+          bookTitle: "Sách Cờ Vua Bài Tập",
           bookPrice: 80000,
         };
       });
@@ -268,7 +268,7 @@ function AttendanceContent() {
         status: "PRESENT",
         note: "",
         hasBook: false,
-        bookTitle: "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+        bookTitle: "Sách Cờ Vua Bài Tập",
         bookPrice: 80000,
       };
       const nextStatus = current.status === "PRESENT" ? "ABSENT" : "PRESENT";
@@ -298,7 +298,7 @@ function AttendanceContent() {
         status: "PRESENT",
         note: "",
         hasBook: false,
-        bookTitle: "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+        bookTitle: "Sách Cờ Vua Bài Tập",
         bookPrice: 80000,
       };
       return {
@@ -348,7 +348,31 @@ function AttendanceContent() {
         status: "PRESENT",
         note: current?.note || "",
         hasBook: current?.hasBook || false,
-        bookTitle: current?.bookTitle || "Sách Cờ Vua Vỡ Lòng & Bài Tập",
+        bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
+        bookPrice: current?.bookPrice || 80000,
+      };
+    });
+    setRecords(updated);
+  };
+
+  const setAllAbsent = () => {
+    const updated: Record<
+      string,
+      {
+        status: "PRESENT" | "ABSENT";
+        note: string;
+        hasBook: boolean;
+        bookTitle: string;
+        bookPrice: number;
+      }
+    > = {};
+    classStudents.forEach((std) => {
+      const current = records[std.id];
+      updated[std.id] = {
+        status: "ABSENT",
+        note: current?.note || "",
+        hasBook: current?.hasBook || false,
+        bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
         bookPrice: current?.bookPrice || 80000,
       };
     });
@@ -445,16 +469,22 @@ function AttendanceContent() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={setAllPresent}
-            className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 text-center"
+            className="flex-1 sm:flex-initial rounded-xl border border-emerald-300 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-100 text-center transition-all active:scale-95"
           >
             Tất cả [Có mặt]
           </button>
           <button
+            onClick={setAllAbsent}
+            className="flex-1 sm:flex-initial rounded-xl border border-rose-300 bg-rose-50/70 px-3.5 py-2.5 text-xs font-bold text-rose-800 shadow-sm hover:bg-rose-100 text-center transition-all active:scale-95"
+          >
+            Tất cả [Vắng]
+          </button>
+          <button
             onClick={handleSaveAttendance}
-            className="flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 text-center"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 text-center transition-all"
           >
             <Save className="h-4 w-4" />
             <span>Lưu Điểm Danh</span>
@@ -683,13 +713,31 @@ function AttendanceContent() {
 
       {/* 1-Click Interactive Attendance List */}
       <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80">
-        <div className="border-b border-slate-100 p-4">
-          <h3 className="text-sm font-bold text-slate-900">
-            Danh Sách Điểm Danh Buổi Học ({classStudents.length} Học Viên)
-          </h3>
-          <p className="text-xs text-slate-500">
-            Chạm vào nút trạng thái của từng học sinh để chuyển đổi nhanh giữa [Có mặt] và [Vắng].
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 p-4 gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Danh Sách Điểm Danh Buổi Học ({classStudents.length} Học Viên)
+            </h3>
+            <p className="text-xs text-slate-500">
+              Chạm vào nút trạng thái của từng học sinh để chuyển đổi nhanh giữa [Có mặt] và [Vắng].
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={setAllPresent}
+              className="rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors shadow-xs"
+            >
+              Tất cả [Có mặt]
+            </button>
+            <button
+              type="button"
+              onClick={setAllAbsent}
+              className="rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-50 transition-colors shadow-xs"
+            >
+              Tất cả [Vắng]
+            </button>
+          </div>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -718,9 +766,6 @@ function AttendanceContent() {
                       </span>
                       <span className="font-mono text-[11px] font-semibold text-slate-400">
                         ({std.code})
-                      </span>
-                      <span className="rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
-                        ★ {std.eloRating}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500">
@@ -756,7 +801,7 @@ function AttendanceContent() {
                           type="text"
                           value={records[std.id]?.bookTitle || ""}
                           onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
-                          placeholder="Tên sách (VD: Sách Cờ vua Vỡ lòng)..."
+                          placeholder="Tên sách (VD: Sách Cờ vua Bài tập)..."
                           className="flex-1 min-w-[150px] sm:w-48 rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
                         />
                         <div className="relative flex-1 min-w-[100px] sm:w-28">
@@ -819,17 +864,31 @@ function AttendanceContent() {
         </div>
 
         {/* Bottom Save Bar */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 p-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50 p-4 gap-3">
           <span className="text-xs text-slate-500">
             Tổng cộng: <strong className="text-brand-primary">{presentCount} Có mặt</strong> • <strong className="text-brand-secondary">{absentCount} Vắng mặt</strong>
           </span>
-          <button
-            onClick={handleSaveAttendance}
-            className="flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-          >
-            <Save className="h-4 w-4" />
-            <span>Lưu Kết Quả Điểm Danh</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={setAllPresent}
+              className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors"
+            >
+              Tất cả [Có mặt]
+            </button>
+            <button
+              onClick={setAllAbsent}
+              className="rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors"
+            >
+              Tất cả [Vắng]
+            </button>
+            <button
+              onClick={handleSaveAttendance}
+              className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 transition-all"
+            >
+              <Save className="h-4 w-4" />
+              <span>Lưu Điểm Danh</span>
+            </button>
+          </div>
         </div>
       </div>
 

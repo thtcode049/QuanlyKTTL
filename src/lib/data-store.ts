@@ -36,12 +36,13 @@ export interface UserData {
 export interface ClassroomData {
   id: string;
   name: string;
-  level: string; // Vỡ lòng, Nhập môn, Nâng cao, Đội tuyển
+  level: string; // Nhập môn, Cơ bản, Nâng cao, Đội tuyển, hoặc Tùy chỉnh
   feePerSession: number;
   schedule: string;
   branchId: string;
   coachId: string;
   isActive: boolean;
+  shareWithAdmin?: boolean; // false = Lớp riêng của HLV (không chia sẻ quyền quản lý & xem với admin)
 }
 
 export interface StudentData {
@@ -53,7 +54,7 @@ export interface StudentData {
   parentName: string;
   parentPhone: string;
   currentLevel: string;
-  eloRating: number;
+  eloRating?: number; // Đã loại bỏ khỏi UI/hệ thống đánh giá
   notes?: string;
   classIds: string[];
   customFeePerSession?: number; // Đơn giá học phí riêng theo từng học viên (ưu đãi, học bổng hoặc kèm riêng)
@@ -219,13 +220,14 @@ export const initialUsers: UserData[] = [
 export const initialClasses: ClassroomData[] = [
   {
     id: "class-1",
-    name: "Cờ vua Vỡ Lòng - K01",
-    level: "Vỡ lòng",
+    name: "Cờ vua Nhập Môn - K01",
+    level: "Nhập môn",
     feePerSession: 150000,
     schedule: "Thứ 3 & Thứ 6 (18:00 - 19:30)",
     branchId: "branch-1",
     coachId: "user-coach-1",
     isActive: true,
+    shareWithAdmin: true,
   },
   {
     id: "class-2",
@@ -236,6 +238,7 @@ export const initialClasses: ClassroomData[] = [
     branchId: "branch-2",
     coachId: "user-coach-1",
     isActive: true,
+    shareWithAdmin: true,
   },
   {
     id: "class-3",
@@ -246,6 +249,7 @@ export const initialClasses: ClassroomData[] = [
     branchId: "branch-3",
     coachId: "user-coach-2",
     isActive: true,
+    shareWithAdmin: true,
   },
   {
     id: "class-4",
@@ -256,16 +260,18 @@ export const initialClasses: ClassroomData[] = [
     branchId: "branch-4",
     coachId: "user-coach-1",
     isActive: true,
+    shareWithAdmin: true,
   },
   {
     id: "class-5",
     name: "Cờ vua Cơ Bản - K05",
-    level: "Nhập môn",
+    level: "Cơ bản",
     feePerSession: 160000,
     schedule: "Thứ 4 & Thứ 7 (18:00 - 19:30)",
     branchId: "branch-5",
     coachId: "user-coach-1",
     isActive: true,
+    shareWithAdmin: true,
   },
   {
     id: "class-6",
@@ -276,16 +282,18 @@ export const initialClasses: ClassroomData[] = [
     branchId: "branch-6",
     coachId: "user-coach-2",
     isActive: true,
+    shareWithAdmin: true,
   },
   {
     id: "class-7",
-    name: "Cờ vua Vỡ Lòng - K07",
-    level: "Vỡ lòng",
+    name: "Cờ vua Cơ Bản - K07 (Lớp riêng)",
+    level: "Cơ bản",
     feePerSession: 150000,
     schedule: "Thứ 7 & Chủ Nhật (09:00 - 10:30)",
     branchId: "branch-7",
     coachId: "user-coach-1",
     isActive: true,
+    shareWithAdmin: false, // Lớp riêng của HLV (không chia sẻ quyền quản lý & xem với admin)
   },
   {
     id: "class-8",
@@ -296,82 +304,83 @@ export const initialClasses: ClassroomData[] = [
     branchId: "branch-8",
     coachId: "user-coach-2",
     isActive: true,
+    shareWithAdmin: true,
   },
 ];
 
 export const initialStudents: StudentData[] = [
-  // Lớp 1 (Vỡ lòng - K01, Bạch Mai) - 7 học viên
-  { id: "std-1", code: "HS001", fullName: "Nguyễn Minh Khang", birthYear: 2018, parentName: "Nguyễn Hoàng Nam", parentPhone: "0912111222", currentLevel: "Vỡ lòng", eloRating: 1020, notes: "Nắm luật nhanh, rất tập trung", classIds: ["class-1"] },
-  { id: "std-2", code: "HS002", fullName: "Trần Bảo An", birthYear: 2019, parentName: "Lê Thị Thu", parentPhone: "0983222333", currentLevel: "Vỡ lòng", eloRating: 980, notes: "Thích ăn quân Xe, vui vẻ", classIds: ["class-1"] },
-  { id: "std-3", code: "HS003", fullName: "Lê Hoàng Phúc", birthYear: 2018, parentName: "Lê Văn Hùng", parentPhone: "0904333444", currentLevel: "Vỡ lòng", eloRating: 1050, notes: "Biết phong Cấp Tốt tốt", classIds: ["class-1"], customFeePerSession: 120000 },
-  { id: "std-4", code: "HS004", fullName: "Phạm Gia Huy", birthYear: 2017, parentName: "Phạm Quốc Tuấn", parentPhone: "0975444555", currentLevel: "Vỡ lòng", eloRating: 1010, notes: "Học đều đặn", classIds: ["class-1"] },
-  { id: "std-5", code: "HS005", fullName: "Vũ Tuệ Lâm", birthYear: 2018, parentName: "Nguyễn Hương Giang", parentPhone: "0966555666", currentLevel: "Vỡ lòng", eloRating: 1040, notes: "Tư duy không gian tốt", classIds: ["class-1"] },
-  { id: "std-6", code: "HS006", fullName: "Đỗ Đăng Khoa", birthYear: 2019, parentName: "Đỗ Xuân Bách", parentPhone: "0918666777", currentLevel: "Vỡ lòng", eloRating: 990, notes: "Mới vào học đầu tháng", classIds: ["class-1"] },
-  { id: "std-7", code: "HS007", fullName: "Bùi Ngọc Hân", birthYear: 2018, parentName: "Bùi Đình Trọng", parentPhone: "0949777888", currentLevel: "Vỡ lòng", eloRating: 1030, notes: "Ngoan ngoãn, hòa đồng", classIds: ["class-1"] },
+  // Lớp 1 (Nhập môn - K01, Bạch Mai) - 7 học viên
+  { id: "std-1", code: "HS001", fullName: "Nguyễn Minh Khang", birthYear: 2018, parentName: "Nguyễn Hoàng Nam", parentPhone: "0912111222", currentLevel: "Nhập môn", notes: "Nắm luật nhanh, rất tập trung", classIds: ["class-1"] },
+  { id: "std-2", code: "HS002", fullName: "Trần Bảo An", birthYear: 2019, parentName: "Lê Thị Thu", parentPhone: "0983222333", currentLevel: "Nhập môn", notes: "Thích ăn quân Xe, vui vẻ", classIds: ["class-1"] },
+  { id: "std-3", code: "HS003", fullName: "Lê Hoàng Phúc", birthYear: 2018, parentName: "Lê Văn Hùng", parentPhone: "0904333444", currentLevel: "Nhập môn", notes: "Biết phong Cấp Tốt tốt", classIds: ["class-1"], customFeePerSession: 120000 },
+  { id: "std-4", code: "HS004", fullName: "Phạm Gia Huy", birthYear: 2017, parentName: "Phạm Quốc Tuấn", parentPhone: "0975444555", currentLevel: "Nhập môn", notes: "Học đều đặn", classIds: ["class-1"] },
+  { id: "std-5", code: "HS005", fullName: "Vũ Tuệ Lâm", birthYear: 2018, parentName: "Nguyễn Hương Giang", parentPhone: "0966555666", currentLevel: "Nhập môn", notes: "Tư duy không gian tốt", classIds: ["class-1"] },
+  { id: "std-6", code: "HS006", fullName: "Đỗ Đăng Khoa", birthYear: 2019, parentName: "Đỗ Xuân Bách", parentPhone: "0918666777", currentLevel: "Nhập môn", notes: "Mới vào học đầu tháng", classIds: ["class-1"] },
+  { id: "std-7", code: "HS007", fullName: "Bùi Ngọc Hân", birthYear: 2018, parentName: "Bùi Đình Trọng", parentPhone: "0949777888", currentLevel: "Nhập môn", notes: "Ngoan ngoãn, hòa đồng", classIds: ["class-1"] },
 
   // Lớp 2 (Nhập môn - K02, Thái Hà) - 6 học viên
-  { id: "std-8", code: "HS008", fullName: "Hoàng Đức Anh", birthYear: 2017, parentName: "Hoàng Văn Tuấn", parentPhone: "0982888999", currentLevel: "Nhập môn", eloRating: 1120, notes: "Biết bẫy mở cờ", classIds: ["class-2"] },
-  { id: "std-9", code: "HS009", fullName: "Đặng Quỳnh Chi", birthYear: 2017, parentName: "Trần Mai Phương", parentPhone: "0933999000", currentLevel: "Nhập môn", eloRating: 1100, notes: "Phản xạ nhanh", classIds: ["class-2"] },
-  { id: "std-10", code: "HS010", fullName: "Ngô Nhật Minh", birthYear: 2016, parentName: "Ngô Quang Huy", parentPhone: "0915123456", currentLevel: "Nhập môn", eloRating: 1150, notes: "Nắm chắc các đòn phối hợp", classIds: ["class-2"] },
-  { id: "std-11", code: "HS011", fullName: "Lý Khánh An", birthYear: 2017, parentName: "Lý Văn Toàn", parentPhone: "0978234567", currentLevel: "Nhập môn", eloRating: 1080, notes: "Chăm chỉ làm bài tập", classIds: ["class-2"] },
-  { id: "std-12", code: "HS012", fullName: "Trương Hải Đăng", birthYear: 2016, parentName: "Trương Quốc Đạt", parentPhone: "0909345678", currentLevel: "Nhập môn", eloRating: 1140, notes: "Chiến thuật chĩa đôi rất sắc", classIds: ["class-2"] },
-  { id: "std-13", code: "HS013", fullName: "Phan Thảo My", birthYear: 2018, parentName: "Phan Văn Quân", parentPhone: "0967456789", currentLevel: "Nhập môn", eloRating: 1090, notes: "Rất say mê cờ vua", classIds: ["class-2"] },
+  { id: "std-8", code: "HS008", fullName: "Hoàng Đức Anh", birthYear: 2017, parentName: "Hoàng Văn Tuấn", parentPhone: "0982888999", currentLevel: "Nhập môn", notes: "Biết bẫy mở cờ", classIds: ["class-2"] },
+  { id: "std-9", code: "HS009", fullName: "Đặng Quỳnh Chi", birthYear: 2017, parentName: "Trần Mai Phương", parentPhone: "0933999000", currentLevel: "Nhập môn", notes: "Phản xạ nhanh", classIds: ["class-2"] },
+  { id: "std-10", code: "HS010", fullName: "Ngô Nhật Minh", birthYear: 2016, parentName: "Ngô Quang Huy", parentPhone: "0915123456", currentLevel: "Nhập môn", notes: "Nắm chắc các đòn phối hợp", classIds: ["class-2"] },
+  { id: "std-11", code: "HS011", fullName: "Lý Khánh An", birthYear: 2017, parentName: "Lý Văn Toàn", parentPhone: "0978234567", currentLevel: "Nhập môn", notes: "Chăm chỉ làm bài tập", classIds: ["class-2"] },
+  { id: "std-12", code: "HS012", fullName: "Trương Hải Đăng", birthYear: 2016, parentName: "Trương Quốc Đạt", parentPhone: "0909345678", currentLevel: "Nhập môn", notes: "Chiến thuật chĩa đôi rất sắc", classIds: ["class-2"] },
+  { id: "std-13", code: "HS013", fullName: "Phan Thảo My", birthYear: 2018, parentName: "Phan Văn Quân", parentPhone: "0967456789", currentLevel: "Nhập môn", notes: "Rất say mê cờ vua", classIds: ["class-2"] },
 
   // Lớp 3 (Nâng cao - N01, Hoàng Quốc Việt) - 6 học viên
-  { id: "std-14", code: "HS014", fullName: "Vũ Gia Bảo", birthYear: 2015, parentName: "Vũ Đình Khiêm", parentPhone: "0981567890", currentLevel: "Nâng cao", eloRating: 1280, notes: "Đạt giải nhì cấp trường", classIds: ["class-3"] },
-  { id: "std-15", code: "HS015", fullName: "Lê Minh Triết", birthYear: 2015, parentName: "Lê Hải Bình", parentPhone: "0913678901", currentLevel: "Nâng cao", eloRating: 1310, notes: "Khai cuộc Italia xuất sắc", classIds: ["class-3"] },
-  { id: "std-16", code: "HS016", fullName: "Nguyễn Phương Linh", birthYear: 2016, parentName: "Nguyễn Thanh Tùng", parentPhone: "0934789012", currentLevel: "Nâng cao", eloRating: 1250, notes: "Tàn cuộc chắc chắn", classIds: ["class-3"] },
-  { id: "std-17", code: "HS017", fullName: "Phạm Quang Dũng", birthYear: 2015, parentName: "Phạm Quốc Hùng", parentPhone: "0972890123", currentLevel: "Nâng cao", eloRating: 1290, notes: "Có nhãn quan chiến lược tốt", classIds: ["class-3"] },
-  { id: "std-18", code: "HS018", fullName: "Đinh Thái Sơn", birthYear: 2014, parentName: "Đinh Văn Long", parentPhone: "0903901234", currentLevel: "Nâng cao", eloRating: 1330, notes: "Lực cờ tấn công mạnh", classIds: ["class-3"] },
-  { id: "std-19", code: "HS019", fullName: "Trần Mai Anh", birthYear: 2016, parentName: "Trần Đình Khang", parentPhone: "0968012345", currentLevel: "Nâng cao", eloRating: 1270, notes: "Tính toán biến sâu", classIds: ["class-3"] },
+  { id: "std-14", code: "HS014", fullName: "Vũ Gia Bảo", birthYear: 2015, parentName: "Vũ Đình Khiêm", parentPhone: "0981567890", currentLevel: "Nâng cao", notes: "Đạt giải nhì cấp trường", classIds: ["class-3"] },
+  { id: "std-15", code: "HS015", fullName: "Lê Minh Triết", birthYear: 2015, parentName: "Lê Hải Bình", parentPhone: "0913678901", currentLevel: "Nâng cao", notes: "Khai cuộc Italia xuất sắc", classIds: ["class-3"] },
+  { id: "std-16", code: "HS016", fullName: "Nguyễn Phương Linh", birthYear: 2016, parentName: "Nguyễn Thanh Tùng", parentPhone: "0934789012", currentLevel: "Nâng cao", notes: "Tàn cuộc chắc chắn", classIds: ["class-3"] },
+  { id: "std-17", code: "HS017", fullName: "Phạm Quang Dũng", birthYear: 2015, parentName: "Phạm Quốc Hùng", parentPhone: "0972890123", currentLevel: "Nâng cao", notes: "Có nhãn quan chiến lược tốt", classIds: ["class-3"] },
+  { id: "std-18", code: "HS018", fullName: "Đinh Thái Sơn", birthYear: 2014, parentName: "Đinh Văn Long", parentPhone: "0903901234", currentLevel: "Nâng cao", notes: "Lực cờ tấn công mạnh", classIds: ["class-3"] },
+  { id: "std-19", code: "HS019", fullName: "Trần Mai Anh", birthYear: 2016, parentName: "Trần Đình Khang", parentPhone: "0968012345", currentLevel: "Nâng cao", notes: "Tính toán biến sâu", classIds: ["class-3"] },
 
   // Lớp 4 (Đội tuyển - DT01, Trương Định) - 6 học viên
-  { id: "std-20", code: "HS020", fullName: "Bùi Quốc Anh", birthYear: 2014, parentName: "Bùi Thế Huynh", parentPhone: "0919123888", currentLevel: "Đội tuyển", eloRating: 1460, notes: "Chuẩn bị thi đấu giải Hà Nội mở rộng", classIds: ["class-4"] },
-  { id: "std-21", code: "HS021", fullName: "Nguyễn Khánh Nam", birthYear: 2013, parentName: "Nguyễn Minh Đức", parentPhone: "0985234999", currentLevel: "Đội tuyển", eloRating: 1420, notes: "Huy chương vàng cấp quận", classIds: ["class-4"] },
-  { id: "std-22", code: "HS022", fullName: "Lê Tuấn Kiệt", birthYear: 2014, parentName: "Lê Văn Hùng", parentPhone: "0936345000", currentLevel: "Đội tuyển", eloRating: 1390, notes: "Khai cuộc Sicilian lão luyện", classIds: ["class-4"] },
-  { id: "std-23", code: "HS023", fullName: "Hoàng Thảo Nguyên", birthYear: 2015, parentName: "Hoàng Minh Tâm", parentPhone: "0974456111", currentLevel: "Đội tuyển", eloRating: 1410, notes: "Tính nước chiếu hết rất nhạy bén", classIds: ["class-4"] },
-  { id: "std-24", code: "HS024", fullName: "Trần Đức Minh", birthYear: 2013, parentName: "Trần Văn Toàn", parentPhone: "0907567222", currentLevel: "Đội tuyển", eloRating: 1480, notes: "Đạt chuẩn Kiện tướng tương lai", classIds: ["class-4"], customFeePerSession: 200000 },
-  { id: "std-25", code: "HS025", fullName: "Võ Minh Khôi", birthYear: 2014, parentName: "Võ Đình Trọng", parentPhone: "0962678333", currentLevel: "Đội tuyển", eloRating: 1430, notes: "Tập trung cao độ, thi đấu bản lĩnh", classIds: ["class-4"] },
+  { id: "std-20", code: "HS020", fullName: "Bùi Quốc Anh", birthYear: 2014, parentName: "Bùi Thế Huynh", parentPhone: "0919123888", currentLevel: "Đội tuyển", notes: "Chuẩn bị thi đấu giải Hà Nội mở rộng", classIds: ["class-4"] },
+  { id: "std-21", code: "HS021", fullName: "Nguyễn Khánh Nam", birthYear: 2013, parentName: "Nguyễn Minh Đức", parentPhone: "0985234999", currentLevel: "Đội tuyển", notes: "Huy chương vàng cấp quận", classIds: ["class-4"] },
+  { id: "std-22", code: "HS022", fullName: "Lê Tuấn Kiệt", birthYear: 2014, parentName: "Lê Văn Hùng", parentPhone: "0936345000", currentLevel: "Đội tuyển", notes: "Khai cuộc Sicilian lão luyện", classIds: ["class-4"] },
+  { id: "std-23", code: "HS023", fullName: "Hoàng Thảo Nguyên", birthYear: 2015, parentName: "Hoàng Minh Tâm", parentPhone: "0974456111", currentLevel: "Đội tuyển", notes: "Tính nước chiếu hết rất nhạy bén", classIds: ["class-4"] },
+  { id: "std-24", code: "HS024", fullName: "Trần Đức Minh", birthYear: 2013, parentName: "Trần Văn Toàn", parentPhone: "0907567222", currentLevel: "Đội tuyển", notes: "Đạt chuẩn Kiện tướng tương lai", classIds: ["class-4"], customFeePerSession: 200000 },
+  { id: "std-25", code: "HS025", fullName: "Võ Minh Khôi", birthYear: 2014, parentName: "Võ Đình Trọng", parentPhone: "0962678333", currentLevel: "Đội tuyển", notes: "Tập trung cao độ, thi đấu bản lĩnh", classIds: ["class-4"] },
 
   // Lớp 5 (Cơ sở 5 – Láng Hạ) - 4 học viên
-  { id: "std-26", code: "HS026", fullName: "Nguyễn Gia Khiêm", birthYear: 2017, parentName: "Nguyễn Văn Hưng", parentPhone: "0915667788", currentLevel: "Nhập môn", eloRating: 1100, notes: "Học rất chăm chỉ", classIds: ["class-5"] },
-  { id: "std-27", code: "HS027", fullName: "Trần Hà My", birthYear: 2018, parentName: "Trần Văn Cường", parentPhone: "0982334455", currentLevel: "Nhập môn", eloRating: 1070, notes: "Nắm chắc luật chơi", classIds: ["class-5"] },
-  { id: "std-28", code: "HS028", fullName: "Lê Minh Quân", birthYear: 2017, parentName: "Lê Tuấn Hùng", parentPhone: "0903445566", currentLevel: "Nhập môn", eloRating: 1120, notes: "Thích học đòn phối hợp", classIds: ["class-5"] },
-  { id: "std-29", code: "HS029", fullName: "Vũ Đăng Khôi", birthYear: 2016, parentName: "Vũ Đình Nam", parentPhone: "0976556677", currentLevel: "Nhập môn", eloRating: 1140, notes: "Phản xạ nhanh", classIds: ["class-5"] },
+  { id: "std-26", code: "HS026", fullName: "Nguyễn Gia Khiêm", birthYear: 2017, parentName: "Nguyễn Văn Hưng", parentPhone: "0915667788", currentLevel: "Nhập môn", notes: "Học rất chăm chỉ", classIds: ["class-5"] },
+  { id: "std-27", code: "HS027", fullName: "Trần Hà My", birthYear: 2018, parentName: "Trần Văn Cường", parentPhone: "0982334455", currentLevel: "Nhập môn", notes: "Nắm chắc luật chơi", classIds: ["class-5"] },
+  { id: "std-28", code: "HS028", fullName: "Lê Minh Quân", birthYear: 2017, parentName: "Lê Tuấn Hùng", parentPhone: "0903445566", currentLevel: "Nhập môn", notes: "Thích học đòn phối hợp", classIds: ["class-5"] },
+  { id: "std-29", code: "HS029", fullName: "Vũ Đăng Khôi", birthYear: 2016, parentName: "Vũ Đình Nam", parentPhone: "0976556677", currentLevel: "Nhập môn", notes: "Phản xạ nhanh", classIds: ["class-5"] },
 
   // Lớp 6 (Cơ sở 6 – Quang Trung, Hà Đông) - 4 học viên
-  { id: "std-30", code: "HS030", fullName: "Bùi Tuấn Kiệt", birthYear: 2015, parentName: "Bùi Văn Thành", parentPhone: "0912889900", currentLevel: "Nâng cao", eloRating: 1260, notes: "Đánh cờ chắc chắn", classIds: ["class-6"] },
-  { id: "std-31", code: "HS031", fullName: "Đỗ Phương Thảo", birthYear: 2016, parentName: "Đỗ Minh Đức", parentPhone: "0983112244", currentLevel: "Nâng cao", eloRating: 1240, notes: "Tập trung cao", classIds: ["class-6"] },
-  { id: "std-32", code: "HS032", fullName: "Hoàng Gia Hưng", birthYear: 2015, parentName: "Hoàng Văn Nam", parentPhone: "0904223355", currentLevel: "Nâng cao", eloRating: 1290, notes: "Lực cờ tốt", classIds: ["class-6"] },
-  { id: "std-33", code: "HS033", fullName: "Phạm Ngọc Diệp", birthYear: 2016, parentName: "Phạm Quốc Toản", parentPhone: "0968334466", currentLevel: "Nâng cao", eloRating: 1230, notes: "Chăm giải cờ thế", classIds: ["class-6"] },
+  { id: "std-30", code: "HS030", fullName: "Bùi Tuấn Kiệt", birthYear: 2015, parentName: "Bùi Văn Thành", parentPhone: "0912889900", currentLevel: "Nâng cao", notes: "Đánh cờ chắc chắn", classIds: ["class-6"] },
+  { id: "std-31", code: "HS031", fullName: "Đỗ Phương Thảo", birthYear: 2016, parentName: "Đỗ Minh Đức", parentPhone: "0983112244", currentLevel: "Nâng cao", notes: "Tập trung cao", classIds: ["class-6"] },
+  { id: "std-32", code: "HS032", fullName: "Hoàng Gia Hưng", birthYear: 2015, parentName: "Hoàng Văn Nam", parentPhone: "0904223355", currentLevel: "Nâng cao", notes: "Lực cờ tốt", classIds: ["class-6"] },
+  { id: "std-33", code: "HS033", fullName: "Phạm Ngọc Diệp", birthYear: 2016, parentName: "Phạm Quốc Toản", parentPhone: "0968334466", currentLevel: "Nâng cao", notes: "Chăm giải cờ thế", classIds: ["class-6"] },
 
   // Lớp 7 (Cơ sở 7 – Gamuda Gardens) - 4 học viên
-  { id: "std-34", code: "HS034", fullName: "Trịnh Minh Trí", birthYear: 2018, parentName: "Trịnh Văn Tuấn", parentPhone: "0916445577", currentLevel: "Vỡ lòng", eloRating: 1010, notes: "Rất thích cờ vua", classIds: ["class-7"] },
-  { id: "std-35", code: "HS035", fullName: "Ngô Thảo Vy", birthYear: 2019, parentName: "Ngô Văn Kiên", parentPhone: "0987556688", currentLevel: "Vỡ lòng", eloRating: 990, notes: "Học luật đi quân nhanh", classIds: ["class-7"] },
-  { id: "std-36", code: "HS036", fullName: "Đặng Quốc Bảo", birthYear: 2018, parentName: "Đặng Văn Hùng", parentPhone: "0905667799", currentLevel: "Vỡ lòng", eloRating: 1040, notes: "Tư duy tốt", classIds: ["class-7"] },
-  { id: "std-37", code: "HS037", fullName: "Nguyễn Thùy Trang", birthYear: 2018, parentName: "Nguyễn Văn Thắng", parentPhone: "0978778800", currentLevel: "Vỡ lòng", eloRating: 1020, notes: "Ngoan ngoãn", classIds: ["class-7"] },
+  { id: "std-34", code: "HS034", fullName: "Trịnh Minh Trí", birthYear: 2018, parentName: "Trịnh Văn Tuấn", parentPhone: "0916445577", currentLevel: "Cơ bản", notes: "Rất thích cờ vua", classIds: ["class-7"] },
+  { id: "std-35", code: "HS035", fullName: "Ngô Thảo Vy", birthYear: 2019, parentName: "Ngô Văn Kiên", parentPhone: "0987556688", currentLevel: "Cơ bản", notes: "Học luật đi quân nhanh", classIds: ["class-7"] },
+  { id: "std-36", code: "HS036", fullName: "Đặng Quốc Bảo", birthYear: 2018, parentName: "Đặng Văn Hùng", parentPhone: "0905667799", currentLevel: "Cơ bản", notes: "Tư duy tốt", classIds: ["class-7"] },
+  { id: "std-37", code: "HS037", fullName: "Nguyễn Thùy Trang", birthYear: 2018, parentName: "Nguyễn Văn Thắng", parentPhone: "0978778800", currentLevel: "Cơ bản", notes: "Ngoan ngoãn", classIds: ["class-7"] },
 
   // Lớp 8 (Cơ sở 8 – Nguyễn Tuân, Thanh Xuân) - 4 học viên
-  { id: "std-38", code: "HS038", fullName: "Mai Đức Anh", birthYear: 2015, parentName: "Mai Văn Long", parentPhone: "0918889911", currentLevel: "Nâng cao", eloRating: 1300, notes: "Chiến thuật tốt", classIds: ["class-8"] },
-  { id: "std-39", code: "HS039", fullName: "Phan Khánh Linh", birthYear: 2016, parentName: "Phan Văn Hậu", parentPhone: "0989990022", currentLevel: "Nâng cao", eloRating: 1270, notes: "Tàn cuộc hay", classIds: ["class-8"] },
-  { id: "std-40", code: "HS040", fullName: "Lê Minh Hoàng", birthYear: 2015, parentName: "Lê Văn Sơn", parentPhone: "0906001133", currentLevel: "Nâng cao", eloRating: 1320, notes: "Khai cuộc tốt", classIds: ["class-8"] },
-  { id: "std-41", code: "HS041", fullName: "Vũ Bảo Trâm", birthYear: 2016, parentName: "Vũ Đình Chiến", parentPhone: "0977112244", currentLevel: "Nâng cao", eloRating: 1250, notes: "Rất cố gắng", classIds: ["class-8"] },
+  { id: "std-38", code: "HS038", fullName: "Mai Đức Anh", birthYear: 2015, parentName: "Mai Văn Long", parentPhone: "0918889911", currentLevel: "Nâng cao", notes: "Chiến thuật tốt", classIds: ["class-8"] },
+  { id: "std-39", code: "HS039", fullName: "Phan Khánh Linh", birthYear: 2016, parentName: "Phan Văn Hậu", parentPhone: "0989990022", currentLevel: "Nâng cao", notes: "Tàn cuộc hay", classIds: ["class-8"] },
+  { id: "std-40", code: "HS040", fullName: "Lê Minh Hoàng", birthYear: 2015, parentName: "Lê Văn Sơn", parentPhone: "0906001133", currentLevel: "Nâng cao", notes: "Khai cuộc tốt", classIds: ["class-8"] },
+  { id: "std-41", code: "HS041", fullName: "Vũ Bảo Trâm", birthYear: 2016, parentName: "Vũ Đình Chiến", parentPhone: "0977112244", currentLevel: "Nâng cao", notes: "Rất cố gắng", classIds: ["class-8"] },
 ];
 
 // Khởi tạo các buổi học thực tế trong tháng 10/2026
 export const initialSessions: AttendanceSessionData[] = [
-  // Lớp 1 (Vỡ lòng - K01): 4 buổi học tháng 10
+  // Lớp 1 (Nhập môn - K01): 4 buổi học tháng 10
   {
     id: "sess-1-1",
     classId: "class-1",
     date: "2026-10-02",
     topic: "Ôn tập luật đi quân và Quy tắc Nhập thành an toàn",
     records: [
-      { id: "rec-1-1-1", sessionId: "sess-1-1", studentId: "std-1", status: "PRESENT", coachNote: "Hiểu tốt quy tắc nhập thành", bookTitle: "Sách Cờ vua Vỡ lòng & Bài tập", bookPrice: 80000 },
+      { id: "rec-1-1-1", sessionId: "sess-1-1", studentId: "std-1", status: "PRESENT", coachNote: "Hiểu tốt quy tắc nhập thành", bookTitle: "Sách Cờ vua Nhập môn & Bài tập", bookPrice: 80000 },
       { id: "rec-1-1-2", sessionId: "sess-1-1", studentId: "std-2", status: "PRESENT", coachNote: "Cần chú ý không đi Vua qua ô bị kiểm soát" },
       { id: "rec-1-1-3", sessionId: "sess-1-1", studentId: "std-3", status: "PRESENT", coachNote: "Tập trung tốt" },
       { id: "rec-1-1-4", sessionId: "sess-1-1", studentId: "std-4", status: "ABSENT", coachNote: "Phụ huynh xin nghỉ về quê" },
-      { id: "rec-1-1-5", sessionId: "sess-1-1", studentId: "std-5", status: "PRESENT", coachNote: "Thực hành nhanh", bookTitle: "Sách Cờ vua Vỡ lòng & Bài tập", bookPrice: 80000 },
+      { id: "rec-1-1-5", sessionId: "sess-1-1", studentId: "std-5", status: "PRESENT", coachNote: "Thực hành nhanh", bookTitle: "Sách Cờ vua Nhập môn & Bài tập", bookPrice: 80000 },
       { id: "rec-1-1-6", sessionId: "sess-1-1", studentId: "std-6", status: "PRESENT", coachNote: "Rất hào hứng" },
       { id: "rec-1-1-7", sessionId: "sess-1-1", studentId: "std-7", status: "PRESENT", coachNote: "Làm bài tập đúng 100%" },
     ],
@@ -607,7 +616,7 @@ export const initialEvaluations: StudentEvaluationData[] = [
   { id: "eval-14", studentId: "std-14", month: 10, year: 2026, opening: 4, tactics: 4, calculation: 4, endgame: 4, generalNote: "Khả năng chiến thuật toàn diện, tâm lý thi đấu rất vững." },
   { id: "eval-15", studentId: "std-15", month: 10, year: 2026, opening: 5, tactics: 4, calculation: 4, endgame: 5, generalNote: "Khai cuộc và tàn cuộc đều ở mức xuất sắc so với lứa tuổi." },
   { id: "eval-20", studentId: "std-20", month: 10, year: 2026, opening: 5, tactics: 5, calculation: 4, endgame: 5, generalNote: "Chuẩn bị tốt cho giải vô địch trẻ thành phố, phong độ ổn định." },
-  { id: "eval-24", studentId: "std-24", month: 10, year: 2026, opening: 5, tactics: 5, calculation: 5, endgame: 5, generalNote: "Kỳ thủ xuất sắc nhất đội, Elo 1480, có tư duy chiến lược đẳng cấp." },
+  { id: "eval-24", studentId: "std-24", month: 10, year: 2026, opening: 5, tactics: 5, calculation: 5, endgame: 5, generalNote: "Kỳ thủ xuất sắc nhất đội, có tư duy chiến lược đẳng cấp." },
 ];
 
 export const initialBankConfig: BankConfig = {
@@ -729,13 +738,33 @@ class InMemoryDataStore {
       }
     });
 
+    // Chuẩn hóa loại bỏ trình độ Vỡ Lòng, chuyển sang Nhập môn hoặc Cơ bản và gán shareWithAdmin
+    for (const c of this.classes) {
+      if (c.level === "Vỡ lòng") {
+        c.level = "Nhập môn";
+      }
+      if (c.name.includes("Vỡ Lòng")) {
+        c.name = c.name.replace(/Vỡ Lòng/g, "Nhập Môn");
+      }
+      if (c.shareWithAdmin === undefined) {
+        c.shareWithAdmin = c.id === "class-7" ? false : true;
+      }
+    }
+    for (const s of this.students) {
+      if (s.currentLevel === "Vỡ lòng") {
+        s.currentLevel = "Nhập môn";
+      }
+    }
+
     // Đồng bộ các lớp học mẫu cho 8 cơ sở
     initialClasses.forEach((ic) => {
       const existingCls = this.classes.find((c) => c.id === ic.id);
       if (existingCls) {
         existingCls.branchId = ic.branchId;
         existingCls.name = ic.name;
+        existingCls.level = ic.level;
         existingCls.schedule = ic.schedule;
+        existingCls.shareWithAdmin = ic.shareWithAdmin;
       } else {
         this.classes.push(ic);
       }
@@ -972,12 +1001,14 @@ class InMemoryDataStore {
   }
 
   // Tính thù lao HLV: Số ca dạy thực tế * Đơn giá ca dạy
-  public getCoachPayroll(month: number, year: number) {
+  public getCoachPayroll(month: number, year: number, onlySharedWithAdmin: boolean = false) {
     return this.users
       .filter((u) => u.role === "COACH")
       .map((coach) => {
-        // Các lớp mà HLV này phụ trách
-        const coachClasses = this.classes.filter((c) => c.coachId === coach.id);
+        // Các lớp mà HLV này phụ trách (nếu Admin xem thì loại trừ các lớp riêng HLV không share)
+        const coachClasses = this.classes.filter(
+          (c) => c.coachId === coach.id && (!onlySharedWithAdmin || c.shareWithAdmin !== false)
+        );
         const classIds = coachClasses.map((c) => c.id);
 
         // Các ca dạy thực tế đã hoàn thành trong tháng
@@ -1077,6 +1108,11 @@ class InMemoryDataStore {
     this.saveToLocalStorage();
     return this.zaloConfig;
   }
+
+  // Lấy danh sách lớp mà Quản trị viên (Admin) được phép xem và quản lý
+  public getAdminClasses(): ClassroomData[] {
+    return this.classes.filter((c) => c.shareWithAdmin !== false);
+  }
 }
 
 // Global singleton instance
@@ -1114,4 +1150,11 @@ export function getCoachStudents(coachId?: string): StudentData[] {
   const coachClasses = getCoachClasses(coachId);
   const classIds = coachClasses.map((c) => c.id);
   return dataStore.students.filter((s) => s.classIds.some((cid) => classIds.includes(cid)));
+}
+
+/**
+ * Lấy danh sách lớp học mà Admin được phép xem và quản trị (loại trừ các lớp riêng HLV không chia sẻ)
+ */
+export function getAdminClasses(): ClassroomData[] {
+  return dataStore.classes.filter((c) => c.shareWithAdmin !== false);
 }

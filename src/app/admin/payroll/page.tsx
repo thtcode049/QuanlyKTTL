@@ -22,7 +22,8 @@ export default function AdminPayrollPage() {
   const [year, setYear] = useState(2026);
   const [zaloModalOpen, setZaloModalOpen] = useState(false);
 
-  const payrollList = dataStore.getCoachPayroll(month, year);
+  // Admin chỉ quản lý và tính thù lao cho các lớp được chia sẻ quyền
+  const payrollList = dataStore.getCoachPayroll(month, year, true);
 
   const totalSessions = payrollList.reduce((sum, p) => sum + p.totalSessions, 0);
   const totalTuition = payrollList.reduce((sum, p) => sum + p.totalTuition, 0);

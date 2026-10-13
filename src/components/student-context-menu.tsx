@@ -106,7 +106,7 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
         </div>
         <div className="overflow-hidden">
           <p className="truncate text-xs font-extrabold text-slate-900">{student.fullName}</p>
-          <p className="text-[10px] font-mono text-slate-500">{student.code} • ★ {student.eloRating}</p>
+          <p className="text-[10px] font-mono text-slate-500">{student.code} • {student.currentLevel}</p>
         </div>
       </div>
 

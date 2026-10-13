@@ -56,7 +56,6 @@ export default function RegisterPage() {
   const [title, setTitle] = useState("HLV Quốc gia");
   const [adminTitle, setAdminTitle] = useState("Ban Chủ Nhiệm CLB");
   const [adminSecretCode, setAdminSecretCode] = useState("KTTLL2026");
-  const [elo, setElo] = useState("2000");
   const [experience, setExperience] = useState("3 năm");
   const [branchId, setBranchId] = useState("branch-1");
   const [bankName, setBankName] = useState("MBBank");
@@ -114,7 +113,6 @@ export default function RegisterPage() {
           role: selectedRole,
           adminSecretCode: selectedRole === "ADMIN" ? adminSecretCode.trim() : undefined,
           title: selectedRole === "ADMIN" ? adminTitle : title,
-          elo: selectedRole === "COACH" ? elo : undefined,
           experience: selectedRole === "COACH" ? experience : "Ban Quản Trị CLB",
           branchId,
           bankName: selectedRole === "COACH" ? bankName : undefined,
@@ -248,7 +246,7 @@ export default function RegisterPage() {
                 Đào Tạo Thế Hệ Kỳ Thủ Tương Lai
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                Hệ thống quản lý chuyên biệt cho Huấn luyện viên cờ vua: Điểm danh 1 chạm, theo dõi tiến độ Elo học sinh, nhận thù lao minh bạch 50% học phí thực dạy + 30% hoa hồng tài liệu.
+                Hệ thống quản lý chuyên biệt cho Huấn luyện viên cờ vua: Điểm danh 1 chạm, theo dõi tiến độ rèn luyện học sinh, nhận thù lao minh bạch 50% học phí thực dạy + 30% hoa hồng tài liệu.
               </p>
 
               <div className="mt-8 space-y-3.5">
@@ -539,16 +537,6 @@ export default function RegisterPage() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block font-bold text-slate-700">Hệ số Elo cờ vua</label>
-                      <input
-                        type="number"
-                        value={elo}
-                        onChange={(e) => setElo(e.target.value)}
-                        placeholder="VD: 2150"
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
-                      />
-                    </div>
 
                     <div>
                       <label className="block font-bold text-slate-700">Kinh nghiệm giảng dạy</label>

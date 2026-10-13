@@ -158,7 +158,7 @@ export default function StudentsDirectoryPage() {
             Quản Lý Hồ Sơ Học Viên
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Tổng hợp toàn bộ học viên các cơ sở, ảnh hồ sơ, hệ số Elo và tiến độ rèn luyện cờ vua.
+            Tổng hợp toàn bộ học viên các cơ sở, ảnh hồ sơ, thông tin liên hệ và tiến độ rèn luyện cờ vua.
           </p>
         </div>
 
@@ -210,8 +210,8 @@ export default function StudentsDirectoryPage() {
                 className="flex-1 sm:flex-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:border-brand-primary focus:bg-white focus:outline-none"
               >
                 <option value="ALL">Tất cả trình độ</option>
-                <option value="Vỡ lòng">Vỡ lòng</option>
                 <option value="Nhập môn">Nhập môn</option>
+                <option value="Cơ bản">Cơ bản</option>
                 <option value="Nâng cao">Nâng cao</option>
                 <option value="Đội tuyển">Đội tuyển</option>
               </select>
@@ -317,9 +317,6 @@ export default function StudentsDirectoryPage() {
                       <p className="text-xs text-slate-500">
                         {std.birthYear} ({age} tuổi) • {std.gender || "Nam"}
                       </p>
-                      <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-700 border border-amber-200 mt-1">
-                        ★ Elo {std.eloRating}
-                      </span>
                     </div>
                   </div>
 
@@ -397,7 +394,6 @@ export default function StudentsDirectoryPage() {
                   <th className="px-4 py-3">Lớp Học</th>
                   <th className="px-4 py-3">Phụ Huynh</th>
                   <th className="px-4 py-3">Số Điện Thoại</th>
-                  <th className="px-4 py-3">Hệ Số Elo</th>
                   <th className="px-4 py-3 text-center">Thao Tác</th>
                 </tr>
               </thead>
@@ -464,12 +460,6 @@ export default function StudentsDirectoryPage() {
 
                       <td className="px-4 py-3 font-mono text-slate-700">
                         {std.parentPhone}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 font-bold text-amber-700 border border-amber-200">
-                          ★ {std.eloRating}
-                        </span>
                       </td>
 
                       <td className="px-4 py-3 text-center">
