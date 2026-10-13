@@ -25,6 +25,7 @@ import { exportInvoicesToExcel, InvoiceExportRow } from "@/lib/excel";
 import { ZaloStudentInvoicePayload } from "@/lib/zalo";
 import VietQrModal from "@/components/vietqr-modal";
 import ZaloSimulatorModal from "@/components/zalo-simulator";
+import ZaloParentSenderModal, { StudentParentInvoiceItem } from "@/components/zalo-parent-sender-modal";
 
 function InvoicesContent() {
   const searchParams = useSearchParams();
@@ -81,6 +82,9 @@ function InvoicesContent() {
   // Modal Zalo Simulator State
   const [zaloModalOpen, setZaloModalOpen] = useState(false);
   const [activeZaloPayload, setActiveZaloPayload] = useState<ZaloStudentInvoicePayload | null>(null);
+
+  // Modal HLV Gửi Thẻ Học Phí Đến Phụ Huynh
+  const [zaloParentModalOpen, setZaloParentModalOpen] = useState(false);
 
   // Modal Chỉnh Sửa Học Phí Riêng Cho Học Viên
   const [editingStudentFee, setEditingStudentFee] = useState<{
@@ -280,8 +284,15 @@ function InvoicesContent() {
 
         <div className="flex items-center gap-2.5">
           <button
+            onClick={() => setZaloParentModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+          >
+            <Send className="h-4 w-4" />
+            <span>Gửi Thẻ Học Phí Đến Phụ Huynh (Zalo)</span>
+          </button>
+          <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover"
+            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover transition-all"
           >
             <Download className="h-4 w-4" />
             <span>Xuất File Excel (.xlsx)</span>
@@ -725,6 +736,55 @@ function InvoicesContent() {
           payload={activeZaloPayload}
         />
       )}
+
+      {/* Modal HLV Gửi Thẻ Học Phí Trực Tiếp Đến Phụ Huynh */}
+      <ZaloParentSenderModal
+        isOpen={zaloParentModalOpen}
+        onClose={() => setZaloParentModalOpen(false)}
+        classroom={selectedClass || null}
+        branch={branchInfo || null}
+        month={selectedMonth}
+        year={selectedYear}
+        students={invoices.map((inv) => {
+          const student = dataStore.students.find((s) => s.id === inv.studentId);
+          const bank = dataStore.bankConfig;
+          const transferContent = `HP ${student?.code || "HS"} T${selectedMonth}`;
+          const vietQrUrl = bank.useCustomQr && bank.customQrImage
+            ? bank.customQrImage
+            : generateVietQrUrl({
+                bankId: bank.bankId,
+                accountNo: bank.bankAccount,
+                accountName: bank.accountHolder,
+                template: "compact2",
+                amount: inv.totalAmount,
+                description: transferContent,
+              });
+
+          return {
+            invoiceId: inv.id,
+            studentId: student?.id || "",
+            studentCode: student?.code || "HS",
+            studentName: student?.fullName || "Học viên",
+            parentName: student?.parentName || "",
+            parentPhone: student?.parentPhone || "",
+            cleanParentPhone: (student?.parentPhone || "").replace(/[^0-9]/g, ""),
+            className: selectedClass?.name || "",
+            branchName: branchInfo?.name || "",
+            month: selectedMonth,
+            year: selectedYear,
+            presentCount: inv.presentCount,
+            presentDates: getPresentDatesForStudent(student?.id || ""),
+            feePerSession: inv.feePerSession,
+            totalAmount: inv.totalAmount,
+            status: inv.status,
+            transferContent,
+            vietQrUrl,
+            bankName: bank.bankName,
+            bankAccount: bank.bankAccount,
+            accountHolder: bank.accountHolder,
+          };
+        })}
+      />
     </div>
   );
 }
