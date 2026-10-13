@@ -85,6 +85,7 @@ function InvoicesContent() {
 
   // Modal HLV Gửi Thẻ Học Phí Đến Phụ Huynh
   const [zaloParentModalOpen, setZaloParentModalOpen] = useState(false);
+  const [selectedStudentForParentModal, setSelectedStudentForParentModal] = useState<string | undefined>(undefined);
 
   // Modal Chỉnh Sửa Học Phí Riêng Cho Học Viên
   const [editingStudentFee, setEditingStudentFee] = useState<{
@@ -284,8 +285,11 @@ function InvoicesContent() {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => setZaloParentModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+            onClick={() => {
+              setSelectedStudentForParentModal(undefined);
+              setZaloParentModalOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
           >
             <Send className="h-4 w-4" />
             <span>Gửi Thẻ Học Phí Đến Phụ Huynh (Zalo)</span>
@@ -609,14 +613,19 @@ function InvoicesContent() {
                           <QrCode className="h-4 w-4" />
                         </button>
 
-                        {/* Nút Gửi Zalo */}
+                        {/* Nút Gửi Zalo Phụ Huynh */}
                         <button
-                          onClick={() => student && handleOpenZalo(inv, student)}
-                          className="flex items-center gap-1 rounded-lg bg-[#0068FF]/10 px-2.5 py-1 text-[11px] font-bold text-[#0068FF] hover:bg-[#0068FF]/20"
-                          title="Gửi học phí qua Zalo OA"
+                          onClick={() => {
+                            if (student) {
+                              setSelectedStudentForParentModal(student.id);
+                              setZaloParentModalOpen(true);
+                            }
+                          }}
+                          className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 shadow-xs transition-all active:scale-95"
+                          title="Mở gửi thẻ học phí qua Zalo cho phụ huynh em này"
                         >
                           <Send className="h-3 w-3" />
-                          <span>Zalo</span>
+                          <span>Gửi Zalo</span>
                         </button>
                       </div>
                     </td>
@@ -745,6 +754,7 @@ function InvoicesContent() {
         branch={branchInfo || null}
         month={selectedMonth}
         year={selectedYear}
+        initialStudentId={selectedStudentForParentModal}
         students={invoices.map((inv) => {
           const student = dataStore.students.find((s) => s.id === inv.studentId);
           const bank = dataStore.bankConfig;
