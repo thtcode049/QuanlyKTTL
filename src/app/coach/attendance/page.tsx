@@ -156,6 +156,12 @@ function AttendanceContent() {
     "Chiến thuật Cờ vua: Đòn Chĩa Đôi & Phối hợp Chiếu Hết"
   );
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
 
   // Tải lớp học và tự động nhảy đến lớp có lịch hôm nay / buổi học đúng thứ
   useEffect(() => {
@@ -332,64 +338,78 @@ function AttendanceContent() {
   };
 
   const setAllPresent = () => {
-    const updated: Record<
-      string,
-      {
-        status: "PRESENT" | "ABSENT";
-        note: string;
-        hasBook: boolean;
-        bookTitle: string;
-        bookPrice: number;
-      }
-    > = {};
-    classStudents.forEach((std) => {
-      const current = records[std.id];
-      updated[std.id] = {
-        status: "PRESENT",
-        note: current?.note || "",
-        hasBook: current?.hasBook || false,
-        bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
-        bookPrice: current?.bookPrice || 80000,
-      };
+    setRecords((prev) => {
+      const updated: Record<
+        string,
+        {
+          status: "PRESENT" | "ABSENT";
+          note: string;
+          hasBook: boolean;
+          bookTitle: string;
+          bookPrice: number;
+        }
+      > = { ...prev };
+      classStudents.forEach((std) => {
+        const current = prev[std.id];
+        updated[std.id] = {
+          status: "PRESENT",
+          note: current?.note || "",
+          hasBook: current?.hasBook || false,
+          bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
+          bookPrice: current?.bookPrice || 80000,
+        };
+      });
+      return updated;
     });
-    setRecords(updated);
+    showToast(`Đã chuyển toàn bộ ${classStudents.length} học viên sang trạng thái [Có mặt]!`);
   };
 
   const setAllAbsent = () => {
-    const updated: Record<
-      string,
-      {
-        status: "PRESENT" | "ABSENT";
-        note: string;
-        hasBook: boolean;
-        bookTitle: string;
-        bookPrice: number;
-      }
-    > = {};
-    classStudents.forEach((std) => {
-      const current = records[std.id];
-      updated[std.id] = {
-        status: "ABSENT",
-        note: current?.note || "",
-        hasBook: current?.hasBook || false,
-        bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
-        bookPrice: current?.bookPrice || 80000,
-      };
+    setRecords((prev) => {
+      const updated: Record<
+        string,
+        {
+          status: "PRESENT" | "ABSENT";
+          note: string;
+          hasBook: boolean;
+          bookTitle: string;
+          bookPrice: number;
+        }
+      > = { ...prev };
+      classStudents.forEach((std) => {
+        const current = prev[std.id];
+        updated[std.id] = {
+          status: "ABSENT",
+          note: current?.note || "",
+          hasBook: current?.hasBook || false,
+          bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
+          bookPrice: current?.bookPrice || 80000,
+        };
+      });
+      return updated;
     });
-    setRecords(updated);
+    showToast(`Đã chuyển toàn bộ ${classStudents.length} học viên sang trạng thái [Vắng mặt]!`);
   };
 
   // Lưu buổi học
   const handleSaveAttendance = () => {
-    const sessionRecords = classStudents.map((std) => ({
-      id: `rec-${Date.now()}-${std.id}`,
-      sessionId: `sess-${selectedClass.id}-${sessionDate}`,
-      studentId: std.id,
-      status: records[std.id]?.status || "PRESENT",
-      coachNote: records[std.id]?.note || "",
-      bookTitle: records[std.id]?.hasBook ? (records[std.id]?.bookTitle || "Sách Cờ Vua") : undefined,
-      bookPrice: records[std.id]?.hasBook ? (Number(records[std.id]?.bookPrice) || 0) : undefined,
-    }));
+    if (!selectedClass) return;
+
+    const sessionRecords = classStudents.map((std) => {
+      const current = records[std.id];
+      const finalStatus: "PRESENT" | "ABSENT" =
+        current?.status === "ABSENT" ? "ABSENT" : "PRESENT";
+
+      return {
+        id: `rec-${Date.now()}-${std.id}`,
+        sessionId: `sess-${selectedClass.id}-${sessionDate}`,
+        studentId: std.id,
+        status: finalStatus,
+        coachNote: current?.note || "",
+        bookTitle: current?.hasBook ? (current?.bookTitle || "Sách Cờ Vua Bài Tập") : undefined,
+        bookPrice: current?.hasBook ? (Number(current?.bookPrice) || 0) : undefined,
+      };
+    });
 
     const existingIndex = dataStore.sessions.findIndex(
       (s) => s.classId === selectedClass.id && s.date === sessionDate
@@ -412,8 +432,10 @@ function AttendanceContent() {
     // Tự động tính toán lại toàn bộ học phí theo quy tắc THỰC HỌC - THỰC TRẢ
     const dateObj = new Date(sessionDate);
     dataStore.recalculateAllInvoices(dateObj.getMonth() + 1, dateObj.getFullYear());
+    dataStore.saveToLocalStorage();
 
     setSaveSuccess(true);
+    showToast(`Đã lưu điểm danh buổi học ngày ${sessionDate} thành công!`);
     confetti({
       particleCount: 50,
       spread: 50,
@@ -491,6 +513,16 @@ function AttendanceContent() {
           </button>
         </div>
       </div>
+
+      {/* Floating Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl border border-emerald-500/40 animate-fade-in">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-primary text-white flex-shrink-0">
+            <Check className="h-4 w-4" />
+          </div>
+          <span>{toastMsg}</span>
+        </div>
+      )}
 
       {/* Success notification */}
       {saveSuccess && (

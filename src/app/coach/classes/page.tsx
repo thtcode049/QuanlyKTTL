@@ -303,20 +303,22 @@ export default function CoachClassesPage() {
     showToast(`Đã tạo lớp học mới: ${newCls.name}!`);
   };
 
-  const openEditClassModal = () => {
-    if (!selectedClass) return;
-    setEditClassName(selectedClass.name);
-    if (["Nhập môn", "Cơ bản", "Nâng cao", "Đội tuyển"].includes(selectedClass.level)) {
-      setEditClassLevel(selectedClass.level);
+  const openEditClassModal = (targetCls?: ClassroomData) => {
+    const clsToEdit = targetCls || selectedClass;
+    if (!clsToEdit) return;
+    setEditClassName(clsToEdit.name);
+    if (["Nhập môn", "Cơ bản", "Nâng cao", "Đội tuyển"].includes(clsToEdit.level)) {
+      setEditClassLevel(clsToEdit.level);
       setEditClassCustomLevel("");
     } else {
       setEditClassLevel("Tùy chỉnh");
-      setEditClassCustomLevel(selectedClass.level);
+      setEditClassCustomLevel(clsToEdit.level);
     }
-    setEditClassBranch(selectedClass.branchId);
-    setEditClassSchedule(selectedClass.schedule);
-    setEditClassFee(selectedClass.feePerSession.toString());
-    setEditClassShareWithAdmin(selectedClass.shareWithAdmin !== false);
+    setEditClassBranch(clsToEdit.branchId);
+    setEditClassSchedule(clsToEdit.schedule);
+    setEditClassFee(clsToEdit.feePerSession.toString());
+    setEditClassShareWithAdmin(clsToEdit.shareWithAdmin !== false);
+    setSelectedClassId(clsToEdit.id);
     setIsEditClassOpen(true);
   };
 
@@ -488,10 +490,43 @@ export default function CoachClassesPage() {
                     </div>
                   </div>
 
+                  {/* Action buttons directly on each class card */}
+                  <div
+                    className="mt-3.5 pt-3 border-t border-slate-100 grid grid-cols-3 gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => openEditClassModal(cls)}
+                      className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-1.5 px-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                      title="Sửa thông tin lớp học này"
+                    >
+                      <Edit2 className="h-3 w-3 text-slate-500" />
+                      <span>Sửa</span>
+                    </button>
+
+                    <Link
+                      href={`/coach/attendance?classId=${cls.id}`}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-brand-primary py-1.5 px-2 text-[11px] font-bold text-white hover:bg-brand-primary-hover active:scale-95 transition-all text-center shadow-xs"
+                      title="Điểm danh buổi học"
+                    >
+                      <Calendar className="h-3 w-3" />
+                      <span>Điểm Danh</span>
+                    </Link>
+
+                    <Link
+                      href={`/coach/invoices?classId=${cls.id}`}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-brand-secondary py-1.5 px-2 text-[11px] font-bold text-white hover:bg-brand-secondary-hover active:scale-95 transition-all text-center shadow-xs"
+                      title="Tổng kết học phí"
+                    >
+                      <DollarSign className="h-3 w-3" />
+                      <span>Học Phí</span>
+                    </Link>
+                  </div>
+
                   {isSelected && (
-                    <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-bold text-brand-primary">
-                      <span>Đang xem chi tiết</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                    <div className="mt-2 text-center text-[10px] font-extrabold text-brand-primary bg-emerald-50 py-0.5 rounded-lg border border-emerald-200">
+                      ✓ Đang xem danh sách
                     </div>
                   )}
                 </div>
@@ -499,76 +534,31 @@ export default function CoachClassesPage() {
             })}
           </div>
 
-      {/* Selected Class Action Header */}
-      {selectedClass && (
-        <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-brand-primary text-white font-black text-xl shadow-md shadow-brand-primary/20 flex-shrink-0">
-              ♞
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">{selectedClass.name}</h2>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
-                  {selectedClass.level}
-                </span>
-                {selectedClass.shareWithAdmin === false && (
-                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
-                    🔒 Lớp riêng (HLV)
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {branchInfo?.name} • {selectedClass.schedule} • Đơn giá:{" "}
-                <span className="font-bold text-slate-800">
-                  {formatCurrencyVND(selectedClass.feePerSession)}/buổi
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <button
-              onClick={openEditClassModal}
-              className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
-            >
-              <Edit2 className="h-3.5 w-3.5 text-brand-primary" />
-              <span>Sửa Thông Tin Lớp</span>
-            </button>
-
-            <Link
-              href={`/coach/attendance?classId=${selectedClass.id}`}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-primary-hover"
-            >
-              <Calendar className="h-4 w-4" />
-              <span>Điểm Danh</span>
-            </Link>
-
-            <Link
-              href={`/coach/invoices?classId=${selectedClass.id}`}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-secondary px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-secondary-hover"
-            >
-              <DollarSign className="h-4 w-4" />
-              <span>Tổng Kết Học Phí</span>
-            </Link>
-          </div>
-        </div>
-      )}
-
       {/* Student List in Selected Class */}
       <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80 overflow-hidden">
         {/* Table Top Controls & Tips */}
         <div className="border-b border-slate-100 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900">
                   Danh Sách Học Viên ({classStudents.length})
                 </h3>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  Lớp {selectedClass?.name}
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-brand-primary border border-emerald-200">
+                  Lớp {selectedClass?.name} ({selectedClass?.level})
                 </span>
+                {selectedClass?.shareWithAdmin === false && (
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                    🔒 Lớp riêng (HLV)
+                  </span>
+                )}
               </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {branchInfo?.name} • {selectedClass?.schedule} • Đơn giá:{" "}
+                <span className="font-bold text-slate-800">
+                  {formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi
+                </span>
+              </p>
               <p className="text-xs text-slate-500 mt-0.5">
                 Nhấp chuột phải vào bất kỳ học viên nào để mở menu thao tác nhanh. Nhấp đúp vào dòng để sửa trực tiếp.
               </p>
