@@ -39,6 +39,24 @@ function sanitizeFileName(name) {
  * Lấy danh sách học viên và hóa đơn cần gửi của lớp từ file dữ liệu
  */
 function getTargetStudentsForSending(options = {}) {
+  const customQueuePath = path.join(__dirname, 'custom_queue.json');
+  if (fs.existsSync(customQueuePath)) {
+    try {
+      const customList = JSON.parse(fs.readFileSync(customQueuePath, 'utf-8'));
+      if (Array.isArray(customList) && customList.length > 0) {
+        return customList.map((st) => ({
+          coachName: st.coachName || 'HLV Kiện Tướng Tương Lai',
+          coachPhone: st.coachPhone || '',
+          className: st.className || 'Lớp cờ vua',
+          classId: st.classId || '',
+          branchName: st.branchName || '',
+          ...st,
+          cleanParentPhone: cleanPhoneNumber(st.parentPhone || st.cleanParentPhone),
+        }));
+      }
+    } catch (e) {}
+  }
+
   const coachDataPath = path.join(__dirname, 'coach_invoices_data.json');
   if (!fs.existsSync(coachDataPath)) {
     // Nếu chưa có, tự động xuất dữ liệu mới

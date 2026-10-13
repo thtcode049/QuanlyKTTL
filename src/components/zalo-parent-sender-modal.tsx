@@ -18,12 +18,15 @@ import {
   Loader2,
   AlertCircle,
   Play,
-  Pause,
   RotateCcw,
   CheckCircle,
   Filter,
   MessageCircle,
   Users,
+  ArrowRight,
+  Info,
+  HelpCircle,
+  Bot,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { ClassroomData, BranchData, dataStore } from "@/lib/data-store";
@@ -143,32 +146,21 @@ export default function ZaloParentSenderModal({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
 
-  // Automation Bot Execution State
+  // === HỘP THOẠI HƯỚNG DẪN GỬI 1-CHẠM (GUIDED SEND DIALOG) ===
+  const [guidedStudent, setGuidedStudent] = useState<StudentParentInvoiceItem | null>(null);
+  const [isCopiedInGuide, setIsCopiedInGuide] = useState(false);
+
+  // === TRÌNH GỬI LẦN LƯỢT CHO CẢ LỚP (BATCH QUEUE RUNNER) ===
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [queueTargets, setQueueTargets] = useState<StudentParentInvoiceItem[]>([]);
+  const [queueCurrentIndex, setQueueCurrentIndex] = useState(0);
+  const [queueCompleted, setQueueCompleted] = useState(false);
+
+  // === BOT AUTOMATION PUPPETEER STATE ===
   const [isBotRunning, setIsBotRunning] = useState(false);
-  const [botStatus, setBotStatus] = useState<"idle" | "running" | "success" | "error">("idle");
-  const [botMessage, setBotMessage] = useState("");
   const [botLogs, setBotLogs] = useState("");
-  const [showLogs, setShowLogs] = useState(false);
-  const [activeTargetStudent, setActiveTargetStudent] = useState<string | null>(null);
-
-  // === TIẾN TRÌNH GỬI HÀNG LOẠT (LIVE BATCH PROGRESS ENGINE) ===
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-  const [isBatchRunning, setIsBatchRunning] = useState(false);
-  const [isBatchPaused, setIsBatchPaused] = useState(false);
-  const [isBatchCompleted, setIsBatchCompleted] = useState(false);
-  const [batchCurrentIndex, setBatchCurrentIndex] = useState(0);
-  const [batchTotal, setBatchTotal] = useState(0);
-  const [batchCurrentStudent, setBatchCurrentStudent] = useState<StudentParentInvoiceItem | null>(null);
-  const [batchStepText, setBatchStepText] = useState("");
-  const [batchItemsStatus, setBatchItemsStatus] = useState<
-    Record<string, { status: "pending" | "sending" | "success" | "error"; timeStr?: string }>
-  >({});
-  const [autoOpenZaloTabs, setAutoOpenZaloTabs] = useState(false);
-  const [autoCopyText, setAutoCopyText] = useState(true);
-
-  // Control Refs for Pause/Stop in Async loop
-  const isPausedRef = useRef(false);
-  const isStoppedRef = useRef(false);
+  const [showBotLogs, setShowBotLogs] = useState(false);
+  const [botStatusMessage, setBotStatusMessage] = useState("");
 
   if (!isOpen || !classroom) return null;
 
@@ -207,7 +199,7 @@ export default function ZaloParentSenderModal({
     }
   };
 
-  // Đánh dấu học sinh đã gửi Zalo
+  // Đánh dấu học sinh đã gửi Zalo thành công
   const markStudentAsSent = (studentId: string, customTime?: string) => {
     const nowIso = customTime || new Date().toISOString();
     setSentMap((prev) => {
@@ -225,7 +217,7 @@ export default function ZaloParentSenderModal({
     }
   };
 
-  // Đánh dấu bỏ gửi (chuyển lại thành chưa gửi)
+  // Đánh dấu hủy gửi (chuyển lại thành chưa gửi)
   const unmarkStudentAsSent = (studentId: string) => {
     setSentMap((prev) => {
       const next = { ...prev };
@@ -244,7 +236,7 @@ export default function ZaloParentSenderModal({
     showToast(`Đã chuyển trạng thái em ${target?.studentName || ""} thành "Chưa gửi".`);
   };
 
-  // Tạo nội dung tin nhắn gửi Zalo chuyên nghiệp
+  // Tạo nội dung tin nhắn gửi Zalo chuẩn
   const buildZaloMessageText = (st: StudentParentInvoiceItem) => {
     const datesStr =
       st.presentDates && st.presentDates.length > 0
@@ -275,28 +267,34 @@ Trân trọng cảm ơn Quý phụ huynh!`;
     const text = buildZaloMessageText(st);
     navigator.clipboard.writeText(text);
     setCopiedStudentId(st.studentId);
-    showToast(`Đã sao chép tin nhắn thông báo học phí của em ${st.studentName}!`);
+    showToast(`Đã sao chép tin nhắn học phí em ${st.studentName}!`);
     setTimeout(() => setCopiedStudentId(null), 2500);
   };
 
-  // Mở Chat Zalo + Tự động copy nội dung + Đánh dấu đã gửi
-  const handleOpenZaloAndSend = (st: StudentParentInvoiceItem) => {
+  // Mở hộp thoại hướng dẫn gửi Zalo 1-chạm & Tự động copy text + Mở Zalo
+  const handleStartGuidedSend = (st: StudentParentInvoiceItem) => {
     const text = buildZaloMessageText(st);
     navigator.clipboard.writeText(text);
-    setCopiedStudentId(st.studentId);
-
-    // Đánh dấu đã gửi
-    markStudentAsSent(st.studentId);
-
-    showToast(`Đã sao chép tin nhắn & đánh dấu đã gửi! Nhấn Ctrl + V vào ô chat Zalo để gửi ngay.`);
+    setIsCopiedInGuide(true);
+    setGuidedStudent(st);
 
     // Mở Zalo Web trong tab mới
-    const url = `https://zalo.me/${st.cleanParentPhone}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    if (st.cleanParentPhone) {
+      const url = `https://zalo.me/${st.cleanParentPhone}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
-  // === XỬ LÝ TIẾN TRÌNH TỰ ĐỘNG GỬI HÀNG LOẠT (CLIENT-SIDE BATCH AUTOMATION) ===
-  const startBatchSending = async (mode: "ALL" | "UNSENT" = "ALL") => {
+  // Xác nhận đã gửi xong từ Hộp thoại Hướng dẫn 1-chạm
+  const handleConfirmSentFromGuide = () => {
+    if (!guidedStudent) return;
+    markStudentAsSent(guidedStudent.studentId);
+    showToast(`✅ Đã xác nhận gửi thẻ học phí cho em ${guidedStudent.studentName}!`);
+    setGuidedStudent(null);
+  };
+
+  // === XỬ LÝ TRÌNH GỬI LẦN LƯỢT CHO CẢ LỚP (GUIDED QUEUE RUNNER) ===
+  const startClassGuidedQueue = (mode: "ALL" | "UNSENT" = "UNSENT") => {
     const targets = mode === "UNSENT"
       ? students.filter((s) => !sentMap[s.studentId])
       : [...students];
@@ -306,138 +304,54 @@ Trân trọng cảm ơn Quý phụ huynh!`;
       return;
     }
 
-    // Khởi tạo trạng thái batch
-    isPausedRef.current = false;
-    isStoppedRef.current = false;
-    setIsBatchModalOpen(true);
-    setIsBatchRunning(true);
-    setIsBatchPaused(false);
-    setIsBatchCompleted(false);
-    setBatchTotal(targets.length);
-    setBatchCurrentIndex(0);
+    setQueueTargets(targets);
+    setQueueCurrentIndex(0);
+    setQueueCompleted(false);
+    setIsQueueOpen(true);
+  };
 
-    const initialStatuses: Record<string, { status: "pending" | "sending" | "success" | "error"; timeStr?: string }> = {};
-    targets.forEach((st) => {
-      initialStatuses[st.studentId] = { status: "pending" };
-    });
-    setBatchItemsStatus(initialStatuses);
+  const handleQueueOpenCurrentStudentZalo = () => {
+    const current = queueTargets[queueCurrentIndex];
+    if (!current) return;
 
-    // Gửi tín hiệu backend song song (nếu server có Chrome thì chạy ngầm, nếu không thì chế độ web_queue)
-    fetch("/api/coach/send-zalo-parents", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        classId: classroom.id,
-        dryRun: false,
-      }),
-    }).catch(() => {});
+    const text = buildZaloMessageText(current);
+    navigator.clipboard.writeText(text);
+    showToast(`Đã tự động sao chép tin nhắn của em ${current.studentName}! Nhấn Ctrl + V vào Zalo.`);
 
-    // Chạy tuần tự qua từng phụ huynh trong danh sách hàng đợi
-    for (let i = 0; i < targets.length; i++) {
-      if (isStoppedRef.current) break;
+    if (current.cleanParentPhone) {
+      window.open(`https://zalo.me/${current.cleanParentPhone}`, "_blank", "noopener,noreferrer");
+    }
+  };
 
-      // Xử lý tạm dừng
-      while (isPausedRef.current) {
-        await new Promise((r) => setTimeout(r, 300));
-        if (isStoppedRef.current) break;
-      }
-      if (isStoppedRef.current) break;
-
-      const current = targets[i];
-      setBatchCurrentIndex(i);
-      setBatchCurrentStudent(current);
-
-      // Bước 1: Chuẩn bị thông tin thẻ
-      setBatchStepText(`Đang đồng bộ thẻ học phí & mã QR cho em ${current.studentName}...`);
-      setBatchItemsStatus((prev) => ({
-        ...prev,
-        [current.studentId]: { status: "sending" },
-      }));
-
-      await new Promise((r) => setTimeout(r, 650));
-      if (isStoppedRef.current) break;
-
-      // Bước 2: Tự động copy nội dung nếu được chọn
-      if (autoCopyText) {
-        try {
-          const msg = buildZaloMessageText(current);
-          await navigator.clipboard.writeText(msg);
-        } catch (e) {}
-      }
-
-      setBatchStepText(`Đang kết nối Zalo phụ huynh (${current.parentPhone || "SĐT"}) & gửi thẻ học phí...`);
-
-      // Mở Zalo Web từng phụ huynh nếu người dùng tích chọn
-      if (autoOpenZaloTabs && current.cleanParentPhone) {
-        window.open(`https://zalo.me/${current.cleanParentPhone}`, "_blank", "noopener,noreferrer");
-      }
-
-      await new Promise((r) => setTimeout(r, 850));
-      if (isStoppedRef.current) break;
-
-      // Bước 3: Đánh dấu thành công
-      const sentTimeIso = new Date().toISOString();
-      markStudentAsSent(current.studentId, sentTimeIso);
-      const timeStr = formatSentTime(sentTimeIso);
-
-      setBatchItemsStatus((prev) => ({
-        ...prev,
-        [current.studentId]: { status: "success", timeStr },
-      }));
+  const handleQueueConfirmAndNext = () => {
+    const current = queueTargets[queueCurrentIndex];
+    if (current) {
+      markStudentAsSent(current.studentId);
     }
 
-    if (!isStoppedRef.current) {
-      setIsBatchCompleted(true);
-      setBatchStepText(`Đã hoàn tất gửi học phí cho toàn bộ ${targets.length} phụ huynh!`);
-      // Bắn confetti ăn mừng
-      confetti({
-        particleCount: 100,
-        spread: 75,
-        origin: { y: 0.6 },
-      });
-      showToast(`🎉 Đã hoàn tất gửi thẻ học phí cho cả lớp thành công!`);
+    if (queueCurrentIndex + 1 < queueTargets.length) {
+      setQueueCurrentIndex(queueCurrentIndex + 1);
+    } else {
+      setQueueCompleted(true);
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+      showToast("🎉 Đã gửi xong cho toàn bộ phụ huynh trong đợt này!");
     }
-
-    setIsBatchRunning(false);
   };
 
-  const pauseBatch = () => {
-    isPausedRef.current = true;
-    setIsBatchPaused(true);
-  };
-
-  const resumeBatch = () => {
-    isPausedRef.current = false;
-    setIsBatchPaused(false);
-  };
-
-  const stopBatch = () => {
-    isStoppedRef.current = true;
-    setIsBatchRunning(false);
-    setIsBatchPaused(false);
-    showToast("Đã dừng tiến trình gửi.");
-  };
-
-  // Kích hoạt Tool Bot Puppeteer tự động gửi (gọi API server)
-  const handleTriggerBot = async (studentCode?: string, dryRun: boolean = false) => {
-    if (!classroom) return;
-
-    // Nếu gửi cả lớp mà không phải dryRun, chuyển thẳng sang Live Batch Dispatcher siêu mượt
-    if (!studentCode && !dryRun) {
-      startBatchSending("ALL");
-      return;
+  const handleQueueSkipCurrent = () => {
+    if (queueCurrentIndex + 1 < queueTargets.length) {
+      setQueueCurrentIndex(queueCurrentIndex + 1);
+    } else {
+      setQueueCompleted(true);
     }
+  };
 
+  // === KÍCH HOẠT BOT PUPPETEER TỰ ĐỘNG GỬI (NẾU CHẠY TRÊN MÁY TÍNH HLV) ===
+  const handleTriggerPuppeteerBot = async (dryRun: boolean = false) => {
     setIsBotRunning(true);
-    setBotStatus("running");
-    setActiveTargetStudent(studentCode || "all");
-    setBotMessage(
-      dryRun
-        ? "Đang chạy thử nghiệm (Dry-Run) và chuẩn bị toàn bộ thẻ học phí..."
-        : studentCode
-        ? `Đang mở Zalo & tự động gửi thẻ học phí cho học viên ${studentCode}...`
-        : "Đang mở Zalo Web và tự động gửi thẻ học phí cho cả lớp..."
-    );
+    setShowBotLogs(true);
+    setBotStatusMessage("Đang chuẩn bị dữ liệu và khởi động Bot Zalo Puppeteer...");
+    setBotLogs("⏳ Đang kết nối máy chủ để chạy tool tự động gửi Zalo...\n");
 
     try {
       const res = await fetch("/api/coach/send-zalo-parents", {
@@ -445,34 +359,35 @@ Trân trọng cảm ơn Quý phụ huynh!`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classId: classroom.id,
-          studentCode: studentCode || undefined,
           dryRun,
+          customStudents: students, // Gửi danh sách học sinh hiện tại (kể cả vừa thêm mới)
         }),
       });
 
       const data = await res.json();
 
-      if (data.success) {
-        setBotStatus("success");
-        setBotMessage(data.message || "Hoàn thành gửi học phí!");
-        setBotLogs(data.output || "");
-        showToast(data.message || "Thao tác thành công!");
-
-        if (studentCode) {
-          const st = students.find((s) => s.studentCode === studentCode);
-          if (st) markStudentAsSent(st.studentId);
-        }
+      if (data.mode === "puppeteer" && data.success) {
+        setBotStatusMessage("✅ Bot đã gửi thành công toàn bộ thẻ học phí!");
+        setBotLogs((prev) => prev + "\n" + (data.output || "Hoàn thành gửi học phí."));
+        // Đánh dấu tất cả học sinh là đã gửi
+        students.forEach((st) => markStudentAsSent(st.studentId));
+        confetti({ particleCount: 80, spread: 60 });
+        showToast("Bot đã hoàn thành gửi tin nhắn và thẻ học phí cho cả lớp!");
       } else {
-        setBotStatus("error");
-        setBotMessage(data.message || "Có lỗi xảy ra khi chạy bot.");
-        setBotLogs(data.output || "");
+        setBotStatusMessage("Chế độ gửi trực tiếp trên trình duyệt:");
+        setBotLogs(
+          `ℹ️ Máy chủ đang chạy trên môi trường đám mây (Cloud/Vercel).\n` +
+          `Do chính sách bảo mật của Zalo, trình duyệt đám mây không thể tự can thiệp ngầm vào Zalo cá nhân của bạn.\n\n` +
+          `👉 BẠN CÓ 2 CÁCH GỬI RẤT ĐƠN GIẢN:\n` +
+          `1. Sử dụng tính năng "Gửi Lần Lượt Cho Cả Lớp": Hệ thống tự copy tin nhắn + mở Zalo, bạn chỉ cần bấm Ctrl+V rồi Enter, 30 giây là gửi xong cả lớp!\n` +
+          `2. Chạy file Chay_Bot_Zalo.bat ngay trên máy tính của bạn để Chrome tự động gõ và gửi 100% không cần chạm tay!`
+        );
       }
     } catch (err: any) {
-      setBotStatus("error");
-      setBotMessage(err.message || "Không thể kết nối đến máy chủ.");
+      setBotStatusMessage("Không thể kích hoạt bot ngầm.");
+      setBotLogs(`Lỗi kết nối: ${err.message || String(err)}`);
     } finally {
       setIsBotRunning(false);
-      setActiveTargetStudent(null);
     }
   };
 
@@ -481,9 +396,7 @@ Trân trọng cảm ơn Quý phụ huynh!`;
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-        onClick={() => {
-          if (!isBatchRunning) onClose();
-        }}
+        onClick={onClose}
       />
 
       {/* Toast Alert */}
@@ -523,13 +436,12 @@ Trân trọng cảm ơn Quý phụ huynh!`;
             {/* Nút gửi hàng loạt cả lớp nổi bật */}
             <button
               type="button"
-              disabled={isBatchRunning}
-              onClick={() => startBatchSending(unsentCount > 0 ? "UNSENT" : "ALL")}
-              className="flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-emerald-800 shadow-md hover:bg-emerald-50 active:scale-95 transition-all disabled:opacity-60"
+              onClick={() => startClassGuidedQueue(unsentCount > 0 ? "UNSENT" : "ALL")}
+              className="flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-emerald-800 shadow-md hover:bg-emerald-50 active:scale-95 transition-all"
             >
               <Send className="h-3.5 w-3.5 text-emerald-700" />
               <span>
-                {unsentCount > 0 ? `🚀 Gửi ${unsentCount} Bạn Chưa Gửi` : "🚀 Gửi Lại Cho Cả Lớp"}
+                {unsentCount > 0 ? `🚀 Gửi Lần Lượt (${unsentCount} PH Chưa Gửi)` : "🚀 Gửi Lại Cả Lớp"}
               </span>
             </button>
 
@@ -551,42 +463,58 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                 <div className="flex items-center gap-2">
                   <Terminal className="h-4 w-4 text-emerald-400" />
                   <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                    Công Cụ Tự Động Gửi Thẻ Ảnh Zalo Cá Nhân
+                    Hệ Thống Gửi Thẻ Học Phí Qua Zalo
                   </span>
-                  {sentCount === students.length && (
-                    <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/40">
-                      ✅ Cả lớp đã gửi xong
-                    </span>
-                  )}
                 </div>
                 <p className="text-xs text-slate-300">
-                  Hỗ trợ: <strong>Tự động gửi cả lớp kèm tiến trình trực quan</strong>, hoặc <strong>Gửi nhanh 1-chạm</strong> (Mở chat Zalo + tự động copy nội dung).
+                  Hỗ trợ 2 hình thức: <strong>Gửi 1-chạm lần lượt cả lớp</strong> (Tự copy tin nhắn + mở Zalo chuẩn 100%) hoặc <strong>Bot tự động Puppeteer</strong> (mở Chrome tự gõ tự gửi).
                 </p>
               </div>
 
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <button
                   type="button"
-                  disabled={isBatchRunning}
-                  onClick={() => handleTriggerBot(undefined, true)}
-                  className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
-                  title="Chạy thử nghiệm để kiểm tra và render sẵn toàn bộ ảnh thẻ học phí"
+                  disabled={isBotRunning}
+                  onClick={() => handleTriggerPuppeteerBot(false)}
+                  className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 active:scale-95 transition-all flex items-center gap-1.5"
+                  title="Chạy Bot Puppeteer tự động gửi trên máy tính"
                 >
-                  <Play className="h-3.5 w-3.5 text-amber-400" />
-                  <span>Chạy Thử (Dry-Run)</span>
+                  <Bot className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Chạy Bot Puppeteer</span>
                 </button>
 
                 <button
                   type="button"
-                  disabled={isBatchRunning}
-                  onClick={() => startBatchSending("ALL")}
-                  className="rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 text-xs font-black text-slate-950 shadow-md shadow-emerald-500/25 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  onClick={() => startClassGuidedQueue("ALL")}
+                  className="rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 text-xs font-black text-slate-950 shadow-md shadow-emerald-500/25 active:scale-95 transition-all flex items-center gap-1.5"
                 >
                   <Send className="h-3.5 w-3.5" />
-                  <span>🚀 Tự Động Gửi Cho Cả Lớp ({students.length} PH)</span>
+                  <span>🚀 Gửi Lần Lượt Cho Cả Lớp ({students.length} PH)</span>
                 </button>
               </div>
             </div>
+
+            {/* Logs Bot Panel if visible */}
+            {showBotLogs && (
+              <div className="mt-3 rounded-xl bg-slate-950 p-3 text-xs border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                    {isBotRunning && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{botStatusMessage}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowBotLogs(false)}
+                    className="text-slate-500 hover:text-slate-300 text-[11px]"
+                  >
+                    Đóng nhật ký
+                  </button>
+                </div>
+                <pre className="font-mono text-[11px] text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                  {botLogs}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Banner Xác Nhận Đã Gửi Xong Cho Cả Lớp */}
@@ -609,7 +537,7 @@ Trân trọng cảm ơn Quý phụ huynh!`;
 
                 <button
                   type="button"
-                  onClick={() => startBatchSending("ALL")}
+                  onClick={() => startClassGuidedQueue("ALL")}
                   className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm transition-all"
                 >
                   Gửi lại cả lớp
@@ -747,10 +675,10 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                           className="flex items-center gap-1.5 shrink-0 self-end sm:self-center flex-wrap"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {/* Nút 1: Gửi Zalo (Mở chat + Đánh dấu đã gửi) */}
+                          {/* Nút 1: Gửi Zalo 1-Chạm (Tự copy tin nhắn + Mở Zalo + Hiện hướng dẫn) */}
                           <button
                             type="button"
-                            onClick={() => handleOpenZaloAndSend(st)}
+                            onClick={() => handleStartGuidedSend(st)}
                             className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition-all active:scale-95 ${
                               isSent
                                 ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
@@ -758,8 +686,8 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                             }`}
                             title={
                               isSent
-                                ? `Đã gửi lúc ${formatSentTime(sentTimeIso)}. Bấm để gửi lại.`
-                                : "Gửi thông báo qua Zalo cho phụ huynh này"
+                                ? `Đã gửi lúc ${formatSentTime(sentTimeIso)}. Bấm để mở lại và gửi lại.`
+                                : "Mở chat Zalo & Tự động copy nội dung học phí"
                             }
                           >
                             {isSent ? (
@@ -775,15 +703,12 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                             )}
                           </button>
 
-                          {/* Nút 2: Mở Zalo Web Chat */}
+                          {/* Nút 2: Mở chat trực tiếp */}
                           <button
                             type="button"
-                            onClick={() => {
-                              handleCopyMessage(st);
-                              window.open(`https://zalo.me/${st.cleanParentPhone}`, "_blank", "noopener,noreferrer");
-                            }}
+                            onClick={() => handleStartGuidedSend(st)}
                             className="flex items-center gap-1 rounded-xl bg-[#0068FF] px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-blue-700 shadow-sm transition-all active:scale-95"
-                            title="Mở chat Zalo phụ huynh & Tự động copy tin nhắn vào clipboard"
+                            title="Mở chat Zalo phụ huynh"
                           >
                             <ExternalLink className="h-3 w-3" />
                             <span>Chat</span>
@@ -986,28 +911,21 @@ Trân trọng cảm ơn Quý phụ huynh!`;
 
                     <button
                       type="button"
-                      onClick={() => handleOpenZaloAndSend(previewStudent)}
+                      onClick={() => handleStartGuidedSend(previewStudent)}
                       className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-98 transition-all"
                     >
                       <Send className="h-4 w-4" />
                       <span>
                         {sentMap[previewStudent.studentId]
-                          ? "🔄 Gửi Lại Zalo Cho Phụ Huynh Này"
-                          : "🚀 Gửi Zalo & Đánh Dấu Đã Gửi"}
+                          ? "🔄 Gửi Lại Cho Phụ Huynh Này"
+                          : "🚀 Mở Zalo & Gửi Cho Phụ Huynh Này"}
                       </span>
                     </button>
 
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          handleCopyMessage(previewStudent);
-                          window.open(
-                            `https://zalo.me/${previewStudent.cleanParentPhone}`,
-                            "_blank",
-                            "noopener,noreferrer"
-                          );
-                        }}
+                        onClick={() => handleStartGuidedSend(previewStudent)}
                         className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0068FF] px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 shadow-sm active:scale-98 transition-all"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -1048,22 +966,21 @@ Trân trọng cảm ơn Quý phụ huynh!`;
           <p className="text-xs text-slate-500 flex items-center gap-1.5">
             <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
             <span>
-              Trạng thái đã gửi được tự động ghi nhận và đồng bộ trực tiếp trên tài khoản HLV.
+              Mỗi tin nhắn gửi đều được hệ thống tự động chuẩn bị sẵn thông tin thanh toán VietQR Napas 24/7.
             </span>
           </p>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
               type="button"
-              disabled={isBatchRunning}
-              onClick={() => startBatchSending(unsentCount > 0 ? "UNSENT" : "ALL")}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-60"
+              onClick={() => startClassGuidedQueue(unsentCount > 0 ? "UNSENT" : "ALL")}
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
             >
               <Send className="h-4 w-4" />
               <span>
                 {unsentCount > 0
-                  ? `🚀 Gửi Tiếp ${unsentCount} Bạn Chưa Gửi`
-                  : `🚀 Gửi Cho Tất Cả (${students.length} Học Viên)`}
+                  ? `🚀 Gửi Lần Lượt ${unsentCount} PH Chưa Gửi`
+                  : `🚀 Gửi Lần Lượt Cho Cả Lớp (${students.length} PH)`}
               </span>
             </button>
 
@@ -1079,20 +996,152 @@ Trân trọng cảm ơn Quý phụ huynh!`;
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL HIỂN THỊ TIẾN TRÌNH TỰ ĐỘNG GỬI CẢ LỚP (LIVE BATCH PROGRESS OVERLAY) */}
+      {/* 1. HỘP THOẠI HƯỚNG DẪN GỬI ZALO 1-CHẠM (GUIDED SEND DIALOG) */}
       {/* ========================================================================= */}
-      {isBatchModalOpen && (
+      {guidedStudent && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-6 text-white shadow-2xl space-y-5">
-            {/* Header Tiến Trình */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 text-slate-900 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    Gửi Học Phí Đến Zalo Phụ Huynh
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Em {guidedStudent.studentName} ({guidedStudent.studentCode}) • PH: {guidedStudent.parentName || "Phụ huynh"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGuidedStudent(null)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Thông báo đã copy vào clipboard */}
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 flex items-start gap-2.5">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-emerald-900">
+                  Đã tự động sao chép toàn bộ thông báo học phí vào Clipboard!
+                </p>
+                <p className="text-[11px] text-emerald-700 mt-0.5">
+                  Số điện thoại phụ huynh: <strong className="font-mono">{guidedStudent.parentPhone}</strong> • Học phí: <strong>{formatCurrencyVND(guidedStudent.totalAmount)}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Hướng dẫn 2 bước cực kỳ dễ hiểu */}
+            <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200/80 space-y-3">
+              <span className="text-xs font-black uppercase text-slate-600 tracking-wider block">
+                👉 2 Bước Hoàn Tất Gửi Trên Zalo:
+              </span>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                    1
+                  </span>
+                  <p className="text-slate-700">
+                    Trên tab Zalo vừa mở: Bấm vào nút màu xanh <strong>[Nhắn tin]</strong> (hoặc mở Zalo trên máy).
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-bold text-white">
+                    2
+                  </span>
+                  <p className="text-slate-700">
+                    Nhấn phím <kbd className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] font-bold border border-slate-300 shadow-xs">Ctrl + V</kbd> (Dán) vào ô nhập tin nhắn và bấm <strong>Enter (Gửi)</strong>!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tiện ích đính kèm */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(buildZaloMessageText(guidedStudent));
+                  setIsCopiedInGuide(true);
+                  showToast("Đã sao chép lại văn bản!");
+                }}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                <Copy className="h-3.5 w-3.5 text-slate-500" />
+                <span>{isCopiedInGuide ? "Đã chép lại text ✅" : "Sao chép lại text"}</span>
+              </button>
+
+              <a
+                href={`/api/coach/send-zalo-parents?action=download&studentCode=${guidedStudent.studentCode}&month=${month}&year=${year}`}
+                download={`${guidedStudent.studentCode}_TheHocPhi.png`}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+              >
+                <Download className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Tải ảnh thẻ PNG</span>
+              </a>
+            </div>
+
+            {/* Nút hành động chính */}
+            <div className="border-t border-slate-100 pt-3 space-y-2">
+              <button
+                type="button"
+                onClick={handleConfirmSentFromGuide}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs font-black text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/25 active:scale-98 transition-all"
+              >
+                <Check className="h-4 w-4" />
+                <span>✅ Tôi Đã Gửi Xong Trên Zalo (Xác Nhận Đã Gửi)</span>
+              </button>
+
+              <div className="flex justify-between items-center text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (guidedStudent.cleanParentPhone) {
+                      window.open(`https://zalo.me/${guidedStudent.cleanParentPhone}`, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  className="text-blue-600 hover:underline flex items-center gap-1 font-semibold"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span>Mở lại tab Zalo</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGuidedStudent(null)}
+                  className="text-slate-500 hover:text-slate-800"
+                >
+                  Đóng lại (Chưa gửi)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2. TRÌNH GỬI LẦN LƯỢT CHO CẢ LỚP (GUIDED QUEUE RUNNER MODAL) */}
+      {/* ========================================================================= */}
+      {isQueueOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl rounded-3xl bg-slate-900 border border-slate-800 p-6 text-white shadow-2xl space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   <Send className="h-5 w-5 animate-pulse" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-white tracking-tight">
-                    Tiến Trình Tự Động Gửi Thẻ Học Phí Cho Cả Lớp
+                    Trình Gửi Thẻ Học Phí Lần Lượt Cho Cả Lớp
                   </h3>
                   <p className="text-xs text-slate-400">
                     Lớp {classroom.name} • Tháng {month}/{year}
@@ -1100,242 +1149,149 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                 </div>
               </div>
 
-              {!isBatchRunning && (
-                <button
-                  type="button"
-                  onClick={() => setIsBatchModalOpen(false)}
-                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setIsQueueOpen(false)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            {/* Thanh Tiến Trình Animated */}
-            <div className="space-y-2">
+            {/* Progress line */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-300">
-                  Tiến độ gửi:{" "}
+                  Tiến độ:{" "}
                   <strong className="text-emerald-400">
-                    {Object.values(batchItemsStatus).filter((i) => i.status === "success").length} /{" "}
-                    {batchTotal}
+                    {queueCurrentIndex + (queueCompleted ? 1 : 0)} / {queueTargets.length}
                   </strong>{" "}
                   phụ huynh
                 </span>
-                <span className="font-mono font-bold text-emerald-400">
-                  {batchTotal > 0
-                    ? Math.round(
-                        (Object.values(batchItemsStatus).filter((i) => i.status === "success").length /
-                          batchTotal) *
-                          100
-                      )
-                    : 0}
+                <span className="font-mono text-emerald-400 font-bold">
+                  {Math.round(
+                    ((queueCurrentIndex + (queueCompleted ? 1 : 0)) / queueTargets.length) * 100
+                  )}
                   %
                 </span>
               </div>
-
-              {/* Progress bar line */}
-              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800 border border-slate-700/60 p-0.5">
+              <div className="h-2.5 w-full rounded-full bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 transition-all duration-300 shadow-sm shadow-emerald-500/50"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300"
                   style={{
                     width: `${
-                      batchTotal > 0
-                        ? (Object.values(batchItemsStatus).filter((i) => i.status === "success").length /
-                            batchTotal) *
-                          100
-                        : 0
+                      ((queueCurrentIndex + (queueCompleted ? 1 : 0)) / queueTargets.length) * 100
                     }%`,
                   }}
                 />
               </div>
             </div>
 
-            {/* Thẻ Phụ Huynh Đang Xử Lý Nổi Bật */}
-            {batchCurrentStudent && !isBatchCompleted && (
-              <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-800/60 to-emerald-950/40 p-4 shadow-inner ring-1 ring-emerald-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-                    Đang gửi phụ huynh [{batchCurrentIndex + 1}/{batchTotal}]:
-                  </span>
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>{batchStepText}</span>
-                  </div>
-                </div>
+            {!queueCompleted ? (
+              <>
+                {/* Active Student Card in Queue */}
+                {queueTargets[queueCurrentIndex] && (
+                  <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-800/80 to-emerald-950/40 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
+                        Phụ huynh đang xử lý [{queueCurrentIndex + 1}/{queueTargets.length}]:
+                      </span>
+                      <span className="text-xs font-mono font-bold text-emerald-400">
+                        {formatCurrencyVND(queueTargets[queueCurrentIndex].totalAmount)}
+                      </span>
+                    </div>
 
-                <div className="flex items-start justify-between gap-3 pt-1">
-                  <div>
-                    <h4 className="text-base font-extrabold text-white">
-                      Em {batchCurrentStudent.studentName}{" "}
-                      <span className="text-xs text-slate-400 font-mono">({batchCurrentStudent.studentCode})</span>
-                    </h4>
-                    <p className="text-xs text-slate-300 mt-0.5">
-                      Phụ huynh: <strong className="text-emerald-300">{batchCurrentStudent.parentName || "Phụ huynh"}</strong> •{" "}
-                      SĐT: <span className="font-mono font-bold text-white">{batchCurrentStudent.parentPhone}</span>
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="text-base font-extrabold text-white">
+                          Em {queueTargets[queueCurrentIndex].studentName}{" "}
+                          <span className="text-xs text-slate-400 font-mono">
+                            ({queueTargets[queueCurrentIndex].studentCode})
+                          </span>
+                        </h4>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          Phụ huynh: <strong className="text-emerald-300">{queueTargets[queueCurrentIndex].parentName || "Phụ huynh"}</strong> •{" "}
+                          SĐT Zalo: <span className="font-mono font-bold text-white">{queueTargets[queueCurrentIndex].parentPhone}</span>
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Thực học: <strong>{queueTargets[queueCurrentIndex].presentCount} buổi</strong> | Cú pháp:{" "}
+                          <span className="text-amber-400 font-mono font-bold">
+                            {queueTargets[queueCurrentIndex].transferContent}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  <div className="text-right">
-                    <span className="text-xs text-slate-400">Tổng học phí:</span>
-                    <p className="text-sm font-black text-emerald-400">
-                      {formatCurrencyVND(batchCurrentStudent.totalAmount)}
-                    </p>
-                    <span className="text-[10px] text-slate-400">
-                      ({batchCurrentStudent.presentCount} buổi thực học)
+                {/* Big Step Actions */}
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleQueueOpenCurrentStudentZalo}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0068FF] hover:bg-blue-600 p-3.5 text-xs font-extrabold text-white shadow-lg shadow-blue-500/25 active:scale-98 transition-all"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Bước 1: Mở Tab Zalo & Tự Động Copy Tin Nhắn Cho Em Này</span>
+                  </button>
+
+                  <p className="text-center text-[11px] text-slate-400">
+                    (Tại Zalo: Nhấn nút <strong>[Nhắn tin]</strong> ➔ Bấm <strong>Ctrl + V</strong> và nhấn <strong>Enter</strong> để gửi)
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleQueueConfirmAndNext}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 p-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-98 transition-all"
+                  >
+                    <Check className="h-4 w-4 stroke-[3]" />
+                    <span>
+                      Bước 2: Đã Gửi Xong Trên Zalo ➔ Chuyển Sang Phụ Huynh Tiếp Theo
                     </span>
-                  </div>
+                  </button>
                 </div>
-              </div>
-            )}
 
-            {/* Banner Hoàn Tất Ăn Mừng Khi Đã Gửi Xong Toàn Bộ */}
-            {isBatchCompleted && (
-              <div className="rounded-2xl border border-emerald-500/60 bg-emerald-950/60 p-5 text-center space-y-2 animate-in zoom-in-95">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/40">
-                  <Check className="h-7 w-7 stroke-[3]" />
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                  <button
+                    type="button"
+                    onClick={handleQueueSkipCurrent}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    Bỏ qua em này ➔
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsQueueOpen(false)}
+                    className="text-rose-400 hover:underline"
+                  >
+                    Tạm dừng tiến trình
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Completed Queue View */
+              <div className="rounded-2xl border border-emerald-500/60 bg-emerald-950/60 p-6 text-center space-y-3 animate-in zoom-in-95">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-slate-950 shadow-xl shadow-emerald-500/40">
+                  <Check className="h-8 w-8 stroke-[3]" />
                 </div>
                 <h4 className="text-base font-black text-emerald-300">
                   🎉 XÁC NHẬN: ĐÃ GỬI XONG CHO TẤT CẢ PHỤ HUYNH!
                 </h4>
-                <p className="text-xs text-slate-300 max-w-lg mx-auto">
-                  Hệ thống đã gửi thành công Thẻ Báo Học Phí tháng {month}/{year} cho toàn bộ{" "}
-                  <strong className="text-white">{batchTotal} phụ huynh</strong> lớp {classroom.name}.
-                  Trạng thái đã gửi kèm thời gian đã được lưu vào hệ thống.
+                <p className="text-xs text-slate-300 max-w-md mx-auto">
+                  Bạn đã hoàn tất gửi thông báo học phí tháng {month}/{year} cho phụ huynh lớp {classroom.name}.
+                  Toàn bộ trạng thái đã được cập nhật chính xác kèm mốc thời gian.
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => setIsQueueOpen(false)}
+                  className="rounded-xl bg-emerald-500 px-6 py-2.5 text-xs font-black text-slate-950 hover:bg-emerald-400 shadow-md transition-all"
+                >
+                  Hoàn Tất & Đóng
+                </button>
               </div>
             )}
-
-            {/* Danh Sách Chi Tiết Tiến Trình Từng Phụ Huynh (Checklist) */}
-            <div className="space-y-1.5">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                Nhật ký tiến trình từng phụ huynh:
-              </span>
-
-              <div className="max-h-52 overflow-y-auto space-y-1.5 rounded-2xl bg-slate-950/60 p-2.5 border border-slate-800">
-                {students.map((st, idx) => {
-                  const itemStatus = batchItemsStatus[st.studentId]?.status || (sentMap[st.studentId] ? "success" : "pending");
-                  const time = batchItemsStatus[st.studentId]?.timeStr || formatSentTime(sentMap[st.studentId]);
-
-                  return (
-                    <div
-                      key={st.studentId}
-                      className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors border ${
-                        itemStatus === "sending"
-                          ? "bg-emerald-950/40 border-emerald-500/50 text-white shadow-xs"
-                          : itemStatus === "success"
-                          ? "bg-slate-900/90 border-emerald-500/20 text-slate-300"
-                          : "bg-slate-900/40 border-slate-800 text-slate-500"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="font-mono text-[10px] text-slate-500 w-5">
-                          #{String(idx + 1).padStart(2, "0")}
-                        </span>
-
-                        <span className="font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">
-                          {st.studentName}
-                        </span>
-
-                        <span className="text-[11px] text-slate-400 truncate hidden sm:inline">
-                          (PH: {st.parentName || "—"} • {st.parentPhone})
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        {itemStatus === "sending" && (
-                          <span className="flex items-center gap-1 font-bold text-emerald-400 text-[11px]">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Đang gửi...</span>
-                          </span>
-                        )}
-
-                        {itemStatus === "success" && (
-                          <span className="flex items-center gap-1 font-bold text-emerald-400 text-[11px]">
-                            <Check className="h-3.5 w-3.5 text-emerald-400" />
-                            <span>Đã gửi {time ? `(${time})` : ""}</span>
-                          </span>
-                        )}
-
-                        {itemStatus === "pending" && (
-                          <span className="text-slate-500 text-[11px]">⚪ Chờ tới lượt</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Action Bar Trong Tiến Trình */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-800 pt-4">
-              {/* Tùy chọn gửi */}
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={autoCopyText}
-                    onChange={(e) => setAutoCopyText(e.target.checked)}
-                    className="rounded border-slate-700 bg-slate-800 text-emerald-500"
-                  />
-                  <span>Tự động sao chép tin nhắn</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 cursor-pointer" title="Tự động mở từng tab Zalo khi gửi">
-                  <input
-                    type="checkbox"
-                    checked={autoOpenZaloTabs}
-                    onChange={(e) => setAutoOpenZaloTabs(e.target.checked)}
-                    className="rounded border-slate-700 bg-slate-800 text-emerald-500"
-                  />
-                  <span>Mở tab chat Zalo</span>
-                </label>
-              </div>
-
-              {/* Các nút điều khiển Pause / Resume / Stop / Complete */}
-              <div className="flex items-center gap-2 self-end sm:self-center">
-                {isBatchRunning ? (
-                  <>
-                    {isBatchPaused ? (
-                      <button
-                        type="button"
-                        onClick={resumeBatch}
-                        className="flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400 active:scale-95 transition-all"
-                      >
-                        <Play className="h-3.5 w-3.5" />
-                        <span>Tiếp Tục</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={pauseBatch}
-                        className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 active:scale-95 transition-all"
-                      >
-                        <Pause className="h-3.5 w-3.5" />
-                        <span>Tạm Dừng</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={stopBatch}
-                      className="rounded-xl border border-rose-800/60 bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-300 hover:bg-rose-900/60 transition-colors"
-                    >
-                      Dừng
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsBatchModalOpen(false)}
-                    className="flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-slate-950 hover:bg-emerald-400 shadow-md transition-all"
-                  >
-                    <Check className="h-4 w-4" />
-                    <span>Hoàn Tất & Đóng</span>
-                  </button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}

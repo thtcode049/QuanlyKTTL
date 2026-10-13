@@ -120,7 +120,15 @@ export async function POST(req: NextRequest) {
     const fs = await import("fs");
     const path = await import("path");
     const body = await req.json();
-    const { classId, studentCode, dryRun } = body;
+    const { classId, studentCode, dryRun, customStudents } = body;
+
+    // Lưu danh sách học viên của lớp hiện tại vào file queue để bot đọc chính xác
+    if (customStudents && Array.isArray(customStudents) && customStudents.length > 0) {
+      try {
+        const queueFile = path.join(process.cwd(), "scripts", "custom_queue.json");
+        fs.writeFileSync(queueFile, JSON.stringify(customStudents, null, 2), "utf-8");
+      } catch (e) {}
+    }
 
     const scriptPath = path.join(process.cwd(), "scripts", "send-invoices-to-parents.js");
     const scriptExists = fs.existsSync(scriptPath);
