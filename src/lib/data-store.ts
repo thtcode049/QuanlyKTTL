@@ -660,6 +660,14 @@ class InMemoryDataStore {
   public saveToLocalStorage() {
     if (typeof window === "undefined") return;
     try {
+      const zaloSentMap: Record<string, string> = {};
+      this.invoices.forEach((inv) => {
+        if (inv.zaloSentAt) {
+          zaloSentMap[inv.id] = inv.zaloSentAt;
+          zaloSentMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`] = inv.zaloSentAt;
+        }
+      });
+
       const payload = {
         users: this.users,
         classes: this.classes,
@@ -667,6 +675,7 @@ class InMemoryDataStore {
         branches: this.branches,
         bankConfig: this.bankConfig,
         zaloConfig: this.zaloConfig,
+        zaloSentMap,
       };
       localStorage.setItem("kttll_datastore", JSON.stringify(payload));
     } catch (e) {
@@ -709,6 +718,16 @@ class InMemoryDataStore {
         this.zaloConfig = { ...this.zaloConfig, ...data.zaloConfig };
       }
       this.recalculateAllInvoices(10, 2026);
+
+      // Phục hồi trạng thái đã gửi Zalo
+      if (data.zaloSentMap && typeof data.zaloSentMap === "object") {
+        this.invoices.forEach((inv) => {
+          const direct = data.zaloSentMap[inv.id];
+          const composite = data.zaloSentMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`];
+          if (direct) inv.zaloSentAt = direct;
+          else if (composite) inv.zaloSentAt = composite;
+        });
+      }
     } catch (e) {
       console.warn("Không thể đọc kttll_datastore từ localStorage", e);
     }
@@ -998,6 +1017,32 @@ class InMemoryDataStore {
     }
 
     this.invoices = newInvoices;
+  }
+
+  // Đánh dấu hóa đơn đã gửi Zalo thành công
+  public markInvoiceZaloSent(invoiceId: string, sentAt?: string) {
+    const inv = this.invoices.find((i) => i.id === invoiceId);
+    if (inv) {
+      inv.zaloSentAt = sentAt || new Date().toISOString();
+      this.saveToLocalStorage();
+    }
+  }
+
+  // Đánh dấu hóa đơn đã gửi Zalo theo lớp, học viên, tháng, năm
+  public markInvoiceZaloSentByStudent(
+    classId: string,
+    studentId: string,
+    month: number,
+    year: number,
+    sentAt?: string
+  ) {
+    const inv = this.invoices.find(
+      (i) => i.classId === classId && i.studentId === studentId && i.month === month && i.year === year
+    );
+    if (inv) {
+      inv.zaloSentAt = sentAt || new Date().toISOString();
+      this.saveToLocalStorage();
+    }
   }
 
   // Tính thù lao HLV: Số ca dạy thực tế * Đơn giá ca dạy

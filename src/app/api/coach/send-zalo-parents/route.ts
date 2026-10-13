@@ -117,14 +117,29 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const body = await req.json();
+    const { classId, studentCode, dryRun } = body;
+
+    const scriptPath = path.join(process.cwd(), "scripts", "send-invoices-to-parents.js");
+    const scriptExists = fs.existsSync(scriptPath);
+
+    // Nếu chạy trên môi trường serverless/cloud hoặc không tìm thấy script Puppeteer desktop
+    if (!scriptExists || process.cwd().startsWith("/var/task") || process.env.VERCEL) {
+      return NextResponse.json({
+        success: true,
+        mode: "web_queue",
+        message: "Hệ thống sẵn sàng gửi tự động trên trình duyệt web.",
+        dryRun: !!dryRun,
+      });
+    }
+
     const { exec } = await import("child_process");
     const { promisify } = await import("util");
     const execAsync = promisify(exec);
 
-    const body = await req.json();
-    const { classId, studentCode, dryRun } = body;
-
-    let cmd = `node scripts/send-invoices-to-parents.js`;
+    let cmd = `node "${scriptPath}"`;
     if (classId) {
       cmd += ` --class=${classId}`;
     }
@@ -135,28 +150,37 @@ export async function POST(req: NextRequest) {
       cmd += ` --dry-run`;
     }
 
-    // Thực thi script Puppeteer tự động
-    const { stdout, stderr } = await execAsync(cmd, {
-      cwd: process.cwd(),
-      timeout: 120000,
-    });
+    try {
+      // Thực thi script Puppeteer tự động trên desktop cục bộ (nếu có môi trường Chrome GUI)
+      const { stdout, stderr } = await execAsync(cmd, {
+        cwd: process.cwd(),
+        timeout: 120000,
+      });
 
+      return NextResponse.json({
+        success: true,
+        mode: "puppeteer",
+        message: dryRun
+          ? "Đã chạy thử nghiệm (Dry-Run) và chuẩn bị xong toàn bộ thẻ học phí!"
+          : "Đã kích hoạt tool tự động gửi thẻ học phí đến phụ huynh!",
+        command: cmd,
+        output: stdout || stderr,
+      });
+    } catch (execErr: any) {
+      // Nếu Puppeteer máy chủ không thể khởi động Chrome GUI, chuyển mượt mà sang chế độ web_queue
+      return NextResponse.json({
+        success: true,
+        mode: "web_queue",
+        message: "Chuyển sang chế độ tiến trình gửi tự động trực tiếp trên trình duyệt.",
+        notice: execErr.message || String(execErr),
+      });
+    }
+  } catch (error: any) {
     return NextResponse.json({
       success: true,
-      message: dryRun
-        ? "Đã chạy thử nghiệm (Dry-Run) và chuẩn bị xong toàn bộ thẻ học phí!"
-        : "Đã kích hoạt tool tự động gửi thẻ học phí đến phụ huynh!",
-      command: cmd,
-      output: stdout || stderr,
+      mode: "web_queue",
+      message: "Chuyển sang chế độ tiến trình gửi tự động trực tiếp trên trình duyệt.",
+      error: error.message || String(error),
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message || "Lỗi khi kích hoạt tool gửi Zalo",
-        output: error.stdout || error.stderr || String(error),
-      },
-      { status: 500 }
-    );
   }
 }

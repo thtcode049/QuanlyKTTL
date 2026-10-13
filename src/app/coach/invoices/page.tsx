@@ -621,11 +621,28 @@ function InvoicesContent() {
                               setZaloParentModalOpen(true);
                             }
                           }}
-                          className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 shadow-xs transition-all active:scale-95"
-                          title="Mở gửi thẻ học phí qua Zalo cho phụ huynh em này"
+                          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold shadow-xs transition-all active:scale-95 ${
+                            inv.zaloSentAt
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                              : "bg-emerald-600 text-white hover:bg-emerald-700"
+                          }`}
+                          title={
+                            inv.zaloSentAt
+                              ? `Đã gửi Zalo lúc ${new Date(inv.zaloSentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Bấm để xem hoặc gửi lại.`
+                              : "Mở gửi thẻ học phí qua Zalo cho phụ huynh em này"
+                          }
                         >
-                          <Send className="h-3 w-3" />
-                          <span>Gửi Zalo</span>
+                          {inv.zaloSentAt ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-600" />
+                              <span>Đã gửi Zalo</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-3 w-3" />
+                              <span>Gửi Zalo</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -755,6 +772,7 @@ function InvoicesContent() {
         month={selectedMonth}
         year={selectedYear}
         initialStudentId={selectedStudentForParentModal}
+        onSentSuccess={reloadInvoices}
         students={invoices.map((inv) => {
           const student = dataStore.students.find((s) => s.id === inv.studentId);
           const bank = dataStore.bankConfig;
@@ -787,6 +805,7 @@ function InvoicesContent() {
             feePerSession: inv.feePerSession,
             totalAmount: inv.totalAmount,
             status: inv.status,
+            zaloSentAt: inv.zaloSentAt,
             transferContent,
             vietQrUrl,
             bankName: bank.bankName,
