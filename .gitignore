@@ -35,3 +35,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Zalo automation & generated outputs
+/zalo_user_data/
+/invoices_output/
+/test_output/
+

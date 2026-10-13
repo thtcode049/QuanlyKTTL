@@ -9,7 +9,12 @@
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "zalo:export": "node ./node_modules/tsx/dist/cli.mjs scripts/export-coach-invoices.ts",
+    "zalo:cards": "node scripts/batch-generate-cards.js --limit=0",
+    "zalo:preview": "node scripts/send-to-coaches.js --dry-run",
+    "zalo:send": "node scripts/send-to-coaches.js",
+    "zalo:coaches": "node scripts/send-to-coaches.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -17,6 +22,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^15.1.6",
+    "puppeteer-core": "^25.13.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5",

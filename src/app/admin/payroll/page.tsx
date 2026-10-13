@@ -10,14 +10,17 @@ import {
   Users,
   Building2,
   BookOpen,
+  Send,
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import { exportPayrollToExcel, PayrollExportRow } from "@/lib/excel";
+import ZaloCoachModal from "@/components/zalo-coach-modal";
 
 export default function AdminPayrollPage() {
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
+  const [zaloModalOpen, setZaloModalOpen] = useState(false);
 
   const payrollList = dataStore.getCoachPayroll(month, year);
 
@@ -62,8 +65,15 @@ export default function AdminPayrollPage() {
 
         <div className="flex items-center gap-2.5">
           <button
+            onClick={() => setZaloModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+          >
+            <Send className="h-4 w-4" />
+            <span>Gửi Học Phí Đến HLV (Zalo)</span>
+          </button>
+          <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover"
+            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover transition-all"
           >
             <Download className="h-4 w-4" />
             <span>Xuất Excel Thu Nhập HLV (.xlsx)</span>
@@ -224,6 +234,14 @@ export default function AdminPayrollPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal Gửi Học Phí Đến HLV (Zalo) */}
+      <ZaloCoachModal
+        isOpen={zaloModalOpen}
+        onClose={() => setZaloModalOpen(false)}
+        month={month}
+        year={year}
+      />
     </div>
   );
 }
