@@ -16,6 +16,7 @@ import {
   ChevronDown,
   AlertCircle,
   History,
+  RotateCcw,
 } from "lucide-react";
 import { dataStore, AttendanceSessionData, ClassroomData, StudentData } from "@/lib/data-store";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
@@ -391,6 +392,20 @@ function AttendanceContent() {
     showToast(`Đã chuyển toàn bộ ${classStudents.length} học viên sang trạng thái [Vắng mặt]!`);
   };
 
+  // Kiểm tra xem hiện tại tất cả học viên có đang Có mặt hay không
+  const isAllPresent =
+    classStudents.length > 0 &&
+    classStudents.every((std) => records[std.id]?.status === "PRESENT");
+
+  // Gộp 2 nút vào làm 1: mỗi lần bấm sẽ đổi trạng thái tất cả có mặt hoặc tất cả vắng
+  const toggleAllAttendance = () => {
+    if (isAllPresent) {
+      setAllAbsent();
+    } else {
+      setAllPresent();
+    }
+  };
+
   // Lưu buổi học
   const handleSaveAttendance = () => {
     if (!selectedClass) return;
@@ -491,19 +506,7 @@ function AttendanceContent() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={setAllPresent}
-            className="flex-1 sm:flex-initial rounded-xl border border-emerald-300 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-100 text-center transition-all active:scale-95"
-          >
-            Tất cả [Có mặt]
-          </button>
-          <button
-            onClick={setAllAbsent}
-            className="flex-1 sm:flex-initial rounded-xl border border-rose-300 bg-rose-50/70 px-3.5 py-2.5 text-xs font-bold text-rose-800 shadow-sm hover:bg-rose-100 text-center transition-all active:scale-95"
-          >
-            Tất cả [Vắng]
-          </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handleSaveAttendance}
             className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 text-center transition-all"
@@ -757,17 +760,29 @@ function AttendanceContent() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={setAllPresent}
-              className="rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors shadow-xs"
+              onClick={toggleAllAttendance}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95 shadow-xs ${
+                isAllPresent
+                  ? "border-rose-300 bg-rose-50/80 text-rose-700 hover:bg-rose-100"
+                  : "border-emerald-300 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100"
+              }`}
+              title={
+                isAllPresent
+                  ? "Hiện tại tất cả đang có mặt. Bấm để đổi sang tất cả vắng mặt"
+                  : "Bấm để đổi sang tất cả có mặt"
+              }
             >
-              Tất cả [Có mặt]
-            </button>
-            <button
-              type="button"
-              onClick={setAllAbsent}
-              className="rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-50 transition-colors shadow-xs"
-            >
-              Tất cả [Vắng]
+              {isAllPresent ? (
+                <>
+                  <RotateCcw className="h-3.5 w-3.5 text-rose-600" />
+                  <span>Đổi Tất cả [Vắng]</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Đổi Tất cả [Có mặt]</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -902,16 +917,25 @@ function AttendanceContent() {
           </span>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
-              onClick={setAllPresent}
-              className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors"
+              type="button"
+              onClick={toggleAllAttendance}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all active:scale-95 shadow-xs ${
+                isAllPresent
+                  ? "border-rose-300 bg-rose-50/80 text-rose-700 hover:bg-rose-100"
+                  : "border-emerald-300 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100"
+              }`}
             >
-              Tất cả [Có mặt]
-            </button>
-            <button
-              onClick={setAllAbsent}
-              className="rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors"
-            >
-              Tất cả [Vắng]
+              {isAllPresent ? (
+                <>
+                  <RotateCcw className="h-3.5 w-3.5 text-rose-600" />
+                  <span>Đổi Tất cả [Vắng]</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Đổi Tất cả [Có mặt]</span>
+                </>
+              )}
             </button>
             <button
               onClick={handleSaveAttendance}
