@@ -542,12 +542,15 @@ class ZaloWorker(threading.Thread):
         if out_path.exists() and out_path.stat().st_size > 15000:
             return out_path
 
-        # Render bằng headless page
+        # Render bằng page trong context hiện tại (bỏ device_scale_factor để tránh lỗi Playwright)
         html_code = build_invoice_html(item)
-        render_page = self.ctx.new_page(device_scale_factor=2)
+        render_page = self.ctx.new_page()
         try:
-            render_page.set_content(html_code, wait_until="networkidle", timeout=12000)
+            render_page.set_viewport_size({"width": 800, "height": 1300})
+            render_page.set_content(html_code, wait_until="load", timeout=15000)
+            render_page.wait_for_timeout(1000)  # Chờ font và mã QR load
             card = render_page.locator("#invoiceCard")
+            card.wait_for(state="visible", timeout=8000)
             card.screenshot(path=str(out_path))
         finally:
             render_page.close()
@@ -561,6 +564,77 @@ class ZaloWorker(threading.Thread):
         except Exception as e:
             self.log(f"Lỗi tạo ảnh cho {item.get('studentName')}: {e}", "error")
 
+    # --- TÌM KIẾM VÀ MỞ CHAT VỚI SĐT (ĐA TẦNG) ---
+    def _open_chat_by_phone(self, phone: str, timeout: float = 8.0) -> bool:
+        """
+        Tìm kiếm và mở khung chat với số điện thoại trên Zalo Web.
+        Thử nghiệm liên tục cả điều hướng phím (ArrowDown + Enter), selector DOM và tìm kiếm danh bạ.
+        """
+        page = self.page
+        try:
+            # 1. Tìm ô tìm kiếm và điền SĐT
+            search = page.locator("input#contact-search-input, input[placeholder*='Tìm kiếm']").first
+            search.click(timeout=5000)
+            search.fill("")
+            search.fill(phone)
+            # Chờ Zalo truy vấn danh bạ qua mạng
+            page.wait_for_timeout(1500)
+
+            chat_input = page.locator("div#richInput, div[contenteditable='true']").first
+
+            # 2. Điều hướng bằng phím (ArrowDown -> Enter) - Cơ chế chuẩn nhất của Zalo Web
+            page.keyboard.press("ArrowDown")
+            page.wait_for_timeout(300)
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(1000)
+
+            if chat_input.is_visible():
+                return True
+
+            # 3. Click vào các selector phần tử kết quả tìm kiếm
+            selectors = [
+                "div[id^='friend-item-']",
+                "div[data-id^='friend-item-']",
+                "div.conv-item",
+                "div[class*='friend-item']",
+                "div[class*='search-item']",
+                "div[class*='conv-item']",
+                ".search-list div[tabindex]",
+                "div[role='listitem']",
+                "div[class*='user-item']",
+            ]
+            for sel in selectors:
+                f = page.locator(sel).first
+                if f.count() and f.is_visible():
+                    f.click()
+                    page.wait_for_timeout(1000)
+                    if chat_input.is_visible():
+                        return True
+
+            # 4. Thử nhấn Enter một lần nữa
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(1000)
+            if chat_input.is_visible():
+                return True
+
+            # 5. Chờ thêm nếu mạng chậm
+            end_t = time.time() + max(1.0, timeout - 4.5)
+            while time.time() < end_t:
+                if chat_input.is_visible():
+                    return True
+                page.wait_for_timeout(300)
+
+            # Không tìm thấy -> reset ô search
+            search.fill("")
+            page.keyboard.press("Escape")
+            return False
+        except Exception:
+            try:
+                page.keyboard.press("Escape")
+            except Exception:
+                pass
+            return False
+
     # --- GỬI ẢNH THẺ VÀO ZALO ---
     def _send_card_to_phone(self, item: dict, img_path: Path, cfg: SendConfig):
         phone = item.get("cleanParentPhone") or normalize_phone(item.get("parentPhone", ""))
@@ -569,56 +643,46 @@ class ZaloWorker(threading.Thread):
 
         page = self.page
         try:
-            # 1. Tìm SĐT
-            search = page.locator(SEL_SEARCH)
-            search.click(timeout=5000)
-            search.fill("")
-            search.fill(phone)
-            page.wait_for_timeout(600)
-
-            # Chờ kết quả đầu tiên
-            friend = None
-            end_t = time.time() + cfg.search_timeout
-            while time.time() < end_t:
-                f = page.locator(SEL_FRIEND).first
-                if f.count() and f.is_visible():
-                    friend = f
-                    break
-                page.wait_for_timeout(200)
-
-            if not friend:
-                search.fill("")
-                page.keyboard.press("Escape")
+            # 1. Tìm và mở cuộc trò chuyện
+            if not self._open_chat_by_phone(phone, timeout=cfg.search_timeout):
                 return "NOT_FOUND", "Không tìm thấy trong bạn bè Zalo"
 
-            friend.click()
+            # 2. Chờ khung chat sẵn sàng
+            chat_input = page.locator("div#richInput, div[contenteditable='true']").first
+            chat_input.wait_for(state="visible", timeout=7000)
 
-            # 2. Chờ khung chat
-            chat_input = page.locator(SEL_INPUT)
-            chat_input.wait_for(state="visible", timeout=8000)
-
-            # 3. Gửi lời chào ngắn nếu được bật
+            # 3. Gửi lời chào nếu được cấu hình
             if cfg.send_greeting_text:
                 st_name = item.get("studentName", "")
                 st_code = item.get("studentCode", "")
                 month = item.get("month", "")
                 year = item.get("year", "")
-                msg = f"CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {student_name} ({st_code})."
+                msg = f"CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {st_name} ({st_code})."
                 chat_input.click()
                 page.keyboard.insert_text(msg)
                 page.keyboard.press("Enter")
                 page.wait_for_timeout(1000)
 
             # 4. Upload ảnh thẻ học phí
-            # Tìm input type file
-            file_input = page.locator("input[type='file']").first
-            if not file_input.count():
+            file_uploaded = False
+            file_inputs = page.locator("input[type='file']")
+            if file_inputs.count():
+                for idx in range(file_inputs.count()):
+                    inp = file_inputs.nth(idx)
+                    try:
+                        inp.set_input_files(str(img_path))
+                        file_uploaded = True
+                        break
+                    except Exception:
+                        pass
+
+            if not file_uploaded:
                 return "ERROR", "Không tìm thấy nút gửi ảnh Zalo"
 
-            file_input.set_input_files(str(img_path))
-            page.wait_for_timeout(2500)
+            page.wait_for_timeout(2000)
 
-            # Bấm gửi media nếu có popup xác nhận
+            # 5. Bấm gửi media (Enter hoặc click nút Gửi)
+            page.keyboard.press("Enter")
             try:
                 page.evaluate("""() => {
                     const btns = document.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id="btn_SendMedia"]');
@@ -740,18 +804,10 @@ class ZaloWorker(threading.Thread):
                 msg = spin(template)
 
                 try:
-                    search = page.locator(SEL_SEARCH)
-                    search.click(timeout=5000)
-                    search.fill(phone)
-                    page.wait_for_timeout(600)
-                    friend = page.locator(SEL_FRIEND).first
-                    if not friend.count():
-                        search.fill("")
-                        page.keyboard.press("Escape")
+                    if not self._open_chat_by_phone(phone, timeout=cfg.search_timeout):
                         status = "NOT_FOUND"
                     else:
-                        friend.click()
-                        box = page.locator(SEL_INPUT)
+                        box = page.locator("div#richInput, div[contenteditable='true']").first
                         box.wait_for(state="visible", timeout=7000)
                         box.click()
                         for k, line in enumerate(msg.split("\n")):
