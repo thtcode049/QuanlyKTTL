@@ -41,3 +41,10 @@ next-env.d.ts
 /invoices_output/
 /test_output/
 
+# Python Zalo sender (local only)
+/tools/zalo-sender/.venv/
+/tools/zalo-sender/zalo_profile/
+/tools/zalo-sender/logs/
+/tools/zalo-sender/config.json
+__pycache__/
+
