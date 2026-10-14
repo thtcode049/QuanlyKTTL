@@ -229,7 +229,52 @@ export default function ZaloParentSenderModal({
     } catch (e) {}
   };
 
-  // Mở Tool EXE trực tiếp từ máy chủ Local (chạy file bat / exe)
+  // Tải file khởi động nhanh Mo_Tool_Zalo.bat về máy tính
+  const downloadQuickLauncher = () => {
+    const batContent = `@echo off\r
+chcp 65001 > nul\r
+title KTTL - MO TOOL ZALO BULK SENDER\r
+echo ===================================================================\r
+echo   CLB CO VUA KIEN TUONG TUONG LAI (KTTLL)\r
+echo   DANG KHOI DONG PHAN MEM ZALO BULK SENDER...\r
+echo ===================================================================\r
+\r
+set "EXE_PATH=d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\dist\\Zalo_Bulk_Sender\\Zalo_Bulk_Sender.exe"\r
+if exist "%EXE_PATH%" (\r
+    start "" "%EXE_PATH%"\r
+    exit /b 0\r
+)\r
+\r
+set "BAT_PATH=d:\\Dự án\\QuanlyKTTL\\Chay_Tool_Zalo_EXE.bat"\r
+if exist "%BAT_PATH%" (\r
+    call "%BAT_PATH%"\r
+    exit /b 0\r
+)\r
+\r
+set "PY_PATH=d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\.venv\\Scripts\\python.exe"\r
+set "SCRIPT_PATH=d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\zalo_sender.py"\r
+if exist "%PY_PATH%" (\r
+    start "" "%PY_PATH%" "%SCRIPT_PATH%"\r
+    exit /b 0\r
+)\r
+\r
+echo Khong tim thay tool tai d:\\Dự án\\QuanlyKTTL\\\r
+echo Vui long kiem tra thu muc du an hoac chay truc tiep Chay_Tool_Zalo_EXE.bat.\r
+pause\r
+`;
+    const blob = new Blob([batContent], { type: "application/x-bat" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Mo_Tool_Zalo.bat";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Đã tải file Mo_Tool_Zalo.bat về Downloads! Bấm mở file đó để bật tool.");
+  };
+
+  // Mở Tool EXE trực tiếp từ máy chủ Local hoặc tải file bat khởi động nhanh
   const handleDirectLaunchTool = async () => {
     try {
       const res = await fetch("/api/coach/send-zalo-parents?action=open_tool");
@@ -240,10 +285,16 @@ export default function ZaloParentSenderModal({
       }
     } catch (e) {}
 
-    // Fallback: Mở qua protocol kttl-zalo://run
+    // Fallback: Thử mở qua custom protocol kttl-zalo://run
     try {
       window.location.href = "kttl-zalo://run";
     } catch (e) {}
+
+    // Nếu chạy trên Vercel/Cloud không thể can thiệp desktop, tự động tải file Mo_Tool_Zalo.bat
+    setTimeout(() => {
+      downloadQuickLauncher();
+    }, 400);
+
     return false;
   };
 
@@ -254,8 +305,13 @@ export default function ZaloParentSenderModal({
       const data = await res.json();
       if (data.success) {
         showToast("📂 Đã mở thư mục chứa Tool Zalo trên máy tính!");
+        return;
       }
     } catch (e) {}
+
+    // Nếu chạy trên cloud, copy đường dẫn thư mục vào clipboard
+    navigator.clipboard.writeText("d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\dist\\Zalo_Bulk_Sender");
+    showToast("Đã sao chép đường dẫn thư mục Tool vào Clipboard! Nhấn Win+R và dán vào.");
   };
 
   // Click nút Gửi Bằng Tool EXE:
@@ -1496,36 +1552,57 @@ Trân trọng cảm ơn Quý phụ huynh!`;
               </div>
 
               {/* Bước 2: Khởi động Tool */}
-              <div className="rounded-2xl bg-slate-800/80 border border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-600 text-white font-black text-xs shrink-0">
-                    2
+              <div className="rounded-2xl bg-slate-800/80 border border-slate-700 p-4 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-600 text-white font-black text-xs shrink-0">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Khởi động Phần Mềm Zalo Sender</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Bấm để mở tool, hoặc tải file khởi động <code className="text-purple-300 font-mono">Mo_Tool_Zalo.bat</code> về Downloads
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">Khởi động Phần Mềm Zalo Sender</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Bấm để Windows tự bật tool, hoặc mở file <code className="text-purple-300 font-mono">Chay_Tool_Zalo_EXE.bat</code>
-                    </p>
+
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleDirectLaunchTool}
+                      className="rounded-xl bg-purple-600 hover:bg-purple-500 px-3.5 py-2 text-xs font-black text-white shadow-md shadow-purple-600/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span>🚀 Mở Tool Ngay</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={downloadQuickLauncher}
+                      className="rounded-xl border border-purple-500/40 bg-purple-950/60 hover:bg-purple-900/60 px-3 py-2 text-xs font-bold text-purple-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                      title="Tải file Mo_Tool_Zalo.bat về máy để nhấp đúp mở tool bất cứ lúc nào"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>📥 Tải File Mở Tool (.bat)</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Gợi ý đường dẫn có sẵn trên máy */}
+                <div className="rounded-xl bg-slate-900/90 border border-slate-700/60 p-2.5 flex items-center justify-between text-[11px] gap-2">
+                  <span className="text-slate-400 truncate">
+                    File có sẵn trên máy: <code className="text-emerald-400 font-mono font-bold">D:\Dự án\QuanlyKTTL\Chay_Tool_Zalo_EXE.bat</code>
+                  </span>
                   <button
                     type="button"
-                    onClick={handleDirectLaunchTool}
-                    className="rounded-xl bg-purple-600 hover:bg-purple-500 px-3.5 py-2 text-xs font-black text-white shadow-md shadow-purple-600/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      navigator.clipboard.writeText("D:\\Dự án\\QuanlyKTTL\\Chay_Tool_Zalo_EXE.bat");
+                      showToast("Đã copy đường dẫn file! Dán vào Run (Win+R) hoặc Explorer để mở.");
+                    }}
+                    className="shrink-0 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700 flex items-center gap-1"
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    <span>🚀 Mở Tool Ngay</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleOpenToolFolder}
-                    className="rounded-xl border border-slate-600 bg-slate-700 hover:bg-slate-600 px-2.5 py-2 text-xs font-bold text-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1"
-                    title="Mở thư mục chứa tool trên máy tính"
-                  >
-                    <span>📂 Thư mục</span>
+                    <Copy className="h-3 w-3" />
+                    <span>Copy đường dẫn</span>
                   </button>
                 </div>
               </div>
