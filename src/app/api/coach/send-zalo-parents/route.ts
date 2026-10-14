@@ -14,6 +14,39 @@ export async function GET(req: NextRequest) {
   const action = searchParams.get("action");
   const studentCode = searchParams.get("studentCode");
 
+  if (action === "open_tool") {
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const { exec } = await import("child_process");
+      const batPath = path.join(process.cwd(), "Chay_Tool_Zalo_EXE.bat");
+      if (fs.existsSync(batPath)) {
+        exec(`start "" "${batPath}"`);
+        return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
+      }
+      const exePath = path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender", "Zalo_Bulk_Sender.exe");
+      if (fs.existsSync(exePath)) {
+        exec(`start "" "${exePath}"`);
+        return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
+      }
+      return NextResponse.json({ success: false, message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy chủ." });
+    } catch (e: any) {
+      return NextResponse.json({ success: false, error: e.message || String(e) });
+    }
+  }
+
+  if (action === "open_folder") {
+    try {
+      const path = await import("path");
+      const { exec } = await import("child_process");
+      const folderPath = path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender");
+      exec(`explorer "${folderPath}"`);
+      return NextResponse.json({ success: true, message: "Đã mở thư mục chứa Tool Zalo." });
+    } catch (e: any) {
+      return NextResponse.json({ success: false, error: e.message || String(e) });
+    }
+  }
+
   if (action === "download" && studentCode) {
     try {
       const fs = await import("fs");
