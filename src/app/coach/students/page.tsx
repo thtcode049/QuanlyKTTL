@@ -40,30 +40,37 @@ export default function StudentsDirectoryPage() {
   const [filterLevel, setFilterLevel] = useState("ALL");
   const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
 
-  // Tải danh sách lớp và học viên của riêng HLV này
+  // Tải danh sách lớp và học viên của riêng HLV này (đồng bộ từ Supabase)
   useEffect(() => {
-    let coachId = "user-coach-1";
+    let coachId = "";
     let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN") isAdmin = true;
+        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    const myClasses = isAdmin
-      ? dataStore.classes
-      : getCoachClasses(coachId, coachEmail);
-    setCoachClasses(myClasses);
-    const myStudents = isAdmin
-      ? dataStore.students
-      : getCoachStudents(coachId, coachEmail);
-    setStudents(myStudents);
+    const updateDisplay = () => {
+      const myClasses = isAdmin
+        ? dataStore.classes
+        : getCoachClasses(coachId, coachEmail);
+      setCoachClasses(myClasses);
+      const myStudents = isAdmin
+        ? dataStore.students
+        : getCoachStudents(coachId, coachEmail);
+      setStudents(myStudents);
+    };
+
+    updateDisplay();
+    dataStore.syncWithDatabase().then(() => {
+      updateDisplay();
+    });
   }, []);
 
   // Toast

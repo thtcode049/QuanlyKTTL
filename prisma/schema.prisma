@@ -69,18 +69,25 @@ model Classroom {
   sessions      AttendanceSession[]
   invoices      MonthlyInvoice[]
   isActive      Boolean             @default(true)
+  shareWithAdmin Boolean            @default(true)
 }
 
 model Student {
   id           String              @id @default(uuid())
+  code         String?
   fullName     String
   birthYear    Int
+  gender       String?
   parentName   String
   parentPhone  String
   currentLevel String              @default("Nhập môn")
   eloRating    Int                 @default(1000)
   notes        String?
   customFeePerSession Float?
+  avatar       String?
+  address      String?
+  school       String?
+  status       String?             @default("ACTIVE")
   classes      ClassStudent[]
   attendances  AttendanceRecord[]
   invoices     MonthlyInvoice[]

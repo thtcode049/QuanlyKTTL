@@ -47,28 +47,15 @@ export default function LoginPage() {
 
       if (res.ok && data.success && data.user) {
         const sessionUser = { ...data.user };
-        const canonicalId = resolveCanonicalCoachId(sessionUser.id || sessionUser.email);
-
-        // Gán canonical id và admin access cho tài khoản nòng cốt để đồng bộ dữ liệu lớp và học sinh trên mọi thiết bị
-        if (canonicalId === "user-coach-1" || canonicalId === "user-coach-2" || canonicalId === "user-admin") {
-          sessionUser.id = canonicalId;
-          sessionUser.hasAdminAccess = true;
-          if (canonicalId === "user-coach-2") {
-            sessionUser.name = "HLV Trần Huyền Trang";
-            sessionUser.title = "HLV Quốc gia";
-          } else if (canonicalId === "user-coach-1") {
-            sessionUser.name = "GM Bùi Vinh";
-            sessionUser.title = "Đại Kiện Tướng Quốc Tế";
-          }
-        }
-
         localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+
+        // Đồng bộ toàn bộ dữ liệu mới nhất từ Supabase PostgreSQL
+        await dataStore.syncWithDatabase();
 
         // Đồng bộ tài khoản vào dataStore cục bộ để sử dụng ngay trong phiên
         const ex = dataStore.users.find(
           (u) =>
             u.id === sessionUser.id ||
-            u.id === canonicalId ||
             u.email.toLowerCase() === sessionUser.email.toLowerCase()
         );
         if (!ex) {
@@ -142,47 +129,54 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (role: "ADMIN" | "COACH1" | "COACH2") => {
+  const handleQuickLogin = async (role: "ADMIN" | "COACH1" | "COACH2") => {
+    let qEmail = "";
+    let qPassword = "";
+
     if (role === "ADMIN") {
-      setEmail("admin@kttll.vn");
-      setPassword("admin123");
-      const user = {
-        id: "user-admin",
-        email: "admin@kttll.vn",
-        name: "Ban Chủ Nhiệm CLB",
-        role: "ADMIN",
-        title: "Chủ nhiệm toàn bộ cơ sở",
-        hasAdminAccess: true,
-      };
-      localStorage.setItem("kttll_user", JSON.stringify(user));
-      router.push("/admin/dashboard");
+      qEmail = "admin@kttll.vn";
+      qPassword = "admin123";
     } else if (role === "COACH1") {
-      setEmail("hlv1@kttll.vn");
-      setPassword("coach123");
-      const dbCoach = dataStore.users.find((u) => u.id === "user-coach-1");
-      const user = {
-        id: "user-coach-1",
-        email: "hlv1@kttll.vn",
-        name: "GM Bùi Vinh",
-        role: "COACH",
-        title: "Đại Kiện Tướng Quốc Tế",
-        hasAdminAccess: !!dbCoach?.hasAdminAccess,
-      };
-      localStorage.setItem("kttll_user", JSON.stringify(user));
-      router.push("/coach/classes");
+      qEmail = "hlv1@kttll.vn";
+      qPassword = "coach123";
     } else {
-      setEmail("hlv2@kttll.vn");
-      setPassword("coach123");
-      const user = {
-        id: "user-coach-2",
-        email: "hlv2@kttll.vn",
-        name: "HLV Trần Huyền Trang",
-        role: "COACH",
-        title: "HLV Quốc gia",
-        hasAdminAccess: true,
-      };
-      localStorage.setItem("kttll_user", JSON.stringify(user));
-      router.push("/coach/classes");
+      qEmail = "trantrang66c@gmail.com";
+      qPassword = "coach123";
+    }
+
+    setEmail(qEmail);
+    setPassword(qPassword);
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: qEmail, password: qPassword }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        localStorage.setItem("kttll_user", JSON.stringify(data.user));
+        await dataStore.syncWithDatabase();
+
+        if (data.user.role === "ADMIN") {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/coach/classes");
+        }
+        return;
+      }
+
+      if (!res.ok) {
+        setError(data.error || "Không thể đăng nhập tài khoản.");
+      }
+    } catch (e: any) {
+      console.error("Lỗi quick login:", e);
+      setError("Lỗi kết nối máy chủ xác thực.");
+    } finally {
+      setLoading(false);
     }
   };
 

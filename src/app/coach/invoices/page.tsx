@@ -47,30 +47,35 @@ function InvoicesContent() {
 
   // Tải lớp học của riêng HLV hiện tại
   useEffect(() => {
-    let coachId = "user-coach-1";
+    let coachId = "";
     let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN") isAdmin = true;
+        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    const myClasses = isAdmin
-      ? dataStore.classes
-      : getCoachClasses(coachId, coachEmail);
-    setClasses(myClasses);
-    const paramClassId = searchParams.get("classId");
-    if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
-      setSelectedClassId(paramClassId);
-    } else {
-      setSelectedClassId(myClasses[0]?.id || "");
-    }
+    const updateDisplay = () => {
+      const myClasses = isAdmin
+        ? dataStore.classes
+        : getCoachClasses(coachId, coachEmail);
+      setClasses(myClasses);
+      const paramClassId = searchParams.get("classId");
+      if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
+        setSelectedClassId(paramClassId);
+      } else {
+        setSelectedClassId((prev) => (myClasses.some((c) => c.id === prev) ? prev : myClasses[0]?.id || ""));
+      }
+    };
+
+    updateDisplay();
+    dataStore.syncWithDatabase().then(() => updateDisplay());
   }, [searchParams]);
 
   // Modal VietQR State

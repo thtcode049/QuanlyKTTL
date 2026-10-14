@@ -97,6 +97,44 @@ export async function POST(request: Request) {
       },
     });
 
+    // Đồng bộ vào Supabase Authentication (auth.users)
+    try {
+      await prisma.$queryRawUnsafe(`
+        INSERT INTO auth.users (
+          id,
+          instance_id,
+          aud,
+          role,
+          email,
+          encrypted_password,
+          email_confirmed_at,
+          raw_app_meta_data,
+          raw_user_meta_data,
+          created_at,
+          updated_at,
+          is_sso_user,
+          is_anonymous
+        ) VALUES (
+          $1::uuid,
+          '00000000-0000-0000-0000-000000000000'::uuid,
+          'authenticated',
+          'authenticated',
+          $2,
+          crypt($3, gen_salt('bf')),
+          NOW(),
+          '{"provider":"email","providers":["email"]}'::jsonb,
+          json_build_object('name', $4, 'role', $5, 'phone', $6)::jsonb,
+          NOW(),
+          NOW(),
+          false,
+          false
+        )
+        ON CONFLICT (id) DO NOTHING;
+      `, newUser.id, cleanEmail, password, formattedName, isAdmin ? "ADMIN" : "COACH", phone.trim());
+    } catch (authErr) {
+      console.warn("Lưu ý: Không thể chèn vào auth.users:", authErr);
+    }
+
     return NextResponse.json({
       success: true,
       message: isAdmin

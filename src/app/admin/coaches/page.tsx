@@ -30,27 +30,15 @@ export default function AdminCoachesPage() {
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
           data.users.forEach((dbUser: UserData) => {
-            const canonicalId = resolveCanonicalCoachId(dbUser.id || dbUser.email);
             const idx = dataStore.users.findIndex(
               (u) =>
                 u.id === dbUser.id ||
-                u.id === canonicalId ||
                 u.email.toLowerCase() === dbUser.email.toLowerCase()
             );
-            const targetId =
-              canonicalId === "user-coach-1" ||
-              canonicalId === "user-coach-2" ||
-              canonicalId === "user-admin"
-                ? canonicalId
-                : dbUser.id;
             const updated = {
               ...dbUser,
-              id: targetId,
-              hasAdminAccess:
-                canonicalId === "user-coach-1" ||
-                canonicalId === "user-coach-2" ||
-                canonicalId === "user-admin" ||
-                dbUser.hasAdminAccess,
+              id: dbUser.id,
+              hasAdminAccess: !!dbUser.hasAdminAccess,
             };
 
             if (idx >= 0) {

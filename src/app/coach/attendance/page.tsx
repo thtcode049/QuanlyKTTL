@@ -171,45 +171,50 @@ function AttendanceContent() {
     setTimeout(() => setToastMsg(null), 3500);
   };
 
-  // Tải lớp học và tự động nhảy đến lớp có lịch hôm nay / buổi học đúng thứ
+  // Tải lớp học và tự động nhảy đến lớp có lịch hôm nay / buổi học đúng thứ (đồng bộ từ Supabase)
   useEffect(() => {
-    let coachId = "user-coach-1";
+    let coachId = "";
     let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN") isAdmin = true;
+        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    const myClasses = isAdmin
-      ? dataStore.classes
-      : getCoachClasses(coachId, coachEmail);
-    setClasses(myClasses);
+    const updateDisplay = () => {
+      const myClasses = isAdmin
+        ? dataStore.classes
+        : getCoachClasses(coachId, coachEmail);
+      setClasses(myClasses);
 
-    const paramClassId = searchParams.get("classId");
-    let targetClass: ClassroomData | undefined;
+      const paramClassId = searchParams.get("classId");
+      let targetClass: ClassroomData | undefined;
 
-    if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
-      targetClass = myClasses.find((c) => c.id === paramClassId);
-    } else {
-      // Ưu tiên tự động chọn lớp có lịch học HÔM NAY
-      const todayDay = new Date().getDay();
-      const todayClass = myClasses.find((c) => parseScheduleInfo(c.schedule).days.includes(todayDay));
-      targetClass = todayClass || myClasses[0];
-    }
+      if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
+        targetClass = myClasses.find((c) => c.id === paramClassId);
+      } else {
+        const todayDay = new Date().getDay();
+        const todayClass = myClasses.find((c) => parseScheduleInfo(c.schedule).days.includes(todayDay));
+        targetClass = todayClass || myClasses[0];
+      }
 
-    if (targetClass) {
-      setSelectedClassId(targetClass.id);
-      // Tự động nhảy đến ngày học đúng thứ của lớp
-      const smartDate = getSmartSessionDate(targetClass.schedule);
-      setSessionDate(smartDate);
-    }
+      if (targetClass) {
+        setSelectedClassId((prev) => (myClasses.some((c) => c.id === prev) ? prev : targetClass!.id));
+        const smartDate = getSmartSessionDate(targetClass.schedule);
+        setSessionDate((prev) => prev || smartDate);
+      }
+    };
+
+    updateDisplay();
+    dataStore.syncWithDatabase().then(() => {
+      updateDisplay();
+    });
   }, [searchParams]);
 
   // Danh sách học viên của lớp
@@ -457,6 +462,20 @@ function AttendanceContent() {
     const dateObj = new Date(sessionDate);
     dataStore.recalculateAllInvoices(dateObj.getMonth() + 1, dateObj.getFullYear());
     dataStore.saveToLocalStorage();
+
+    // Đồng bộ lên Supabase Database
+    try {
+      fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: selectedClass.id,
+          date: sessionDate,
+          topic: topic || "Buổi học cờ vua",
+          records: sessionRecords,
+        }),
+      }).catch((err) => console.warn("Lỗi lưu điểm danh lên máy chủ Supabase:", err));
+    } catch (e) {}
 
     setSaveSuccess(true);
     showToast(`Đã lưu điểm danh buổi học ngày ${sessionDate} thành công!`);

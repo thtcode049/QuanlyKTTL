@@ -16,32 +16,40 @@ import { formatCurrencyVND } from "@/lib/vietqr";
 export default function CoachPayrollPage() {
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
-  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("");
   const [currentCoachEmail, setCurrentCoachEmail] = useState<string>("");
+  const [, setDataVersion] = useState(0);
 
   React.useEffect(() => {
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) setCurrentCoachId(resolveCanonicalCoachId(u.id || u.email));
+        if (u.id) setCurrentCoachId(u.id);
         if (u.email) setCurrentCoachEmail(u.email);
       } catch (e) {}
     }
+    dataStore.syncWithDatabase().then(() => setDataVersion((v) => v + 1));
   }, []);
 
   // Lấy dữ liệu của HLV đang đăng nhập
-  const canonicalId = resolveCanonicalCoachId(currentCoachId || currentCoachEmail);
   const currentCoach =
-    dataStore.users.find((u) => u.id === currentCoachId || u.id === canonicalId) ||
-    dataStore.users.find((u) => u.role === "COACH");
+    dataStore.users.find(
+      (u) =>
+        (currentCoachId && u.id === currentCoachId) ||
+        (currentCoachEmail && u.email && u.email.toLowerCase() === currentCoachEmail.toLowerCase())
+    ) || dataStore.users.find((u) => u.role === "COACH");
+
   const coachClasses = getCoachClasses(currentCoachId, currentCoachEmail || currentCoach?.email);
   const coachClassIds = coachClasses.map((c) => c.id);
 
   // Tính toán thu nhập HLV theo công thức chuẩn: Tổng học phí * 50% + Tiền sách * 30%
   const payrollList = dataStore.getCoachPayroll(month, year);
   const coachPayroll = payrollList.find(
-    (p) => p.coachId === currentCoach?.id || resolveCanonicalCoachId(p.coachId) === canonicalId
+    (p) =>
+      p.coachId === currentCoach?.id ||
+      p.coachId === currentCoachId ||
+      resolveCanonicalCoachId(p.coachId) === resolveCanonicalCoachId(currentCoachId)
   );
 
   const totalTuition = coachPayroll?.totalTuition || 0;

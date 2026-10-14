@@ -35,27 +35,32 @@ export default function CoachEvaluationsPage() {
   const [year, setYear] = useState(2026);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Tải danh sách học viên của riêng HLV hiện tại
+  // Tải danh sách học viên của riêng HLV hiện tại (đồng bộ từ Supabase)
   React.useEffect(() => {
-    let coachId = "user-coach-1";
+    let coachId = "";
     let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN") isAdmin = true;
+        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
-    const myStudents = isAdmin
-      ? dataStore.students
-      : getCoachStudents(coachId, coachEmail);
-    setStudents(myStudents);
-    setSelectedStudentId(myStudents[0]?.id || "");
+    const updateDisplay = () => {
+      const myStudents = isAdmin
+        ? dataStore.students
+        : getCoachStudents(coachId, coachEmail);
+      setStudents(myStudents);
+      setSelectedStudentId((prev) => (myStudents.some((s) => s.id === prev) ? prev : myStudents[0]?.id || ""));
+    };
+
+    updateDisplay();
+    dataStore.syncWithDatabase().then(() => updateDisplay());
   }, []);
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId) || students[0];

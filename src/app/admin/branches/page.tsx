@@ -37,11 +37,15 @@ export default function AdminBranchesAndClassesPage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all"); // "all" hoặc id cơ sở
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Chuẩn hóa dữ liệu HLV và 8 cơ sở ban đầu
+  // Chuẩn hóa dữ liệu HLV và 8 cơ sở ban đầu, đồng bộ Supabase
   useEffect(() => {
     dataStore.normalizeCoachData();
-    setBranches([...dataStore.branches]);
-    setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
+    const updateDisplay = () => {
+      setBranches([...dataStore.branches]);
+      setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
+    };
+    updateDisplay();
+    dataStore.syncWithDatabase().then(() => updateDisplay());
   }, []);
 
   // Modal Cơ sở
@@ -194,8 +198,7 @@ export default function AdminBranchesAndClassesPage() {
       shareWithAdmin: true,
     };
 
-    dataStore.classes.push(newCls);
-    dataStore.recalculateAllInvoices(10, 2026);
+    dataStore.addClass(newCls);
     setClasses(dataStore.classes.filter((c) => c.shareWithAdmin !== false));
     setIsCreateClassOpen(false);
 

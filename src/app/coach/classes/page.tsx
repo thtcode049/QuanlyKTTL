@@ -47,33 +47,41 @@ export default function CoachClassesPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Tải thông tin tài khoản HLV hiện tại từ localStorage
+  // Tải thông tin tài khoản HLV hiện tại từ localStorage và đồng bộ Supabase PostgreSQL
   useEffect(() => {
-    let coachId = "user-coach-1";
+    let coachId = "";
     let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN") isAdmin = true;
+        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
     setCurrentCoachEmail(coachEmail);
 
-    // Lọc danh sách lớp học của riêng HLV này (nếu là Admin thì hiển thị toàn bộ lớp được chia sẻ)
-    const myClasses = isAdmin
-      ? dataStore.classes.filter((c) => c.shareWithAdmin !== false)
-      : getCoachClasses(coachId, coachEmail);
-    setClasses(myClasses);
-    setSelectedClassId(myClasses[0]?.id || "");
+    const updateDisplay = () => {
+      const myClasses = isAdmin
+        ? dataStore.classes.filter((c) => c.shareWithAdmin !== false)
+        : getCoachClasses(coachId, coachEmail);
+      setClasses(myClasses);
+      setSelectedClassId((prev) => (myClasses.some((c) => c.id === prev) ? prev : myClasses[0]?.id || ""));
 
-    const myClassIds = myClasses.map((c) => c.id);
-    const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
-    setStudents(myStudents);
+      const myClassIds = myClasses.map((c) => c.id);
+      const myStudents = dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+      setStudents(myStudents);
+    };
+
+    updateDisplay();
+
+    // Đồng bộ tức thì từ Supabase PostgreSQL qua API
+    dataStore.syncWithDatabase().then(() => {
+      updateDisplay();
+    });
   }, []);
 
   // Toast notification
@@ -253,7 +261,7 @@ export default function CoachClassesPage() {
     };
 
     dataStore.addStudent(newStudent);
-    const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+    const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
     const myClassIds = myClasses.map((c) => c.id);
     setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
     setIsAddStudentOpen(false);
@@ -302,8 +310,7 @@ export default function CoachClassesPage() {
       shareWithAdmin: newClassShareWithAdmin,
     };
 
-    dataStore.classes.push(newCls);
-    dataStore.saveToLocalStorage();
+    dataStore.addClass(newCls);
     const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
     setClasses(myClasses);
     setSelectedClassId(newCls.id);
@@ -368,10 +375,8 @@ export default function CoachClassesPage() {
 
   const handleRemoveStudentFromClass = (student: StudentData) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi lớp này không?`)) {
-      student.classIds = student.classIds.filter((cid) => cid !== selectedClass.id);
-      dataStore.recalculateAllInvoices(10, 2026);
-      dataStore.saveToLocalStorage();
-      const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+      dataStore.deleteStudent(student.id, selectedClass.id);
+      const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       const myClassIds = myClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã xóa học viên ${student.fullName} khỏi lớp!`);

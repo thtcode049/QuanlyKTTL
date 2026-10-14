@@ -884,7 +884,55 @@ class InMemoryDataStore {
     this.saveToLocalStorage();
   }
 
-  // Cập nhật thông tin toàn diện của Lớp học
+  // Đồng bộ toàn diện dữ liệu trực tiếp từ Supabase PostgreSQL
+  public async syncWithDatabase(): Promise<boolean> {
+    try {
+      if (typeof window === "undefined") return false;
+      const res = await fetch("/api/sync");
+      if (!res.ok) return false;
+      const json = await res.json();
+      if (json.success && json.data) {
+        const { branches, users, classes, students, sessions } = json.data;
+        if (Array.isArray(branches) && branches.length > 0) this.branches = branches;
+        if (Array.isArray(users) && users.length > 0) this.users = users;
+        if (Array.isArray(classes)) this.classes = classes;
+        if (Array.isArray(students)) this.students = students;
+        if (Array.isArray(sessions)) this.sessions = sessions;
+        this.recalculateAllInvoices(10, 2026);
+        this.saveToLocalStorage();
+        return true;
+      }
+    } catch (err) {
+      console.warn("Lỗi đồng bộ dữ liệu từ Supabase:", err);
+    }
+    return false;
+  }
+
+  // Thêm lớp học mới (đồng bộ Supabase DB)
+  public async addClass(cls: ClassroomData) {
+    const existingIdx = this.classes.findIndex((c) => c.id === cls.id);
+    if (existingIdx >= 0) {
+      this.classes[existingIdx] = cls;
+    } else {
+      this.classes.push(cls);
+    }
+    this.saveToLocalStorage();
+
+    // Đồng bộ lên Supabase Database
+    try {
+      if (typeof window !== "undefined") {
+        fetch("/api/classes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cls),
+        }).catch((e) => console.warn("Lỗi lưu lớp học lên DB:", e));
+      }
+    } catch (e) {}
+
+    return cls;
+  }
+
+  // Cập nhật thông tin toàn diện của Lớp học (đồng bộ Supabase DB)
   public updateClass(classId: string, data: Partial<ClassroomData>) {
     const cls = this.classes.find((c) => c.id === classId);
     if (cls) {
@@ -893,6 +941,18 @@ class InMemoryDataStore {
         this.recalculateAllInvoices(10, 2026);
       }
       this.saveToLocalStorage();
+
+      // Đồng bộ lên Supabase Database
+      try {
+        if (typeof window !== "undefined") {
+          fetch("/api/classes", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: classId, ...data }),
+          }).catch((e) => console.warn("Lỗi cập nhật lớp học lên DB:", e));
+        }
+      } catch (e) {}
+
       return cls;
     }
     return null;
@@ -916,7 +976,7 @@ class InMemoryDataStore {
     return true;
   }
 
-  // Xóa lớp học
+  // Xóa lớp học (đồng bộ Supabase DB)
   public deleteClass(classId: string) {
     this.classes = this.classes.filter((c) => c.id !== classId);
     // Gỡ lớp khỏi danh sách học viên
@@ -925,6 +985,16 @@ class InMemoryDataStore {
     });
     this.recalculateAllInvoices(10, 2026);
     this.saveToLocalStorage();
+
+    // Đồng bộ xóa trên Supabase Database
+    try {
+      if (typeof window !== "undefined") {
+        fetch(`/api/classes?id=${classId}`, {
+          method: "DELETE",
+        }).catch((e) => console.warn("Lỗi xóa lớp học trên DB:", e));
+      }
+    } catch (e) {}
+
     return true;
   }
 
@@ -935,15 +1005,32 @@ class InMemoryDataStore {
     return true;
   }
 
-  // Thêm học viên mới
+  // Thêm học viên mới (đồng bộ Supabase DB)
   public addStudent(student: StudentData) {
-    this.students.push(student);
+    const existingIdx = this.students.findIndex((s) => s.id === student.id);
+    if (existingIdx >= 0) {
+      this.students[existingIdx] = student;
+    } else {
+      this.students.push(student);
+    }
     this.recalculateAllInvoices(10, 2026);
     this.saveToLocalStorage();
+
+    // Đồng bộ lên Supabase Database
+    try {
+      if (typeof window !== "undefined") {
+        fetch("/api/students", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(student),
+        }).catch((e) => console.warn("Lỗi lưu học sinh lên DB:", e));
+      }
+    } catch (e) {}
+
     return student;
   }
 
-  // Cập nhật thông tin học viên (hỗ trợ inline editing & đổi ảnh avatar)
+  // Cập nhật thông tin học viên (đồng bộ Supabase DB)
   public updateStudent(studentId: string, data: Partial<StudentData>) {
     const student = this.students.find((s) => s.id === studentId);
     if (student) {
@@ -952,16 +1039,46 @@ class InMemoryDataStore {
         this.recalculateAllInvoices(10, 2026);
       }
       this.saveToLocalStorage();
+
+      // Đồng bộ lên Supabase Database
+      try {
+        if (typeof window !== "undefined") {
+          fetch("/api/students", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: studentId, ...data }),
+          }).catch((e) => console.warn("Lỗi cập nhật học sinh lên DB:", e));
+        }
+      } catch (e) {}
+
       return student;
     }
     return null;
   }
 
-  // Xóa học viên
-  public deleteStudent(studentId: string) {
-    this.students = this.students.filter((s) => s.id !== studentId);
+  // Xóa học viên (đồng bộ Supabase DB)
+  public deleteStudent(studentId: string, classId?: string) {
+    if (classId) {
+      const s = this.students.find((st) => st.id === studentId);
+      if (s) {
+        s.classIds = s.classIds.filter((cid) => cid !== classId);
+      }
+    } else {
+      this.students = this.students.filter((s) => s.id !== studentId);
+    }
     this.recalculateAllInvoices(10, 2026);
     this.saveToLocalStorage();
+
+    // Đồng bộ xóa trên Supabase Database
+    try {
+      if (typeof window !== "undefined") {
+        const url = classId ? `/api/students?id=${studentId}&classId=${classId}` : `/api/students?id=${studentId}`;
+        fetch(url, {
+          method: "DELETE",
+        }).catch((e) => console.warn("Lỗi xóa học sinh trên DB:", e));
+      }
+    } catch (e) {}
+
     return true;
   }
 
@@ -1183,22 +1300,19 @@ if (!globalStore.__kttllStore) {
 export const dataStore = globalStore.__kttllStore;
 
 /**
- * Chuẩn hóa và map ID / Email / Name của HLV về canonical ID chuẩn
+ * Chuẩn hóa và map ID / Email / Name của HLV về UUID thực tế trong Supabase
  */
 export function resolveCanonicalCoachId(coachIdOrEmail?: string): string {
-  if (!coachIdOrEmail) return "user-coach-1";
+  if (!coachIdOrEmail) return "";
   const str = String(coachIdOrEmail).toLowerCase().trim();
 
   // GM Bùi Vinh (HLV 1)
   if (
     str === "user-coach-1" ||
     str === "c5d28630-d676-4746-adf3-481504084b3a" ||
-    str === "hlv1@kttll.vn" ||
-    str.includes("hlv1") ||
-    str.includes("bui vinh") ||
-    str.includes("bùi vinh")
+    str === "hlv1@kttll.vn"
   ) {
-    return "user-coach-1";
+    return "c5d28630-d676-4746-adf3-481504084b3a";
   }
 
   // HLV Trần Huyền Trang (HLV 2)
@@ -1207,63 +1321,57 @@ export function resolveCanonicalCoachId(coachIdOrEmail?: string): string {
     str === "102dedb3-2dbe-4f91-a9dd-80ff4e31caa0" ||
     str === "00477341-c15a-430a-8d1f-a64e39c03a9c" ||
     str === "hlv2@kttll.vn" ||
-    str === "trantrang66c@gmail.com" ||
-    str.includes("hlv2") ||
-    str.includes("trantrang") ||
-    str.includes("huyen trang") ||
-    str.includes("huyền trang")
+    str === "trantrang66c@gmail.com"
   ) {
-    return "user-coach-2";
+    return "00477341-c15a-430a-8d1f-a64e39c03a9c";
   }
 
   // Ban Chủ Nhiệm (Admin)
   if (
     str === "user-admin" ||
     str === "2054bdb5-6e30-4d7b-b6f5-b041ccc6cb77" ||
-    str === "admin@kttll.vn" ||
-    str.includes("admin")
+    str === "admin@kttll.vn"
   ) {
-    return "user-admin";
-  }
-
-  // Tìm trong dataStore.users nếu có email hoặc id khớp
-  if (dataStore && dataStore.users) {
-    const found = dataStore.users.find(
-      (u) => u.id === coachIdOrEmail || (u.email && u.email.toLowerCase() === str)
-    );
-    if (found) {
-      if (found.email.toLowerCase() === "trantrang66c@gmail.com" || (found.name && found.name.includes("Huyền Trang"))) {
-        return "user-coach-2";
-      }
-      if (found.email.toLowerCase() === "hlv1@kttll.vn" || (found.name && found.name.includes("Bùi Vinh"))) {
-        return "user-coach-1";
-      }
-      return found.id;
-    }
+    return "2054bdb5-6e30-4d7b-b6f5-b041ccc6cb77";
   }
 
   return coachIdOrEmail;
 }
 
 /**
- * Kiểm tra xem lớp học có thuộc về HLV này hay không (hỗ trợ cả UUID, email và canonical ID)
+ * Kiểm tra xem lớp học có thuộc về HLV này hay không (hỗ trợ cả UUID, email và danh sách user Supabase)
  */
 export function isClassOwnedByCoach(cls: ClassroomData, coachId?: string, coachEmail?: string): boolean {
   if (!cls) return false;
   if (!coachId && !coachEmail) return false;
 
+  // 1. Khớp trực tiếp ID (UUID của Supabase)
   if (coachId && cls.coachId === coachId) return true;
-  if (coachEmail && cls.coachId === coachEmail) return true;
 
+  // 2. Khớp trực tiếp Email
+  if (coachEmail && (cls.coachId === coachEmail || (cls as any).coachEmail === coachEmail)) return true;
+
+  // 3. Khớp qua danh sách người dùng trong hệ thống (Supabase users)
+  if (dataStore && dataStore.users) {
+    const coachUser = dataStore.users.find(
+      (u) => (coachId && u.id === coachId) || (coachEmail && u.email?.toLowerCase() === coachEmail.toLowerCase())
+    );
+    if (coachUser) {
+      if (cls.coachId === coachUser.id || cls.coachId === coachUser.email) return true;
+    }
+    const classCoach = dataStore.users.find(
+      (u) => u.id === cls.coachId || (u.email && u.email.toLowerCase() === cls.coachId?.toLowerCase())
+    );
+    if (classCoach) {
+      if (coachEmail && classCoach.email?.toLowerCase() === coachEmail.toLowerCase()) return true;
+      if (coachId && classCoach.id === coachId) return true;
+    }
+  }
+
+  // 4. Khớp fallback cho ID demo/lịch sử
   const classCanonical = resolveCanonicalCoachId(cls.coachId);
   const userCanonical = resolveCanonicalCoachId(coachId || coachEmail);
-
-  if (classCanonical === userCanonical) return true;
-
-  if (coachEmail) {
-    const emailCanonical = resolveCanonicalCoachId(coachEmail);
-    if (classCanonical === emailCanonical) return true;
-  }
+  if (classCanonical && userCanonical && classCanonical === userCanonical) return true;
 
   return false;
 }
