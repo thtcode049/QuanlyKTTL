@@ -232,35 +232,9 @@ export default function ZaloParentSenderModal({
   // Tải file khởi động nhanh Mo_Tool_Zalo.bat về máy tính
   const downloadQuickLauncher = () => {
     const batContent = `@echo off\r
-chcp 65001 > nul\r
 title KTTL - MO TOOL ZALO BULK SENDER\r
-echo ===================================================================\r
-echo   CLB CO VUA KIEN TUONG TUONG LAI (KTTLL)\r
-echo   DANG KHOI DONG PHAN MEM ZALO BULK SENDER...\r
-echo ===================================================================\r
-\r
-set "EXE_PATH=d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\dist\\Zalo_Bulk_Sender\\Zalo_Bulk_Sender.exe"\r
-if exist "%EXE_PATH%" (\r
-    start "" "%EXE_PATH%"\r
-    exit /b 0\r
-)\r
-\r
-set "BAT_PATH=d:\\Dự án\\QuanlyKTTL\\Chay_Tool_Zalo_EXE.bat"\r
-if exist "%BAT_PATH%" (\r
-    call "%BAT_PATH%"\r
-    exit /b 0\r
-)\r
-\r
-set "PY_PATH=d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\.venv\\Scripts\\python.exe"\r
-set "SCRIPT_PATH=d:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\zalo_sender.py"\r
-if exist "%PY_PATH%" (\r
-    start "" "%PY_PATH%" "%SCRIPT_PATH%"\r
-    exit /b 0\r
-)\r
-\r
-echo Khong tim thay tool tai d:\\Dự án\\QuanlyKTTL\\\r
-echo Vui long kiem tra thu muc du an hoac chay truc tiep Chay_Tool_Zalo_EXE.bat.\r
-pause\r
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'd:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\dist\\Zalo_Bulk_Sender\\Zalo_Bulk_Sender.exe' -WorkingDirectory 'd:\\Dự án\\QuanlyKTTL\\tools\\zalo-sender\\dist\\Zalo_Bulk_Sender'"\r
+exit /b 0\r
 `;
     const blob = new Blob([batContent], { type: "application/x-bat" });
     const url = URL.createObjectURL(blob);
@@ -1588,10 +1562,19 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                   </div>
                 </div>
 
-                {/* Gợi ý đường dẫn có sẵn trên máy */}
+                {/* Gợi ý mở nhanh qua Desktop hoặc file có sẵn trên máy */}
+                <div className="rounded-xl bg-purple-950/40 border border-purple-500/30 p-2.5 flex items-center justify-between text-[11px] gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🖥️</span>
+                    <span className="text-purple-200">
+                      Đã tạo sẵn biểu tượng <strong className="text-white font-bold">"Zalo Bulk Sender - KTTL"</strong> ngay ngoài <strong>Desktop (Màn hình chính)</strong>!
+                    </span>
+                  </div>
+                </div>
+
                 <div className="rounded-xl bg-slate-900/90 border border-slate-700/60 p-2.5 flex items-center justify-between text-[11px] gap-2">
                   <span className="text-slate-400 truncate">
-                    File có sẵn trên máy: <code className="text-emerald-400 font-mono font-bold">D:\Dự án\QuanlyKTTL\Chay_Tool_Zalo_EXE.bat</code>
+                    File khởi động: <code className="text-emerald-400 font-mono font-bold">D:\Dự án\QuanlyKTTL\Chay_Tool_Zalo_EXE.bat</code>
                   </span>
                   <button
                     type="button"

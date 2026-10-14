@@ -19,14 +19,15 @@ export async function GET(req: NextRequest) {
       const fs = await import("fs");
       const path = await import("path");
       const { exec } = await import("child_process");
-      const batPath = path.join(process.cwd(), "Chay_Tool_Zalo_EXE.bat");
-      if (fs.existsSync(batPath)) {
-        exec(`start "" "${batPath}"`);
-        return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
-      }
       const exePath = path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender", "Zalo_Bulk_Sender.exe");
       if (fs.existsSync(exePath)) {
-        exec(`start "" "${exePath}"`);
+        const workDir = path.dirname(exePath);
+        exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '${exePath}' -WorkingDirectory '${workDir}'"`);
+        return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
+      }
+      const batPath = path.join(process.cwd(), "Chay_Tool_Zalo_EXE.bat");
+      if (fs.existsSync(batPath)) {
+        exec(`cmd /c "${batPath}"`);
         return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
       }
       return NextResponse.json({ success: false, message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy chủ." });
