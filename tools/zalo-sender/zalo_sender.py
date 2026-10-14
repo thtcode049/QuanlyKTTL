@@ -7,6 +7,7 @@ Công nghệ: Python, Playwright (Sync API), CustomTkinter (đa luồng).
 
 from __future__ import annotations
 
+import base64
 import csv
 import json
 import os
@@ -745,19 +746,83 @@ class ZaloWorker(threading.Thread):
 
             # 4. Upload ảnh thẻ học phí
             file_uploaded = False
-            file_inputs = page.locator("input[type='file']")
-            if file_inputs.count():
-                for idx in range(file_inputs.count()):
-                    inp = file_inputs.nth(idx)
-                    try:
-                        inp.set_input_files(str(img_path))
-                        file_uploaded = True
-                        break
-                    except Exception:
-                        pass
 
+            # Tầng A: Paste ảnh trực tiếp qua DataTransfer Clipboard Event (Tự nhiên, không phụ thuộc DOM nút bấm)
+            try:
+                with open(img_path, "rb") as f:
+                    b64_data = base64.b64encode(f.read()).decode("utf-8")
+
+                file_uploaded = page.evaluate("""([b64, fname]) => {
+                    try {
+                        const byteCharacters = atob(b64);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const file = new File([byteArray], fname, { type: 'image/png' });
+
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+
+                        const target = document.querySelector('div#richInput') || document.querySelector('div[contenteditable="true"]');
+                        if (target) {
+                            target.focus();
+                            const pasteEvent = new ClipboardEvent('paste', {
+                                bubbles: true,
+                                cancelable: true,
+                                clipboardData: dt
+                            });
+                            target.dispatchEvent(pasteEvent);
+                            return true;
+                        }
+                    } catch (e) {
+                        return false;
+                    }
+                    return false;
+                }""", [b64_data, img_path.name])
+            except Exception:
+                file_uploaded = False
+
+            # Tầng B: Click vào icon Gửi ảnh trên thanh công cụ chat (Icon bức tranh) qua expect_file_chooser
             if not file_uploaded:
-                return "ERROR", "Không tìm thấy nút gửi ảnh Zalo"
+                photo_selectors = [
+                    "div[data-translate-inner='STR_SEND_PHOTO']",
+                    "div[title*='ảnh']",
+                    "div[title*='Ảnh']",
+                    "div[title*='Photo']",
+                    "div[title*='hình ảnh']",
+                    "div[data-id*='photo']",
+                    "div[data-id*='Photo']",
+                    "i[class*='photo']",
+                    "div[class*='icon-photo']",
+                    ".chat-input__tools > *:nth-child(2)",
+                    "div[class*='toolbar'] > *:nth-child(2)",
+                    "div[class*='tools'] > *:nth-child(2)"
+                ]
+
+                for psel in photo_selectors:
+                    btn = page.locator(psel).first
+                    if btn.count() and btn.is_visible():
+                        try:
+                            with page.expect_file_chooser(timeout=3000) as fc_info:
+                                btn.click()
+                            file_chooser = fc_info.value
+                            file_chooser.set_files(str(img_path))
+                            file_uploaded = True
+                            break
+                        except Exception:
+                            pass
+
+            # Tầng C: Nếu có thẻ input[type="file"] xuất hiện
+            if not file_uploaded:
+                try:
+                    file_inputs = page.locator("input[type='file']")
+                    if file_inputs.count():
+                        file_inputs.first.set_input_files(str(img_path))
+                        file_uploaded = True
+                except Exception:
+                    pass
 
             page.wait_for_timeout(2000)
 
@@ -766,13 +831,19 @@ class ZaloWorker(threading.Thread):
             page.wait_for_timeout(600)
             try:
                 page.evaluate("""() => {
-                    const btns = document.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id="btn_SendMedia"]');
+                    const btns = document.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id="btn_SendMedia"], div[data-id="btn_Send"]');
                     for (const b of btns) {
                         const txt = (b.innerText || '').trim().toLowerCase();
-                        if (txt === 'gửi' || txt === 'send' || b.getAttribute('data-id') === 'btn_SendMedia') {
+                        const dataId = b.getAttribute('data-id') || '';
+                        if (txt === 'gửi' || txt === 'send' || dataId.includes('Send') || dataId.includes('send') || dataId === 'btn_SendMedia') {
                             b.click();
-                            break;
+                            return;
                         }
+                    }
+                    const icons = document.querySelectorAll('i[class*="send"], span[class*="send"]');
+                    for (const ic of icons) {
+                        const btn = ic.closest('div[role="button"], button, div');
+                        if (btn) { btn.click(); return; }
                     }
                 }""")
             except Exception:
