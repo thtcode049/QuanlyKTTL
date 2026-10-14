@@ -44,7 +44,10 @@ next-env.d.ts
 # Python Zalo sender (local only)
 /tools/zalo-sender/.venv/
 /tools/zalo-sender/zalo_profile/
+/tools/zalo-sender/cards_output/
 /tools/zalo-sender/logs/
 /tools/zalo-sender/config.json
+/tools/zalo-sender/build/
+/tools/zalo-sender/dist/
 __pycache__/
 

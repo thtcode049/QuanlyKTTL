@@ -162,6 +162,73 @@ export default function ZaloParentSenderModal({
   const [showBotLogs, setShowBotLogs] = useState(false);
   const [botStatusMessage, setBotStatusMessage] = useState("");
 
+  // === TOOL ZALO BULK SENDER (EXE) MODAL STATE ===
+  const [isToolModalOpen, setIsToolModalOpen] = useState(false);
+
+  // Xuất file JSON dữ liệu học phí cả lớp để Tool EXE tự động nhận diện
+  const exportInvoicesJsonForTool = () => {
+    if (!classroom) return;
+    const cleanClassName = classroom.name.replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]/g, "_");
+    const fileName = `KTTL_TheHocPhi_Lop_${cleanClassName}_Thang_${month}_${year}.json`;
+
+    const exportData = {
+      createdAt: new Date().toISOString(),
+      className: classroom.name,
+      classId: classroom.id,
+      branchName: branch?.name || "",
+      month,
+      year,
+      totalStudents: students.length,
+      students: students.map((st) => ({
+        studentId: st.studentId,
+        studentCode: st.studentCode,
+        studentName: st.studentName,
+        parentName: st.parentName,
+        parentPhone: st.parentPhone,
+        cleanParentPhone: st.cleanParentPhone,
+        className: st.className,
+        branchName: st.branchName,
+        month: st.month,
+        year: st.year,
+        presentCount: st.presentCount,
+        presentDates: st.presentDates,
+        feePerSession: st.feePerSession,
+        totalAmount: st.totalAmount,
+        transferContent: st.transferContent,
+        vietQrUrl: st.vietQrUrl,
+        bankName: st.bankName,
+        bankAccount: st.bankAccount,
+        accountHolder: st.accountHolder,
+      })),
+    };
+
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`Đã tải file "${fileName}" về thư mục Downloads!`);
+
+    // Thử kích hoạt mở tool qua giao thức kttl-zalo://run
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = "kttl-zalo://run";
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 2500);
+    } catch (e) {}
+  };
+
   if (!isOpen || !classroom) return null;
 
   const totalAmount = students.reduce((sum, s) => sum + s.totalAmount, 0);
@@ -474,13 +541,23 @@ Trân trọng cảm ơn Quý phụ huynh!`;
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <button
                   type="button"
+                  onClick={() => setIsToolModalOpen(true)}
+                  className="rounded-xl border border-indigo-400/40 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 px-3.5 py-2 text-xs font-black text-white shadow-lg shadow-indigo-500/30 active:scale-95 transition-all flex items-center gap-1.5"
+                  title="Mở phần mềm Zalo Bulk Sender gửi ảnh thẻ học phí tự động"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
+                  <span>⚡ Gửi Bằng Tool EXE (Thẻ Ảnh)</span>
+                </button>
+
+                <button
+                  type="button"
                   disabled={isBotRunning}
                   onClick={() => handleTriggerPuppeteerBot(false)}
                   className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 active:scale-95 transition-all flex items-center gap-1.5"
                   title="Chạy Bot Puppeteer tự động gửi trên máy tính"
                 >
                   <Bot className="h-3.5 w-3.5 text-amber-400" />
-                  <span>Chạy Bot Puppeteer</span>
+                  <span>Bot Puppeteer</span>
                 </button>
 
                 <button
@@ -1292,6 +1369,141 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* 3. MODAL HƯỚNG DẪN & KẾT NỐI TOOL ZALO BULK SENDER (EXE) */}
+      {/* ========================================================================= */}
+      {isToolModalOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl rounded-3xl bg-slate-900 border border-slate-800 p-6 text-white shadow-2xl space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white tracking-tight flex items-center gap-2">
+                    <span>Phần Mềm Zalo Bulk Sender (EXE)</span>
+                    <span className="rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-0.5 border border-indigo-500/30">
+                      Gửi Thẻ Ảnh Tự Động
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Lớp {classroom.name} • {students.length} học viên • Ảnh thẻ VietQR Napas 24/7 sắc nét
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsToolModalOpen(false)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mô tả giải pháp */}
+            <div className="rounded-2xl bg-indigo-950/40 border border-indigo-500/30 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs">
+                <Info className="h-4 w-4 shrink-0" />
+                <span>Quy trình hoạt động tự động 100%:</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed pl-6">
+                Tool chạy trực tiếp trên máy tính của bạn nên <strong>không bị chặn bởi chính sách bảo mật đám mây</strong>. Tool sẽ tự động tạo ảnh thẻ học phí riêng cho từng học viên và gửi lần lượt vào Zalo cá nhân của phụ huynh.
+              </p>
+            </div>
+
+            {/* 3 Bước thực hiện */}
+            <div className="space-y-3">
+              {/* Bước 1: Tải file dữ liệu */}
+              <div className="rounded-2xl bg-slate-800/80 border border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white font-black text-xs shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Xuất gói dữ liệu học phí cả lớp</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Tải file <code className="text-indigo-300 font-mono">.json</code> chứa toàn bộ {students.length} học viên về máy
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={exportInvoicesJsonForTool}
+                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-3.5 py-2 text-xs font-black text-white shadow-md shadow-indigo-600/30 active:scale-95 transition-all flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>📥 Tải File JSON</span>
+                </button>
+              </div>
+
+              {/* Bước 2: Khởi động Tool */}
+              <div className="rounded-2xl bg-slate-800/80 border border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-600 text-white font-black text-xs shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Mở Phần Mềm Zalo Sender</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Chạy file <code className="text-purple-300 font-mono">Chay_Tool_Zalo_EXE.bat</code> hoặc mở trực tiếp trên máy
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "kttl-zalo://run";
+                    showToast("Đang kích hoạt mở phần mềm Zalo Sender...");
+                  }}
+                  className="rounded-xl bg-purple-600 hover:bg-purple-500 px-3.5 py-2 text-xs font-black text-white shadow-md shadow-purple-600/30 active:scale-95 transition-all flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>🚀 Mở Tool EXE</span>
+                </button>
+              </div>
+
+              {/* Bước 3: Nạp và gửi */}
+              <div className="rounded-2xl bg-slate-800/50 border border-slate-700/60 p-4 flex items-start gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white font-black text-xs shrink-0">
+                  3
+                </div>
+                <div className="space-y-1 text-xs">
+                  <h4 className="font-bold text-white">Tự động nhận file & Bấm gửi</h4>
+                  <p className="text-slate-300 text-[11.5px] leading-relaxed">
+                    Trên giao diện phần mềm Zalo Sender, chỉ cần bấm nút:
+                  </p>
+                  <p className="font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 rounded-lg px-2.5 py-1 inline-block">
+                    ⚡ Nhận file mới từ Downloads
+                  </p>
+                  <p className="text-slate-400 text-[11px]">
+                    Toàn bộ danh sách {students.length} học viên sẽ hiện lên kèm ảnh thẻ. Bấm <strong>[🚀 BẮT ĐẦU GỬI]</strong> là xong!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
+              <span className="text-slate-500">
+                Phiên bản: <strong className="text-slate-400 font-mono">v2.0 (Retina 2x VietQR)</strong>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setIsToolModalOpen(false)}
+                className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                Đóng hộp thoại
+              </button>
+            </div>
           </div>
         </div>
       )}
