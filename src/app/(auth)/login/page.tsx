@@ -129,18 +129,15 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = async (role: "ADMIN" | "COACH1" | "COACH2") => {
+  const handleQuickLogin = async (role: "ADMIN" | "COACH1") => {
     let qEmail = "";
     let qPassword = "";
 
     if (role === "ADMIN") {
       qEmail = "admin@kttll.vn";
       qPassword = "admin123";
-    } else if (role === "COACH1") {
-      qEmail = "hlv1@kttll.vn";
-      qPassword = "coach123";
     } else {
-      qEmail = "trantrang66c@gmail.com";
+      qEmail = "hlv1@kttll.vn";
       qPassword = "coach123";
     }
 
@@ -289,7 +286,7 @@ export default function LoginPage() {
             <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
               ⚡ Truy cập nhanh tài khoản thử nghiệm:
             </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => handleQuickLogin("ADMIN")}
@@ -315,20 +312,6 @@ export default function LoginPage() {
                 <div className="overflow-hidden">
                   <p className="text-xs font-bold text-brand-primary truncate">GM Bùi Vinh</p>
                   <p className="text-[10px] text-slate-500 truncate">hlv1@kttll.vn</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("COACH2")}
-                className="group flex items-center gap-2 rounded-xl border border-teal-600 bg-teal-500/10 p-2.5 text-left text-slate-900 transition-all hover:bg-teal-500/20"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-white flex-shrink-0">
-                  <Award className="h-4 w-4" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs font-bold text-teal-800 truncate">HLV Huyền Trang</p>
-                  <p className="text-[10px] text-slate-500 truncate">hlv2@kttll.vn</p>
                 </div>
               </button>
             </div>
