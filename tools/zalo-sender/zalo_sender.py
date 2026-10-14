@@ -28,16 +28,14 @@ from playwright.sync_api import Error as PWError
 from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
 
-# Đường dẫn thư mục làm việc (hỗ trợ cả chạy script và sau khi đóng gói PyInstaller)
-if getattr(sys, "frozen", False):
-    APP_DIR = Path(sys.executable).resolve().parent
-else:
-    APP_DIR = Path(__file__).resolve().parent
+# Đường dẫn thư mục làm việc cố định (giúp 1 file exe chạy ở bất kỳ đâu cũng lưu session ổn định)
+DATA_DIR = Path.home() / ".kttl_zalo_sender"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-PROFILE_DIR = APP_DIR / "zalo_profile"
-CARDS_DIR = APP_DIR / "cards_output"
-LOG_DIR = APP_DIR / "logs"
-CONFIG_FILE = APP_DIR / "config.json"
+PROFILE_DIR = DATA_DIR / "zalo_profile"
+CARDS_DIR = DATA_DIR / "cards_output"
+LOG_DIR = DATA_DIR / "logs"
+CONFIG_FILE = DATA_DIR / "config.json"
 ZALO_URL = "https://chat.zalo.me/"
 
 SEL_SEARCH = "input#contact-search-input"

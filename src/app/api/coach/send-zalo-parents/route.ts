@@ -19,17 +19,20 @@ export async function GET(req: NextRequest) {
       const fs = await import("fs");
       const path = await import("path");
       const { exec } = await import("child_process");
-      const exePath = path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender", "Zalo_Bulk_Sender.exe");
-      if (fs.existsSync(exePath)) {
-        const workDir = path.dirname(exePath);
-        exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '${exePath}' -WorkingDirectory '${workDir}'"`);
-        return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
+      
+      const candidatePaths = [
+        path.join(process.cwd(), "Zalo_Bulk_Sender.exe"),
+        path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender.exe"),
+      ];
+
+      for (const exePath of candidatePaths) {
+        if (fs.existsSync(exePath)) {
+          const workDir = path.dirname(exePath);
+          exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '${exePath}' -WorkingDirectory '${workDir}'"`);
+          return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
+        }
       }
-      const batPath = path.join(process.cwd(), "Chay_Tool_Zalo_EXE.bat");
-      if (fs.existsSync(batPath)) {
-        exec(`cmd /c "${batPath}"`);
-        return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
-      }
+
       return NextResponse.json({ success: false, message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy chủ." });
     } catch (e: any) {
       return NextResponse.json({ success: false, error: e.message || String(e) });
@@ -40,7 +43,7 @@ export async function GET(req: NextRequest) {
     try {
       const path = await import("path");
       const { exec } = await import("child_process");
-      const folderPath = path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender");
+      const folderPath = process.cwd();
       exec(`explorer "${folderPath}"`);
       return NextResponse.json({ success: true, message: "Đã mở thư mục chứa Tool Zalo." });
     } catch (e: any) {

@@ -1562,31 +1562,23 @@ Trân trọng cảm ơn Quý phụ huynh!`;
                   </div>
                 </div>
 
-                {/* Gợi ý mở nhanh qua Desktop hoặc file có sẵn trên máy */}
-                <div className="rounded-xl bg-purple-950/40 border border-purple-500/30 p-2.5 flex items-center justify-between text-[11px] gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🖥️</span>
-                    <span className="text-purple-200">
-                      Đã tạo sẵn biểu tượng <strong className="text-white font-bold">"Zalo Bulk Sender - KTTL"</strong> ngay ngoài <strong>Desktop (Màn hình chính)</strong>!
-                    </span>
+                {/* Gợi ý mở nhanh file exe độc lập */}
+                <div className="rounded-xl bg-purple-950/40 border border-purple-500/30 p-3 space-y-2 text-[11.5px]">
+                  <div className="flex items-center gap-2 font-bold text-purple-200">
+                    <span className="text-base">🚀</span>
+                    <span>Đã tạo file <code className="text-emerald-400 font-mono font-bold bg-slate-900 px-1.5 py-0.5 rounded">Zalo_Bulk_Sender.exe</code> độc lập tại 3 vị trí:</span>
                   </div>
-                </div>
-
-                <div className="rounded-xl bg-slate-900/90 border border-slate-700/60 p-2.5 flex items-center justify-between text-[11px] gap-2">
-                  <span className="text-slate-400 truncate">
-                    File khởi động: <code className="text-emerald-400 font-mono font-bold">D:\Dự án\QuanlyKTTL\Chay_Tool_Zalo_EXE.bat</code>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText("D:\\Dự án\\QuanlyKTTL\\Chay_Tool_Zalo_EXE.bat");
-                      showToast("Đã copy đường dẫn file! Dán vào Run (Win+R) hoặc Explorer để mở.");
-                    }}
-                    className="shrink-0 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700 flex items-center gap-1"
-                  >
-                    <Copy className="h-3 w-3" />
-                    <span>Copy đường dẫn</span>
-                  </button>
+                  <ul className="space-y-1.5 pl-6 list-disc text-slate-300 text-xs">
+                    <li>
+                      <strong>Ngoài màn hình Desktop:</strong> Nhấp đúp vào biểu tượng <code className="text-purple-300 font-bold">Zalo_Bulk_Sender.exe</code>
+                    </li>
+                    <li>
+                      <strong>Trong thư mục Downloads:</strong> Nhấp đúp vào file <code className="text-purple-300 font-bold">Zalo_Bulk_Sender.exe</code> (cạnh file JSON học phí)
+                    </li>
+                    <li>
+                      <strong>Trong thư mục dự án:</strong> <code className="text-emerald-400 font-mono text-[11px]">D:\Dự án\QuanlyKTTL\Zalo_Bulk_Sender.exe</code>
+                    </li>
+                  </ul>
                 </div>
               </div>
 
