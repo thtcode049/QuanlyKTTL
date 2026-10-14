@@ -208,12 +208,12 @@ export const initialUsers: UserData[] = [
     id: "user-coach-2",
     name: "HLV Trần Huyền Trang",
     email: "hlv2@kttll.vn",
-    phone: "0983.112.233",
+    phone: "0833.599.495",
     role: "COACH",
     branchId: "branch-3",
     baseRate: 200000,
     title: "HLV Quốc gia",
-    hasAdminAccess: false,
+    hasAdminAccess: true,
   },
 ];
 
@@ -736,9 +736,17 @@ class InMemoryDataStore {
   // Chuẩn hóa dữ liệu HLV mẫu và danh sách cơ sở
   public normalizeCoachData() {
     for (const u of this.users) {
-      if (u.id === "user-coach-2" || (u.name && u.name.includes("Hùng"))) {
+      const canonical = resolveCanonicalCoachId(u.id || u.email);
+      if (canonical === "user-coach-2") {
         u.name = "HLV Trần Huyền Trang";
         u.title = "HLV Quốc gia";
+        u.hasAdminAccess = true;
+      } else if (canonical === "user-coach-1") {
+        u.name = "GM Bùi Vinh";
+        u.title = "Đại Kiện Tướng Quốc Tế";
+        u.hasAdminAccess = true;
+      } else if (canonical === "user-admin") {
+        u.hasAdminAccess = true;
       }
       if (u.name && u.name.includes("ĐKT")) {
         u.name = u.name.replace(/ĐKT/g, "GM");
@@ -1051,9 +1059,14 @@ class InMemoryDataStore {
       .filter((u) => u.role === "COACH")
       .map((coach) => {
         // Các lớp mà HLV này phụ trách (nếu Admin xem thì loại trừ các lớp riêng HLV không share)
-        const coachClasses = this.classes.filter(
-          (c) => c.coachId === coach.id && (!onlySharedWithAdmin || c.shareWithAdmin !== false)
-        );
+        const coachClasses = this.classes.filter((c) => {
+          if (onlySharedWithAdmin && c.shareWithAdmin === false) return false;
+          return (
+            c.coachId === coach.id ||
+            resolveCanonicalCoachId(c.coachId) === resolveCanonicalCoachId(coach.id) ||
+            (coach.email && resolveCanonicalCoachId(c.coachId) === resolveCanonicalCoachId(coach.email))
+          );
+        });
         const classIds = coachClasses.map((c) => c.id);
 
         // Các ca dạy thực tế đã hoàn thành trong tháng
@@ -1170,29 +1183,115 @@ if (!globalStore.__kttllStore) {
 export const dataStore = globalStore.__kttllStore;
 
 /**
+ * Chuẩn hóa và map ID / Email / Name của HLV về canonical ID chuẩn
+ */
+export function resolveCanonicalCoachId(coachIdOrEmail?: string): string {
+  if (!coachIdOrEmail) return "user-coach-1";
+  const str = String(coachIdOrEmail).toLowerCase().trim();
+
+  // GM Bùi Vinh (HLV 1)
+  if (
+    str === "user-coach-1" ||
+    str === "c5d28630-d676-4746-adf3-481504084b3a" ||
+    str === "hlv1@kttll.vn" ||
+    str.includes("hlv1") ||
+    str.includes("bui vinh") ||
+    str.includes("bùi vinh")
+  ) {
+    return "user-coach-1";
+  }
+
+  // HLV Trần Huyền Trang (HLV 2)
+  if (
+    str === "user-coach-2" ||
+    str === "102dedb3-2dbe-4f91-a9dd-80ff4e31caa0" ||
+    str === "00477341-c15a-430a-8d1f-a64e39c03a9c" ||
+    str === "hlv2@kttll.vn" ||
+    str === "trantrang66c@gmail.com" ||
+    str.includes("hlv2") ||
+    str.includes("trantrang") ||
+    str.includes("huyen trang") ||
+    str.includes("huyền trang")
+  ) {
+    return "user-coach-2";
+  }
+
+  // Ban Chủ Nhiệm (Admin)
+  if (
+    str === "user-admin" ||
+    str === "2054bdb5-6e30-4d7b-b6f5-b041ccc6cb77" ||
+    str === "admin@kttll.vn" ||
+    str.includes("admin")
+  ) {
+    return "user-admin";
+  }
+
+  // Tìm trong dataStore.users nếu có email hoặc id khớp
+  if (dataStore && dataStore.users) {
+    const found = dataStore.users.find(
+      (u) => u.id === coachIdOrEmail || (u.email && u.email.toLowerCase() === str)
+    );
+    if (found) {
+      if (found.email.toLowerCase() === "trantrang66c@gmail.com" || (found.name && found.name.includes("Huyền Trang"))) {
+        return "user-coach-2";
+      }
+      if (found.email.toLowerCase() === "hlv1@kttll.vn" || (found.name && found.name.includes("Bùi Vinh"))) {
+        return "user-coach-1";
+      }
+      return found.id;
+    }
+  }
+
+  return coachIdOrEmail;
+}
+
+/**
+ * Kiểm tra xem lớp học có thuộc về HLV này hay không (hỗ trợ cả UUID, email và canonical ID)
+ */
+export function isClassOwnedByCoach(cls: ClassroomData, coachId?: string, coachEmail?: string): boolean {
+  if (!cls) return false;
+  if (!coachId && !coachEmail) return false;
+
+  if (coachId && cls.coachId === coachId) return true;
+  if (coachEmail && cls.coachId === coachEmail) return true;
+
+  const classCanonical = resolveCanonicalCoachId(cls.coachId);
+  const userCanonical = resolveCanonicalCoachId(coachId || coachEmail);
+
+  if (classCanonical === userCanonical) return true;
+
+  if (coachEmail) {
+    const emailCanonical = resolveCanonicalCoachId(coachEmail);
+    if (classCanonical === emailCanonical) return true;
+  }
+
+  return false;
+}
+
+/**
  * Kiểm tra xem tài khoản có phải là tài khoản mẫu/demo của hệ thống hay không
  */
 export function isDemoCoach(coachId?: string): boolean {
   if (!coachId) return false;
-  return coachId === "user-coach-1" || coachId === "user-coach-2" || coachId === "user-admin";
+  const canonical = resolveCanonicalCoachId(coachId);
+  return canonical === "user-coach-1" || canonical === "user-coach-2" || canonical === "user-admin";
 }
 
 /**
  * Lấy danh sách lớp học của riêng Huấn luyện viên
- * Đối với tài khoản người dùng mới đăng ký: chỉ hiển thị các lớp do chính HLV đó tạo, không bị lẫn lớp mẫu
+ * Hỗ trợ nhận diện chính xác theo cả ID cơ sở dữ liệu Supabase, Email và Canonical Mock ID
  */
-export function getCoachClasses(coachId?: string): ClassroomData[] {
-  if (!coachId) return [];
-  return dataStore.classes.filter((c) => c.coachId === coachId);
+export function getCoachClasses(coachId?: string, coachEmail?: string): ClassroomData[] {
+  if (!coachId && !coachEmail) return [];
+  return dataStore.classes.filter((c) => isClassOwnedByCoach(c, coachId, coachEmail));
 }
 
 /**
  * Lấy danh sách học viên của riêng Huấn luyện viên
- * Đối với tài khoản người dùng mới đăng ký: chỉ hiển thị học viên trong các lớp của HLV đó
  */
-export function getCoachStudents(coachId?: string): StudentData[] {
-  if (!coachId) return [];
-  const coachClasses = getCoachClasses(coachId);
+export function getCoachStudents(coachId?: string, coachEmail?: string): StudentData[] {
+  if (!coachId && !coachEmail) return [];
+  const coachClasses = getCoachClasses(coachId, coachEmail);
   const classIds = coachClasses.map((c) => c.id);
   return dataStore.students.filter((s) => s.classIds.some((cid) => classIds.includes(cid)));
 }

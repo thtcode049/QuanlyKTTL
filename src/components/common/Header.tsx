@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft, Menu } from "lucide-react";
-import { dataStore } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId } from "@/lib/data-store";
 
 interface HeaderProps {
   userRole: "ADMIN" | "COACH";
@@ -21,8 +21,15 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        const dbUser = dataStore.users.find((x) => x.id === u.id);
-        setCurrentUser(dbUser ? { ...u, ...dbUser } : u);
+        const canonicalId = resolveCanonicalCoachId(u.id || u.email);
+        const dbUser = dataStore.users.find(
+          (x) => x.id === u.id || x.id === canonicalId || (u.email && x.email.toLowerCase() === u.email.toLowerCase())
+        );
+        const merged = dbUser ? { ...u, ...dbUser } : u;
+        if (canonicalId === "user-admin" || canonicalId === "user-coach-1" || canonicalId === "user-coach-2") {
+          merged.hasAdminAccess = true;
+        }
+        setCurrentUser(merged);
       } catch (e) {}
     }
   }, [userRole]);

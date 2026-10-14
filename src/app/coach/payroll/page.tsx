@@ -10,32 +10,39 @@ import {
   Award,
   Sparkles,
 } from "lucide-react";
-import { dataStore } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId, getCoachClasses } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function CoachPayrollPage() {
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
   const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachEmail, setCurrentCoachEmail] = useState<string>("");
 
   React.useEffect(() => {
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) setCurrentCoachId(u.id);
+        if (u.id) setCurrentCoachId(resolveCanonicalCoachId(u.id || u.email));
+        if (u.email) setCurrentCoachEmail(u.email);
       } catch (e) {}
     }
   }, []);
 
   // Lấy dữ liệu của HLV đang đăng nhập
-  const currentCoach = dataStore.users.find((u) => u.id === currentCoachId) || dataStore.users.find((u) => u.role === "COACH");
-  const coachClasses = dataStore.classes.filter((c) => c.coachId === currentCoach?.id);
+  const canonicalId = resolveCanonicalCoachId(currentCoachId || currentCoachEmail);
+  const currentCoach =
+    dataStore.users.find((u) => u.id === currentCoachId || u.id === canonicalId) ||
+    dataStore.users.find((u) => u.role === "COACH");
+  const coachClasses = getCoachClasses(currentCoachId, currentCoachEmail || currentCoach?.email);
   const coachClassIds = coachClasses.map((c) => c.id);
 
   // Tính toán thu nhập HLV theo công thức chuẩn: Tổng học phí * 50% + Tiền sách * 30%
   const payrollList = dataStore.getCoachPayroll(month, year);
-  const coachPayroll = payrollList.find((p) => p.coachId === currentCoach?.id);
+  const coachPayroll = payrollList.find(
+    (p) => p.coachId === currentCoach?.id || resolveCanonicalCoachId(p.coachId) === canonicalId
+  );
 
   const totalTuition = coachPayroll?.totalTuition || 0;
   const tuitionCommission = coachPayroll?.tuitionCommission || 0; // 50%

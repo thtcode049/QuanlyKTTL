@@ -13,8 +13,9 @@ import {
   QrCode,
   ArrowRight,
   UserPlus,
+  Award,
 } from "lucide-react";
-import { dataStore } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId } from "@/lib/data-store";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,17 +46,37 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success && data.user) {
-        const sessionUser = data.user;
+        const sessionUser = { ...data.user };
+        const canonicalId = resolveCanonicalCoachId(sessionUser.id || sessionUser.email);
+
+        // Gán canonical id và admin access cho tài khoản nòng cốt để đồng bộ dữ liệu lớp và học sinh trên mọi thiết bị
+        if (canonicalId === "user-coach-1" || canonicalId === "user-coach-2" || canonicalId === "user-admin") {
+          sessionUser.id = canonicalId;
+          sessionUser.hasAdminAccess = true;
+          if (canonicalId === "user-coach-2") {
+            sessionUser.name = "HLV Trần Huyền Trang";
+            sessionUser.title = "HLV Quốc gia";
+          } else if (canonicalId === "user-coach-1") {
+            sessionUser.name = "GM Bùi Vinh";
+            sessionUser.title = "Đại Kiện Tướng Quốc Tế";
+          }
+        }
+
         localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
 
         // Đồng bộ tài khoản vào dataStore cục bộ để sử dụng ngay trong phiên
-        const ex = dataStore.users.find((u) => u.id === sessionUser.id || u.email.toLowerCase() === sessionUser.email.toLowerCase());
+        const ex = dataStore.users.find(
+          (u) =>
+            u.id === sessionUser.id ||
+            u.id === canonicalId ||
+            u.email.toLowerCase() === sessionUser.email.toLowerCase()
+        );
         if (!ex) {
           dataStore.users.push({
             id: sessionUser.id,
             name: sessionUser.name,
             email: sessionUser.email,
-            phone: "",
+            phone: sessionUser.phone || "",
             role: sessionUser.role,
             title: sessionUser.title,
             branchId: sessionUser.branchId,
@@ -152,14 +173,13 @@ export default function LoginPage() {
     } else {
       setEmail("hlv2@kttll.vn");
       setPassword("coach123");
-      const dbCoach = dataStore.users.find((u) => u.id === "user-coach-2");
       const user = {
         id: "user-coach-2",
         email: "hlv2@kttll.vn",
         name: "HLV Trần Huyền Trang",
         role: "COACH",
         title: "HLV Quốc gia",
-        hasAdminAccess: !!dbCoach?.hasAdminAccess,
+        hasAdminAccess: true,
       };
       localStorage.setItem("kttll_user", JSON.stringify(user));
       router.push("/coach/classes");
@@ -275,32 +295,46 @@ export default function LoginPage() {
             <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
               ⚡ Truy cập nhanh tài khoản thử nghiệm:
             </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => handleQuickLogin("ADMIN")}
-                className="group flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#161616] p-2.5 text-left text-white transition-all hover:bg-slate-800"
+                className="group flex items-center gap-2 rounded-xl border border-slate-800 bg-[#161616] p-2.5 text-left text-white transition-all hover:bg-slate-800"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-brand-secondary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-brand-secondary flex-shrink-0">
                   <ShieldCheck className="h-4 w-4" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold">Ban Quản Trị (Admin)</p>
-                  <p className="text-[10px] text-slate-300">admin@kttll.vn</p>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold truncate">Ban Quản Trị</p>
+                  <p className="text-[10px] text-slate-300 truncate">admin@kttll.vn</p>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleQuickLogin("COACH1")}
-                className="group flex items-center gap-2.5 rounded-xl border border-brand-primary bg-emerald-500/10 p-2.5 text-left text-slate-900 transition-all hover:bg-emerald-500/20"
+                className="group flex items-center gap-2 rounded-xl border border-brand-primary bg-emerald-500/10 p-2.5 text-left text-slate-900 transition-all hover:bg-emerald-500/20"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary text-white flex-shrink-0">
                   <UserCheck className="h-4 w-4" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-brand-primary">GM Bùi Vinh (HLV)</p>
-                  <p className="text-[10px] text-slate-500">hlv1@kttll.vn</p>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-brand-primary truncate">GM Bùi Vinh</p>
+                  <p className="text-[10px] text-slate-500 truncate">hlv1@kttll.vn</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickLogin("COACH2")}
+                className="group flex items-center gap-2 rounded-xl border border-teal-600 bg-teal-500/10 p-2.5 text-left text-slate-900 transition-all hover:bg-teal-500/20"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-white flex-shrink-0">
+                  <Award className="h-4 w-4" />
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-teal-800 truncate">HLV Huyền Trang</p>
+                  <p className="text-[10px] text-slate-500 truncate">hlv2@kttll.vn</p>
                 </div>
               </button>
             </div>

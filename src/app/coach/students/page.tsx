@@ -19,7 +19,13 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
-import { dataStore, StudentData } from "@/lib/data-store";
+import {
+  dataStore,
+  StudentData,
+  resolveCanonicalCoachId,
+  getCoachClasses,
+  getCoachStudents,
+} from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import { StudentProfileModal } from "@/components/student-profile-modal";
@@ -38,11 +44,13 @@ export default function StudentsDirectoryPage() {
   useEffect(() => {
     let coachId = "user-coach-1";
     let isAdmin = false;
+    let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = u.id;
+        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.email) coachEmail = u.email;
         if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
@@ -50,12 +58,11 @@ export default function StudentsDirectoryPage() {
 
     const myClasses = isAdmin
       ? dataStore.classes
-      : dataStore.classes.filter((c) => c.coachId === coachId);
+      : getCoachClasses(coachId, coachEmail);
     setCoachClasses(myClasses);
-    const myClassIds = myClasses.map((c) => c.id);
     const myStudents = isAdmin
       ? dataStore.students
-      : dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid)));
+      : getCoachStudents(coachId, coachEmail);
     setStudents(myStudents);
   }, []);
 

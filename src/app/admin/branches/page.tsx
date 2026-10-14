@@ -27,6 +27,7 @@ import {
   BranchData,
   ClassroomData,
   UserData,
+  resolveCanonicalCoachId,
 } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
@@ -442,7 +443,11 @@ export default function AdminBranchesAndClassesPage() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {filteredClasses.map((cls) => {
               const branch = branches.find((b) => b.id === cls.branchId);
-              const coach = dataStore.users.find((u) => u.id === cls.coachId);
+              const coach = dataStore.users.find(
+                (u) =>
+                  u.id === cls.coachId ||
+                  resolveCanonicalCoachId(u.id || u.email) === resolveCanonicalCoachId(cls.coachId)
+              );
               const students = dataStore.students.filter((s) => s.classIds.includes(cls.id));
               const sessions = dataStore.sessions.filter((s) => s.classId === cls.id);
 

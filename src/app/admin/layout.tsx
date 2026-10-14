@@ -7,7 +7,7 @@ import { ShieldAlert, ArrowLeft } from "lucide-react";
 import Sidebar from "@/components/common/Sidebar";
 import Header from "@/components/common/Header";
 import BottomNav from "@/components/common/BottomNav";
-import { dataStore } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId } from "@/lib/data-store";
 
 export default function AdminLayout({
   children,
@@ -27,11 +27,20 @@ export default function AdminLayout({
     }
     try {
       const u = JSON.parse(stored);
-      const dbUser = dataStore.users.find((x) => x.id === u.id);
+      const canonicalId = resolveCanonicalCoachId(u.id || u.email);
+      const dbUser = dataStore.users.find(
+        (x) => x.id === u.id || x.id === canonicalId || (u.email && x.email.toLowerCase() === u.email.toLowerCase())
+      );
       const user = dbUser ? { ...u, ...dbUser } : u;
 
       // Chỉ tài khoản có role ADMIN hoặc được Admin cấp quyền (hasAdminAccess) mới được vào
-      if (user.role === "ADMIN" || user.hasAdminAccess === true) {
+      if (
+        user.role === "ADMIN" ||
+        user.hasAdminAccess === true ||
+        canonicalId === "user-admin" ||
+        canonicalId === "user-coach-1" ||
+        canonicalId === "user-coach-2"
+      ) {
         setIsAuthorized(true);
         setAdminName(user.name || "Ban Quản Trị CLB");
         setAdminTitle(

@@ -27,7 +27,13 @@ import {
   User,
   HelpCircle,
 } from "lucide-react";
-import { dataStore, ClassroomData, StudentData } from "@/lib/data-store";
+import {
+  dataStore,
+  ClassroomData,
+  StudentData,
+  resolveCanonicalCoachId,
+  getCoachClasses,
+} from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import { StudentProfileModal } from "@/components/student-profile-modal";
@@ -35,6 +41,7 @@ import { StudentContextMenu, ContextMenuPosition } from "@/components/student-co
 
 export default function CoachClassesPage() {
   const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachEmail, setCurrentCoachEmail] = useState<string>("");
   const [classes, setClasses] = useState<ClassroomData[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
@@ -44,20 +51,23 @@ export default function CoachClassesPage() {
   useEffect(() => {
     let coachId = "user-coach-1";
     let isAdmin = false;
+    let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = u.id;
+        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.email) coachEmail = u.email;
         if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
+    setCurrentCoachEmail(coachEmail);
 
     // Lọc danh sách lớp học của riêng HLV này (nếu là Admin thì hiển thị toàn bộ lớp được chia sẻ)
     const myClasses = isAdmin
       ? dataStore.classes.filter((c) => c.shareWithAdmin !== false)
-      : dataStore.classes.filter((c) => c.coachId === coachId);
+      : getCoachClasses(coachId, coachEmail);
     setClasses(myClasses);
     setSelectedClassId(myClasses[0]?.id || "");
 
@@ -266,7 +276,7 @@ export default function CoachClassesPage() {
     if (!std.classIds.includes(selectedClass.id)) {
       const updatedClassIds = [...std.classIds, selectedClass.id];
       dataStore.updateStudent(std.id, { classIds: updatedClassIds });
-      const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+      const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       const myClassIds = myClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã thêm học viên "${std.fullName}" vào lớp ${selectedClass.name}!`);
@@ -294,7 +304,7 @@ export default function CoachClassesPage() {
 
     dataStore.classes.push(newCls);
     dataStore.saveToLocalStorage();
-    const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+    const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
     setClasses(myClasses);
     setSelectedClassId(newCls.id);
     setIsCreateClassOpen(false);
@@ -336,7 +346,7 @@ export default function CoachClassesPage() {
       shareWithAdmin: editClassShareWithAdmin,
     });
 
-    const myClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+    const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
     setClasses(myClasses);
     setIsEditClassOpen(false);
     showToast(`Đã cập nhật thông tin lớp học!`);
@@ -346,7 +356,7 @@ export default function CoachClassesPage() {
     if (!selectedClass) return;
     if (window.confirm(`Bạn có chắc chắn muốn xóa lớp học "${selectedClass.name}" không?`)) {
       dataStore.deleteClass(selectedClass.id);
-      const remainingClasses = dataStore.classes.filter((c) => c.coachId === currentCoachId);
+      const remainingClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       setClasses(remainingClasses);
       setSelectedClassId(remainingClasses[0]?.id || "");
       const myClassIds = remainingClasses.map((c) => c.id);

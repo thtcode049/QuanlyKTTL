@@ -19,7 +19,14 @@ import {
   X,
   GraduationCap,
 } from "lucide-react";
-import { dataStore, MonthlyInvoiceData, ClassroomData, StudentData } from "@/lib/data-store";
+import {
+  dataStore,
+  MonthlyInvoiceData,
+  ClassroomData,
+  StudentData,
+  resolveCanonicalCoachId,
+  getCoachClasses,
+} from "@/lib/data-store";
 import { formatCurrencyVND, generateVietQrUrl } from "@/lib/vietqr";
 import { exportInvoicesToExcel, InvoiceExportRow } from "@/lib/excel";
 import { ZaloStudentInvoicePayload } from "@/lib/zalo";
@@ -42,11 +49,13 @@ function InvoicesContent() {
   useEffect(() => {
     let coachId = "user-coach-1";
     let isAdmin = false;
+    let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = u.id;
+        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.email) coachEmail = u.email;
         if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
@@ -54,7 +63,7 @@ function InvoicesContent() {
 
     const myClasses = isAdmin
       ? dataStore.classes
-      : dataStore.classes.filter((c) => c.coachId === coachId);
+      : getCoachClasses(coachId, coachEmail);
     setClasses(myClasses);
     const paramClassId = searchParams.get("classId");
     if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {

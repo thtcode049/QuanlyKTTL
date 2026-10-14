@@ -18,7 +18,7 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
-import { dataStore } from "@/lib/data-store";
+import { dataStore, getCoachClasses } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 interface ZaloCoachModalProps {
@@ -44,8 +44,8 @@ export default function ZaloCoachModal({
 
   // Xây dựng dữ liệu lớp & học phí cho từng HLV
   const coachDataList = coaches.map((coach) => {
-    const coachClasses = dataStore.classes.filter(
-      (c) => c.coachId === coach.id && c.isActive
+    const coachClasses = getCoachClasses(coach.id, coach.email).filter(
+      (c) => c.isActive
     );
 
     const cleanPhone = coach.phone ? coach.phone.replace(/[^0-9]/g, "") : "";

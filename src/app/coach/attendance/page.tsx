@@ -18,7 +18,14 @@ import {
   History,
   RotateCcw,
 } from "lucide-react";
-import { dataStore, AttendanceSessionData, ClassroomData, StudentData } from "@/lib/data-store";
+import {
+  dataStore,
+  AttendanceSessionData,
+  ClassroomData,
+  StudentData,
+  resolveCanonicalCoachId,
+  getCoachClasses,
+} from "@/lib/data-store";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import confetti from "canvas-confetti";
 
@@ -168,11 +175,13 @@ function AttendanceContent() {
   useEffect(() => {
     let coachId = "user-coach-1";
     let isAdmin = false;
+    let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        if (u.id) coachId = u.id;
+        if (u.id) coachId = resolveCanonicalCoachId(u.id || u.email);
+        if (u.email) coachEmail = u.email;
         if (u.role === "ADMIN") isAdmin = true;
       } catch (e) {}
     }
@@ -180,7 +189,7 @@ function AttendanceContent() {
 
     const myClasses = isAdmin
       ? dataStore.classes
-      : dataStore.classes.filter((c) => c.coachId === coachId);
+      : getCoachClasses(coachId, coachEmail);
     setClasses(myClasses);
 
     const paramClassId = searchParams.get("classId");

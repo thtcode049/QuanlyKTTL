@@ -16,7 +16,7 @@ import {
   GraduationCap,
   ShieldCheck,
 } from "lucide-react";
-import { dataStore, UserData } from "@/lib/data-store";
+import { dataStore, UserData, resolveCanonicalCoachId, getCoachClasses } from "@/lib/data-store";
 
 export default function AdminCoachesPage() {
   // Đảm bảo dữ liệu HLV luôn được chuẩn hóa và đồng bộ từ Database
@@ -30,15 +30,36 @@ export default function AdminCoachesPage() {
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
           data.users.forEach((dbUser: UserData) => {
+            const canonicalId = resolveCanonicalCoachId(dbUser.id || dbUser.email);
             const idx = dataStore.users.findIndex(
-              (u) => u.id === dbUser.id || u.email.toLowerCase() === dbUser.email.toLowerCase()
+              (u) =>
+                u.id === dbUser.id ||
+                u.id === canonicalId ||
+                u.email.toLowerCase() === dbUser.email.toLowerCase()
             );
+            const targetId =
+              canonicalId === "user-coach-1" ||
+              canonicalId === "user-coach-2" ||
+              canonicalId === "user-admin"
+                ? canonicalId
+                : dbUser.id;
+            const updated = {
+              ...dbUser,
+              id: targetId,
+              hasAdminAccess:
+                canonicalId === "user-coach-1" ||
+                canonicalId === "user-coach-2" ||
+                canonicalId === "user-admin" ||
+                dbUser.hasAdminAccess,
+            };
+
             if (idx >= 0) {
-              dataStore.users[idx] = { ...dataStore.users[idx], ...dbUser };
+              dataStore.users[idx] = { ...dataStore.users[idx], ...updated };
             } else {
-              dataStore.users.push(dbUser);
+              dataStore.users.push(updated);
             }
           });
+          dataStore.normalizeCoachData();
           dataStore.saveToLocalStorage();
           setCoaches([...dataStore.users.filter((u) => u.role === "COACH")]);
         }
@@ -190,7 +211,7 @@ export default function AdminCoachesPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {coaches.map((coach) => {
           const branch = dataStore.branches.find((b) => b.id === coach.branchId);
-          const coachClasses = dataStore.classes.filter((c) => c.coachId === coach.id);
+          const coachClasses = getCoachClasses(coach.id, coach.email);
           const sessionsTaught = dataStore.sessions.filter((s) =>
             coachClasses.some((c) => c.id === s.classId)
           ).length;
