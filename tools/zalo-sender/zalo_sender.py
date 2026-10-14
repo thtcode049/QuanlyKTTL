@@ -442,10 +442,15 @@ class ZaloWorker(threading.Thread):
                     args=args,
                     no_viewport=True,
                     ignore_default_args=["--enable-automation"],
+                    permissions=["clipboard-read", "clipboard-write"],
                 )
                 if channel:
                     kw["channel"] = channel
                 ctx = self.pw.chromium.launch_persistent_context(**kw)
+                try:
+                    ctx.grant_permissions(["clipboard-read", "clipboard-write"], origin="https://chat.zalo.me")
+                except Exception:
+                    pass
                 self.log(f"Đã mở trình duyệt: {channel or 'Chromium'}")
                 return ctx
             except PWError as e:
@@ -635,6 +640,83 @@ class ZaloWorker(threading.Thread):
                 pass
             return False
 
+    # --- GÕ VÀ GỬI TIN NHẮN VĂN BẢN HOÀN CHỈNH ---
+    def _type_and_send_message(self, text: str) -> bool:
+        """
+        Gõ và gửi tin nhắn hoàn chỉnh vào khung chat Zalo Web.
+        Dùng Clipboard Paste để giữ nguyên 100% định dạng, xuống dòng, emoji.
+        Tự động nhấn Enter + click nút Gửi + Ctrl+Enter để đảm bảo tin nhắn gửi đi 100%.
+        """
+        page = self.page
+        try:
+            chat_input = page.locator("div#richInput, div[contenteditable='true']").first
+            chat_input.wait_for(state="visible", timeout=7000)
+            chat_input.click()
+            page.wait_for_timeout(300)
+
+            # Xóa text cũ nếu có
+            page.keyboard.press("Control+A")
+            page.keyboard.press("Backspace")
+            page.wait_for_timeout(200)
+
+            # Đưa text vào clipboard của trình duyệt và paste
+            pasted = False
+            try:
+                page.evaluate("text => navigator.clipboard.writeText(text)", text)
+                page.wait_for_timeout(100)
+                page.keyboard.press("Control+V")
+                page.wait_for_timeout(500)
+                pasted = True
+            except Exception:
+                pass
+
+            # Fallback nếu paste chưa có text
+            if not pasted or not chat_input.inner_text().strip():
+                lines = text.split("\n")
+                for idx, line in enumerate(lines):
+                    if idx > 0:
+                        page.keyboard.press("Shift+Enter")
+                        page.wait_for_timeout(150)
+                    if line:
+                        page.keyboard.insert_text(line)
+                        page.wait_for_timeout(100)
+
+            page.wait_for_timeout(600)
+
+            # 1. Thử nhấn Enter để gửi
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(500)
+
+            # 2. Thử click nút Gửi (icon máy bay giấy / send button)
+            try:
+                page.evaluate("""() => {
+                    const sendBtns = document.querySelectorAll('div[data-id="btn_Send"], div[class*="chat-input__send-btn"], div[class*="btn-send"], div[role="button"][data-translate-inner="STR_SEND"]');
+                    for (const b of sendBtns) {
+                        b.click();
+                        return;
+                    }
+                    const icons = document.querySelectorAll('i[class*="send"], span[class*="send"]');
+                    for (const ic of icons) {
+                        const btn = ic.closest('div[role="button"], button, div');
+                        if (btn) { btn.click(); return; }
+                    }
+                }""")
+            except Exception:
+                pass
+
+            page.wait_for_timeout(500)
+
+            # 3. Nếu vẫn còn text (do Zalo cấu hình Ctrl+Enter để gửi)
+            if chat_input.inner_text().strip():
+                page.keyboard.press("Control+Enter")
+                page.wait_for_timeout(600)
+
+            page.wait_for_timeout(800)
+            return True
+        except Exception as e:
+            self.log(f"Lỗi gửi tin nhắn: {e}", "warn")
+            return False
+
     # --- GỬI ẢNH THẺ VÀO ZALO ---
     def _send_card_to_phone(self, item: dict, img_path: Path, cfg: SendConfig):
         phone = item.get("cleanParentPhone") or normalize_phone(item.get("parentPhone", ""))
@@ -657,11 +739,9 @@ class ZaloWorker(threading.Thread):
                 st_code = item.get("studentCode", "")
                 month = item.get("month", "")
                 year = item.get("year", "")
-                msg = f"CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {st_name} ({st_code})."
-                chat_input.click()
-                page.keyboard.insert_text(msg)
-                page.keyboard.press("Enter")
-                page.wait_for_timeout(1000)
+                greeting = f"CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {st_name} ({st_code})."
+                self._type_and_send_message(greeting)
+                page.wait_for_timeout(800)
 
             # 4. Upload ảnh thẻ học phí
             file_uploaded = False
@@ -681,8 +761,9 @@ class ZaloWorker(threading.Thread):
 
             page.wait_for_timeout(2000)
 
-            # 5. Bấm gửi media (Enter hoặc click nút Gửi)
+            # 5. Bấm gửi media (Enter hoặc click nút Gửi media)
             page.keyboard.press("Enter")
+            page.wait_for_timeout(600)
             try:
                 page.evaluate("""() => {
                     const btns = document.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id="btn_SendMedia"]');
@@ -807,16 +888,8 @@ class ZaloWorker(threading.Thread):
                     if not self._open_chat_by_phone(phone, timeout=cfg.search_timeout):
                         status = "NOT_FOUND"
                     else:
-                        box = page.locator("div#richInput, div[contenteditable='true']").first
-                        box.wait_for(state="visible", timeout=7000)
-                        box.click()
-                        for k, line in enumerate(msg.split("\n")):
-                            if k:
-                                page.keyboard.press("Shift+Enter")
-                            if line:
-                                page.keyboard.insert_text(line)
-                        page.keyboard.press("Enter")
-                        status = "OK"
+                        sent = self._type_and_send_message(msg)
+                        status = "OK" if sent else "ERROR"
                 except Exception as e:
                     status = "ERROR"
 
