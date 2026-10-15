@@ -251,16 +251,26 @@ function InvoicesContent() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Nút tải trực tiếp Tool EXE */}
-          <a
-            href="/api/tool/download"
-            download="Zalo_Bulk_Sender.exe"
-            className="flex items-center gap-2 rounded-xl border border-amber-400/60 bg-amber-500 hover:bg-amber-600 px-3.5 py-2.5 text-xs font-black text-slate-950 shadow-md active:scale-95 transition-all"
-            title="Tải phần mềm Zalo_Bulk_Sender.exe cho máy tính chưa cài tool"
-          >
-            <Download className="h-4 w-4" />
-            <span>Tải File Tool (.exe)</span>
-          </a>
+          {/* Nút tải trực tiếp Tool EXE & ZIP */}
+          <div className="inline-flex rounded-xl shadow-md">
+            <a
+              href="/downloads/Zalo_Bulk_Sender.exe"
+              download="Zalo_Bulk_Sender.exe"
+              className="flex items-center gap-1.5 rounded-l-xl border border-amber-400/60 bg-amber-500 hover:bg-amber-600 px-3.5 py-2.5 text-xs font-black text-slate-950 active:scale-95 transition-all"
+              title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
+            >
+              <Download className="h-4 w-4" />
+              <span>Tải Tool (.exe)</span>
+            </a>
+            <a
+              href="/downloads/Zalo_Bulk_Sender.zip"
+              download="Zalo_Bulk_Sender.zip"
+              className="flex items-center rounded-r-xl border-y border-r border-amber-400/60 bg-amber-600 hover:bg-amber-500 px-2.5 py-2.5 text-[11px] font-black text-slate-950 active:scale-95 transition-all"
+              title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
+            >
+              <span>.ZIP</span>
+            </a>
+          </div>
 
           {/* Nút Mở Tool Gửi Thẻ Học Phí */}
           <button

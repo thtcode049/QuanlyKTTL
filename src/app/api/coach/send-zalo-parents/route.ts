@@ -18,23 +18,145 @@ export async function GET(req: NextRequest) {
     try {
       const fs = await import("fs");
       const path = await import("path");
-      const { exec } = await import("child_process");
-      
+      const os = await import("os");
+      const { spawn } = await import("child_process");
+
       const candidatePaths = [
         path.join(process.cwd(), "Zalo_Bulk_Sender.exe"),
+        path.join(process.cwd(), "public", "downloads", "Zalo_Bulk_Sender.exe"),
         path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender.exe"),
+        path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender", "Zalo_Bulk_Sender.exe"),
       ];
 
+      let foundExe = "";
       for (const exePath of candidatePaths) {
         if (fs.existsSync(exePath)) {
-          const workDir = path.dirname(exePath);
-          exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '${exePath}' -WorkingDirectory '${workDir}'"`);
-          return NextResponse.json({ success: true, message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính!" });
+          foundExe = exePath;
+          break;
         }
       }
 
-      return NextResponse.json({ success: false, message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy chủ." });
+      if (!foundExe) {
+        return NextResponse.json({
+          success: false,
+          message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy chủ.",
+        });
+      }
+
+      const workDir = path.dirname(foundExe);
+      const args: string[] = [];
+
+      // Nếu có classId, tự động kết xuất dữ liệu hóa đơn của lớp này và truyền đường dẫn vào tool
+      if (classId) {
+        try {
+          const targetClass = dataStore.classes.find((c) => c.id === classId);
+          const branch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+          const invoices = dataStore.invoices.filter(
+            (inv) => inv.classId === classId && inv.month === month && inv.year === year
+          );
+          const sessions = dataStore.sessions.filter((s) => {
+            if (s.classId !== classId) return false;
+            const d = new Date(s.date);
+            return d.getMonth() + 1 === month && d.getFullYear() === year;
+          });
+
+          const studentsList = invoices.map((inv) => {
+            const student = dataStore.students.find((s) => s.id === inv.studentId);
+            const presentDates: string[] = [];
+            sessions.forEach((sess) => {
+              const rec = sess.records.find((r) => r.studentId === student?.id);
+              if (rec && rec.status === "PRESENT") {
+                const d = new Date(sess.date);
+                presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+              }
+            });
+
+            const transferContent = `HP ${student?.code || "HS"} T${month}`;
+            const vietQrUrl =
+              dataStore.bankConfig.useCustomQr && dataStore.bankConfig.customQrImage
+                ? dataStore.bankConfig.customQrImage
+                : generateVietQrUrl({
+                    bankId: dataStore.bankConfig.bankId,
+                    accountNo: dataStore.bankConfig.bankAccount,
+                    accountName: dataStore.bankConfig.accountHolder,
+                    template: "compact2",
+                    amount: inv.totalAmount,
+                    description: transferContent,
+                  });
+
+            const cleanPhone = (student?.parentPhone || "").replace(/[^0-9]/g, "");
+
+            return {
+              invoiceId: inv.id,
+              studentId: student?.id,
+              studentCode: student?.code,
+              studentName: student?.fullName,
+              parentName: student?.parentName,
+              parentPhone: student?.parentPhone,
+              cleanParentPhone: cleanPhone,
+              className: targetClass?.name,
+              branchName: branch?.name,
+              month,
+              year,
+              presentCount: inv.presentCount,
+              presentDates,
+              feePerSession: inv.feePerSession,
+              totalAmount: inv.totalAmount,
+              status: inv.status,
+              transferContent,
+              vietQrUrl,
+              bankName: dataStore.bankConfig.bankName,
+              bankAccount: dataStore.bankConfig.bankAccount,
+              accountHolder: dataStore.bankConfig.accountHolder,
+            };
+          });
+
+          const exportBundle = {
+            exportTime: new Date().toISOString(),
+            classInfo: {
+              classId,
+              className: targetClass?.name,
+              branchName: branch?.name,
+              month,
+              year,
+              totalSessions: sessions.length,
+            },
+            bankConfig: {
+              bankName: dataStore.bankConfig.bankName,
+              bankAccount: dataStore.bankConfig.bankAccount,
+              accountHolder: dataStore.bankConfig.accountHolder,
+            },
+            totalStudents: studentsList.length,
+            totalAmount: studentsList.reduce((sum, s) => sum + s.totalAmount, 0),
+            students: studentsList,
+          };
+
+          const kttlDir = path.join(os.homedir(), ".kttl_zalo_sender");
+          if (!fs.existsSync(kttlDir)) {
+            fs.mkdirSync(kttlDir, { recursive: true });
+          }
+          const jsonTempPath = path.join(kttlDir, "invoices_auto_launch.json");
+          fs.writeFileSync(jsonTempPath, JSON.stringify(exportBundle, null, 2), "utf-8");
+          args.push(jsonTempPath);
+        } catch (jsonErr) {
+          console.warn("Không thể chuẩn bị file JSON tự động:", jsonErr);
+        }
+      }
+
+      // Khởi động trực tiếp EXE qua spawn với đường dẫn UTF-16 Unicode không bị lỗi tiếng Việt
+      const child = spawn(foundExe, args, {
+        cwd: workDir,
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+
+      return NextResponse.json({
+        success: true,
+        message: "Đã khởi động Tool Zalo Bulk Sender trên máy tính thành công!",
+      });
     } catch (e: any) {
+      console.error("Lỗi khởi động tool Zalo:", e);
       return NextResponse.json({ success: false, error: e.message || String(e) });
     }
   }

@@ -279,19 +279,23 @@ export default function ZaloParentSenderModal({
     showToast("Đã tải file dữ liệu học phí (.json) vào thư mục Downloads!");
   };
 
-  // Khởi động trực tiếp Tool EXE (nếu chạy trên máy tính có tool)
+  // Khởi động trực tiếp Tool EXE trên máy tính (nạp sẵn danh sách học viên lớp này)
   const handleDirectLaunchTool = async () => {
-    exportInvoicesJsonForTool();
     try {
-      const res = await fetch("/api/coach/send-zalo-parents?action=open_tool");
+      showToast("⏳ Đang khởi động Tool Zalo Bulk Sender trên máy tính...");
+      const res = await fetch(
+        `/api/coach/send-zalo-parents?action=open_tool&classId=${classroom.id}&month=${month}&year=${year}`
+      );
       const data = await res.json();
       if (data.success) {
-        showToast("🚀 Đã khởi động Tool Zalo Bulk Sender trên máy tính của bạn!");
+        showToast("🚀 Đã mở Tool Zalo trên máy tính của bạn kèm dữ liệu lớp này!");
       } else {
-        showToast("Nếu bạn chưa tải Tool về máy, hãy bấm nút 'Tải Tool Zalo (.exe)' bên dưới!");
+        showToast(
+          "⚠️ " + (data.message || "Chưa tìm thấy Tool trên máy. Hãy bấm nút 'Tải Tool' bên cạnh để tải về!")
+        );
       }
-    } catch (e) {
-      showToast("Đã tải file JSON. Vui lòng mở Zalo_Bulk_Sender.exe trên máy để gửi!");
+    } catch (e: any) {
+      showToast("⚠️ Vui lòng mở trực tiếp file Zalo_Bulk_Sender.exe trên máy tính để gửi!");
     }
   };
 
@@ -376,16 +380,26 @@ export default function ZaloParentSenderModal({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* NÚT 1: TẢI TOOL EXE */}
-              <a
-                href="/api/tool/download"
-                download="Zalo_Bulk_Sender.exe"
-                className="rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-2 text-xs font-black text-slate-950 shadow-md active:scale-95 transition-all flex items-center gap-1.5"
-                title="Tải file phần mềm Zalo_Bulk_Sender.exe cho người dùng chưa có tool trên máy"
-              >
-                <Download className="h-4 w-4" />
-                <span>📥 Tải Tool Zalo (.exe)</span>
-              </a>
+              {/* NÚT 1: TẢI TOOL EXE & ZIP */}
+              <div className="inline-flex rounded-xl shadow-md">
+                <a
+                  href="/downloads/Zalo_Bulk_Sender.exe"
+                  download="Zalo_Bulk_Sender.exe"
+                  className="rounded-l-xl border border-amber-400/50 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-2 text-xs font-black text-slate-950 active:scale-95 transition-all flex items-center gap-1.5"
+                  title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>📥 Tải Tool (.exe)</span>
+                </a>
+                <a
+                  href="/downloads/Zalo_Bulk_Sender.zip"
+                  download="Zalo_Bulk_Sender.zip"
+                  className="rounded-r-xl border-y border-r border-amber-400/50 bg-amber-600 hover:bg-amber-500 px-2.5 py-2 text-[11px] font-black text-slate-950 active:scale-95 transition-all flex items-center"
+                  title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
+                >
+                  <span>.ZIP</span>
+                </a>
+              </div>
 
               {/* NÚT 2: TẢI FILE DỮ LIỆU JSON */}
               <button

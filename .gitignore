@@ -51,5 +51,7 @@ next-env.d.ts
 /tools/zalo-sender/dist/
 __pycache__/
 
-# Executables
+# Executables and archives
 *.exe
+*.zip
+
