@@ -68,6 +68,53 @@ def register_windows_protocol():
         pass
 
 
+def copy_image_to_windows_clipboard(image_path: Path | str) -> bool:
+    """Đưa file ảnh vào Windows System Clipboard dưới định dạng CF_DIB (DIB) để paste trực tiếp vào Zalo."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import io
+        import ctypes
+        from PIL import Image
+
+        image = Image.open(str(image_path))
+        output = io.BytesIO()
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]  # Bỏ 14 byte BMP header để thành định dạng DIB tiêu chuẩn
+        output.close()
+
+        kernel32 = ctypes.windll.kernel32
+        user32 = ctypes.windll.user32
+
+        kernel32.GlobalAlloc.restype = ctypes.c_void_p
+        kernel32.GlobalAlloc.argtypes = [ctypes.c_uint, ctypes.c_size_t]
+        kernel32.GlobalLock.restype = ctypes.c_void_p
+        kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
+        kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+        user32.OpenClipboard.argtypes = [ctypes.c_void_p]
+        user32.SetClipboardData.restype = ctypes.c_void_p
+        user32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
+
+        if not user32.OpenClipboard(None):
+            return False
+        try:
+            user32.EmptyClipboard()
+            hMem = kernel32.GlobalAlloc(0x0042, len(data))  # GMEM_MOVEABLE | GMEM_ZEROINIT
+            if not hMem:
+                return False
+            pMem = kernel32.GlobalLock(hMem)
+            if not pMem:
+                return False
+            ctypes.memmove(pMem, data, len(data))
+            kernel32.GlobalUnlock(hMem)
+            res = user32.SetClipboardData(8, hMem)  # CF_DIB = 8
+            return bool(res)
+        finally:
+            user32.CloseClipboard()
+    except Exception:
+        return False
+
+
 # ----------------------------------------------------------------------------
 # Xử lý SĐT & Spintax
 # ----------------------------------------------------------------------------
@@ -144,71 +191,71 @@ def build_invoice_html(data: dict) -> str:
       -webkit-font-smoothing: antialiased;
     }}
     .invoice-card {{
-      width: 480px;
+      width: 650px;
       background: #ffffff;
-      border-radius: 24px;
-      box-shadow: 0 10px 35px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.06);
+      border-radius: 28px;
+      box-shadow: 0 12px 40px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(15, 23, 42, 0.08);
       overflow: hidden;
       position: relative;
     }}
     .brand-stamp {{
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 26px;
+      right: 28px;
       display: flex;
       align-items: center;
     }}
     .brand-logo {{
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: #059669;
       color: white;
-      font-size: 15px;
+      font-size: 20px;
       font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+      box-shadow: 0 3px 8px rgba(5, 150, 105, 0.35);
     }}
     .card-header {{
-      padding: 24px 24px 16px 24px;
+      padding: 30px 32px 20px 32px;
       border-bottom: 1px solid #f1f5f9;
     }}
     .badge-month {{
       display: inline-block;
       background: #ecfdf5;
       color: #059669;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.5px;
-      padding: 4px 10px;
-      border-radius: 8px;
+      padding: 5px 12px;
+      border-radius: 10px;
       text-transform: uppercase;
     }}
     .title {{
-      margin-top: 8px;
-      font-size: 16px;
+      margin-top: 10px;
+      font-size: 21px;
       font-weight: 800;
       color: #0f172a;
       line-height: 1.35;
     }}
     .intro {{
-      margin-top: 8px;
-      font-size: 12.5px;
+      margin-top: 10px;
+      font-size: 15px;
       color: #475569;
-      line-height: 1.55;
+      line-height: 1.6;
     }}
     .details-table {{
-      padding: 16px 24px;
+      padding: 20px 32px;
     }}
     .row {{
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 9px 0;
+      padding: 11px 0;
       border-bottom: 1px solid #f8fafc;
-      font-size: 12.5px;
+      font-size: 15px;
     }}
     .row:last-child {{ border-bottom: none; }}
     .label {{
@@ -222,59 +269,59 @@ def build_invoice_html(data: dict) -> str:
       font-weight: 700;
       text-align: right;
       width: 62%;
-      line-height: 1.4;
+      line-height: 1.45;
     }}
     .row-highlight {{
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin: 8px 0;
+      border-radius: 14px;
+      padding: 15px 18px;
+      margin: 10px 0;
       align-items: center;
     }}
     .row-highlight .label {{
       color: #047857;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 16px;
     }}
     .row-highlight .value {{
       color: #059669;
-      font-size: 18px;
-      font-weight: 800;
+      font-size: 24px;
+      font-weight: 900;
     }}
     .syntax-highlight {{
       color: #ea580c;
       font-family: monospace;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: 0.5px;
     }}
     .qr-container {{
-      margin: 8px 24px 20px 24px;
+      margin: 10px 32px 24px 32px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 20px;
+      padding: 22px;
       text-align: center;
     }}
     .qr-title {{
-      font-size: 12px;
+      font-size: 14.5px;
       font-weight: 700;
       color: #334155;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
     }}
     .qr-box {{
-      width: 190px;
-      height: 190px;
+      width: 250px;
+      height: 250px;
       margin: 0 auto;
       background: #ffffff;
-      border-radius: 14px;
-      padding: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
       border: 1px solid #cbd5e1;
       display: flex;
       align-items: center;
@@ -284,29 +331,29 @@ def build_invoice_html(data: dict) -> str:
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
-      border-radius: 8px;
+      border-radius: 10px;
     }}
     .qr-footer-note {{
-      margin-top: 10px;
-      font-size: 10.5px;
+      margin-top: 12px;
+      font-size: 13px;
       color: #64748b;
       font-style: italic;
       line-height: 1.45;
     }}
     .card-footer-cta {{
-      margin: 0 24px 24px 24px;
+      margin: 0 32px 32px 32px;
       background: linear-gradient(135deg, #059669 0%, #10b981 100%);
       color: #ffffff;
-      font-size: 12.5px;
-      font-weight: 700;
+      font-size: 15px;
+      font-weight: 800;
       text-align: center;
-      padding: 11px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+      padding: 14px;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
     }}
   </style>
 </head>
@@ -545,21 +592,56 @@ class ZaloWorker(threading.Thread):
         img_name = f"{code}_{clean_name}_T{month}_{year}.png"
         out_path = CARDS_DIR / img_name
 
-        if out_path.exists() and out_path.stat().st_size > 15000:
-            return out_path
+        # Nếu đã có ảnh và độ phân giải cao (>= 1200px width), tái sử dụng để tiết kiệm thời gian
+        if out_path.exists():
+            try:
+                with Image.open(out_path) as im:
+                    if im.width >= 1200:
+                        return out_path
+            except Exception:
+                pass
 
-        # Render bằng page trong context hiện tại (bỏ device_scale_factor để tránh lỗi Playwright)
         html_code = build_invoice_html(item)
-        render_page = self.ctx.new_page()
+        render_ctx = None
+        render_page = None
+        temp_browser = None
         try:
-            render_page.set_viewport_size({"width": 800, "height": 1300})
+            # Tạo trang render với device_scale_factor=2 để ảnh sắc nét chuẩn Retina (1300px), không bị vỡ trên điện thoại
+            for ch in ("msedge", "chrome", None):
+                try:
+                    temp_browser = self.pw.chromium.launch(headless=True, channel=ch)
+                    render_ctx = temp_browser.new_context(device_scale_factor=2)
+                    render_page = render_ctx.new_page()
+                    break
+                except Exception:
+                    continue
+
+            if render_page is None:
+                # Fallback dùng context hiện tại nếu không mở được browser phụ
+                render_page = self.ctx.new_page()
+
+            render_page.set_viewport_size({"width": 800, "height": 1400})
             render_page.set_content(html_code, wait_until="load", timeout=15000)
-            render_page.wait_for_timeout(1000)  # Chờ font và mã QR load
+            render_page.wait_for_timeout(1200)  # Chờ font Google Fonts và ảnh QR load hoàn tất
             card = render_page.locator("#invoiceCard")
             card.wait_for(state="visible", timeout=8000)
             card.screenshot(path=str(out_path))
         finally:
-            render_page.close()
+            if render_page:
+                try:
+                    render_page.close()
+                except Exception:
+                    pass
+            if render_ctx:
+                try:
+                    render_ctx.close()
+                except Exception:
+                    pass
+            if temp_browser:
+                try:
+                    temp_browser.close()
+                except Exception:
+                    pass
         return out_path
 
     def _render_single_card(self, item: dict):
@@ -574,7 +656,7 @@ class ZaloWorker(threading.Thread):
     def _open_chat_by_phone(self, phone: str, timeout: float = 8.0) -> bool:
         """
         Tìm kiếm và mở khung chat với số điện thoại trên Zalo Web.
-        Thử nghiệm liên tục cả điều hướng phím (ArrowDown + Enter), selector DOM và tìm kiếm danh bạ.
+        Thử nghiệm liên tục cả điều hướng phím (ArrowDown + Enter) và click kết quả tìm kiếm danh bạ.
         """
         page = self.page
         try:
@@ -586,40 +668,47 @@ class ZaloWorker(threading.Thread):
             # Chờ Zalo truy vấn danh bạ qua mạng
             page.wait_for_timeout(1500)
 
-            chat_input = page.locator("div#richInput, div[contenteditable='true']").first
+            chat_input = page.locator("#chatView div#richInput, .chat-input div#richInput, div#richInput").first
 
             # 2. Điều hướng bằng phím (ArrowDown -> Enter) - Cơ chế chuẩn nhất của Zalo Web
             page.keyboard.press("ArrowDown")
             page.wait_for_timeout(300)
             page.keyboard.press("Enter")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(800)
+
+            # Nhấn Escape để đóng menu popup search nếu còn nổi lên
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
 
             if chat_input.is_visible():
                 return True
 
-            # 3. Click vào các selector phần tử kết quả tìm kiếm
+            # 3. Click vào các selector phần tử kết quả tìm kiếm trong dropdown danh bạ (.search-list)
+            # TUYỆT ĐỐI KHÔNG DÙNG div.conv-item để tránh click nhầm vào các nhóm chat gần đây ở sidebar!
             selectors = [
+                ".search-list div[id^='friend-item-']",
+                ".search-list div[data-id^='friend-item-']",
+                ".search-list div[class*='friend-item']",
+                ".search-list div[class*='search-item']",
+                ".search-list div[tabindex]",
                 "div[id^='friend-item-']",
                 "div[data-id^='friend-item-']",
-                "div.conv-item",
-                "div[class*='friend-item']",
-                "div[class*='search-item']",
-                "div[class*='conv-item']",
-                ".search-list div[tabindex]",
-                "div[role='listitem']",
-                "div[class*='user-item']",
             ]
             for sel in selectors:
                 f = page.locator(sel).first
                 if f.count() and f.is_visible():
                     f.click()
-                    page.wait_for_timeout(1000)
+                    page.wait_for_timeout(800)
+                    page.keyboard.press("Escape")
+                    page.wait_for_timeout(400)
                     if chat_input.is_visible():
                         return True
 
             # 4. Thử nhấn Enter một lần nữa
             page.keyboard.press("Enter")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(500)
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(500)
             if chat_input.is_visible():
                 return True
 
@@ -650,7 +739,7 @@ class ZaloWorker(threading.Thread):
         """
         page = self.page
         try:
-            chat_input = page.locator("div#richInput, div[contenteditable='true']").first
+            chat_input = page.locator("#chatView div#richInput, .chat-input div#richInput, div#richInput, div[contenteditable='true']").first
             chat_input.wait_for(state="visible", timeout=7000)
             chat_input.click()
             page.wait_for_timeout(300)
@@ -730,8 +819,8 @@ class ZaloWorker(threading.Thread):
             if not self._open_chat_by_phone(phone, timeout=cfg.search_timeout):
                 return "NOT_FOUND", "Không tìm thấy trong bạn bè Zalo"
 
-            # 2. Chờ khung chat sẵn sàng
-            chat_input = page.locator("div#richInput, div[contenteditable='true']").first
+            # 2. Chờ khung chat sẵn sàng (Ưu tiên phần chatView của người nhận hiện tại)
+            chat_input = page.locator("#chatView div#richInput, .chat-input div#richInput, div#richInput, div[contenteditable='true']").first
             chat_input.wait_for(state="visible", timeout=7000)
 
             # 3. Gửi lời chào nếu được cấu hình
@@ -744,61 +833,53 @@ class ZaloWorker(threading.Thread):
                 self._type_and_send_message(greeting)
                 page.wait_for_timeout(800)
 
-            # 4. Upload ảnh thẻ học phí
+            # 4. Upload ảnh thẻ học phí - TẤT CẢ PHẢI ĐƯỢC GIỚI HẠN TRONG #chatView / .chat-input
+            # TUYỆT ĐỐI KHÔNG CLICK VÀO BẤT KỲ SELECTOR NÀO Ở SIDEBAR ĐỂ TRÁNH GỬI NHẦM NHÓM
             file_uploaded = False
 
-            # Tầng A: Paste ảnh trực tiếp qua DataTransfer Clipboard Event (Tự nhiên, không phụ thuộc DOM nút bấm)
+            # Tầng A: Copy ảnh vào Windows System Clipboard và paste trực tiếp vào chat_input bằng Control+V
+            # Đây là cách tự nhiên nhất, an toàn 100%, không bao giờ bị lệch sang chat khác!
             try:
-                with open(img_path, "rb") as f:
-                    b64_data = base64.b64encode(f.read()).decode("utf-8")
-
-                file_uploaded = page.evaluate("""([b64, fname]) => {
-                    try {
-                        const byteCharacters = atob(b64);
-                        const byteNumbers = new Array(byteCharacters.length);
-                        for (let i = 0; i < byteCharacters.length; i++) {
-                            byteNumbers[i] = byteCharacters.charCodeAt(i);
-                        }
-                        const byteArray = new Uint8Array(byteNumbers);
-                        const file = new File([byteArray], fname, { type: 'image/png' });
-
-                        const dt = new DataTransfer();
-                        dt.items.add(file);
-
-                        const target = document.querySelector('div#richInput') || document.querySelector('div[contenteditable="true"]');
-                        if (target) {
-                            target.focus();
-                            const pasteEvent = new ClipboardEvent('paste', {
-                                bubbles: true,
-                                cancelable: true,
-                                clipboardData: dt
-                            });
-                            target.dispatchEvent(pasteEvent);
-                            return true;
-                        }
-                    } catch (e) {
-                        return false;
-                    }
-                    return false;
-                }""", [b64_data, img_path.name])
-            except Exception:
+                if copy_image_to_windows_clipboard(img_path):
+                    chat_input.click()
+                    page.wait_for_timeout(300)
+                    page.keyboard.press("Control+V")
+                    page.wait_for_timeout(1500)
+                    file_uploaded = True
+            except Exception as e:
+                self.log(f"Clipboard paste error: {e}", "warn")
                 file_uploaded = False
 
-            # Tầng B: Click vào icon Gửi ảnh trên thanh công cụ chat (Icon bức tranh) qua expect_file_chooser
+            # Tầng B: Nếu Tầng A chưa gửi được, dùng input[type='file'] TRONG #chatView hoặc .chat-input
+            if not file_uploaded:
+                try:
+                    scoped_file_inputs = page.locator("#chatView input[type='file'], .chat-input input[type='file']")
+                    if scoped_file_inputs.count():
+                        scoped_file_inputs.first.set_input_files(str(img_path))
+                        file_uploaded = True
+                        page.wait_for_timeout(1500)
+                except Exception:
+                    pass
+
+            # Tầng C: Click icon Gửi ảnh TRONG THANH CÔNG CỤ CỦA CHATVIEW bằng expect_file_chooser
             if not file_uploaded:
                 photo_selectors = [
-                    "div[data-translate-inner='STR_SEND_PHOTO']",
-                    "div[title*='ảnh']",
-                    "div[title*='Ảnh']",
-                    "div[title*='Photo']",
-                    "div[title*='hình ảnh']",
-                    "div[data-id*='photo']",
-                    "div[data-id*='Photo']",
-                    "i[class*='photo']",
-                    "div[class*='icon-photo']",
-                    ".chat-input__tools > *:nth-child(2)",
-                    "div[class*='toolbar'] > *:nth-child(2)",
-                    "div[class*='tools'] > *:nth-child(2)"
+                    "#chatView div[data-translate-inner='STR_SEND_PHOTO']",
+                    "#chatView div[data-id='btn_SendPhoto']",
+                    "#chatView div[data-id*='Photo']",
+                    "#chatView div[data-id*='photo']",
+                    "#chatView .chat-input__tools > *:nth-child(2)",
+                    "#chatView div[class*='chat-input__tools'] > *:nth-child(2)",
+                    "#chatView .chat-input div[title*='ảnh']",
+                    "#chatView .chat-input div[title*='Ảnh']",
+                    "#chatView .chat-input div[title*='hình ảnh']",
+                    "#chatView .chat-input div[title*='Photo']",
+                    ".chat-input div[title*='ảnh']",
+                    ".chat-input div[title*='Ảnh']",
+                    ".chat-input div[title*='hình ảnh']",
+                    ".chat-input div[title*='Photo']",
+                    ".chat-input .chat-input__tools > *:nth-child(2)",
+                    ".chat-input div[class*='chat-input__tools'] > *:nth-child(2)",
                 ]
 
                 for psel in photo_selectors:
@@ -810,37 +891,29 @@ class ZaloWorker(threading.Thread):
                             file_chooser = fc_info.value
                             file_chooser.set_files(str(img_path))
                             file_uploaded = True
+                            page.wait_for_timeout(1500)
                             break
                         except Exception:
                             pass
 
-            # Tầng C: Nếu có thẻ input[type="file"] xuất hiện
-            if not file_uploaded:
-                try:
-                    file_inputs = page.locator("input[type='file']")
-                    if file_inputs.count():
-                        file_inputs.first.set_input_files(str(img_path))
-                        file_uploaded = True
-                except Exception:
-                    pass
+            page.wait_for_timeout(1500)
 
-            page.wait_for_timeout(2000)
-
-            # 5. Bấm gửi media (Enter hoặc click nút Gửi media)
+            # 5. Bấm gửi media (Enter hoặc click nút Gửi media TRONG #chatView)
             page.keyboard.press("Enter")
             page.wait_for_timeout(600)
             try:
                 page.evaluate("""() => {
-                    const btns = document.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id="btn_SendMedia"], div[data-id="btn_Send"]');
+                    const chatBox = document.querySelector('#chatView') || document.querySelector('.chat-input') || document;
+                    const btns = chatBox.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id*="Send"], div[data-id*="send"]');
                     for (const b of btns) {
                         const txt = (b.innerText || '').trim().toLowerCase();
-                        const dataId = b.getAttribute('data-id') || '';
-                        if (txt === 'gửi' || txt === 'send' || dataId.includes('Send') || dataId.includes('send') || dataId === 'btn_SendMedia') {
+                        const dataId = (b.getAttribute('data-id') || '').toLowerCase();
+                        if (txt === 'gửi' || txt === 'send' || dataId.includes('sendmedia') || dataId === 'btn_send') {
                             b.click();
                             return;
                         }
                     }
-                    const icons = document.querySelectorAll('i[class*="send"], span[class*="send"]');
+                    const icons = chatBox.querySelectorAll('i[class*="send"], span[class*="send"]');
                     for (const ic of icons) {
                         const btn = ic.closest('div[role="button"], button, div');
                         if (btn) { btn.click(); return; }
