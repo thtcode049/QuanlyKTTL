@@ -64,6 +64,7 @@ export default function CoachEvaluationsPage() {
   }, []);
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId) || students[0];
+  const selectedStudentClass = dataStore.classes.find((c) => selectedStudent?.classIds?.includes(c.id));
 
   // Lấy đánh giá của học viên
   const currentEval =
@@ -212,6 +213,7 @@ export default function CoachEvaluationsPage() {
             {filteredStudents.map((std) => {
               const isSelected = std.id === selectedStudent?.id;
               const avatarUrl = getStudentAvatarUrl(std.avatar, std.fullName);
+              const stdClass = dataStore.classes.find((c) => std.classIds?.includes(c.id));
               return (
                 <div
                   key={std.id}
@@ -236,7 +238,7 @@ export default function CoachEvaluationsPage() {
                         </span>
                       </div>
                       <p className={`text-[11px] ${isSelected ? "text-white/80" : "text-slate-500"}`}>
-                        {std.currentLevel} • Sinh năm {std.birthYear}
+                        {stdClass?.level ? `${stdClass.level} • ` : ""}{std.birthYear ? `Sinh năm ${std.birthYear}` : `Mã: ${std.code}`}
                       </p>
                     </div>
                   </div>
@@ -270,11 +272,11 @@ export default function CoachEvaluationsPage() {
                     <div className="flex items-center gap-2">
                       <h2 className="text-lg font-bold text-slate-900">{selectedStudent.fullName}</h2>
                       <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-brand-primary">
-                        {selectedStudent.currentLevel}
+                        {selectedStudentClass?.level || "Học viên"}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">
-                      Mã HV: {selectedStudent.code} • Phụ huynh: {selectedStudent.parentName} ({selectedStudent.parentPhone})
+                      Mã HV: {selectedStudent.code} • SĐT: {selectedStudent.parentPhone}
                     </p>
                   </div>
                 </div>

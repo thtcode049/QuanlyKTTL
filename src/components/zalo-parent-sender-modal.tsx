@@ -28,7 +28,7 @@ export interface StudentParentInvoiceItem {
   studentId: string;
   studentCode: string;
   studentName: string;
-  parentName: string;
+  parentName?: string;
   parentPhone: string;
   cleanParentPhone: string;
   className: string;
@@ -646,7 +646,7 @@ export default function ZaloParentSenderModal({
                             </div>
 
                             <p className="mt-0.5 text-xs text-slate-500 truncate">
-                              PH: <strong className="text-slate-800">{st.parentName || "Chưa có"}</strong> •{" "}
+                              SĐT:{" "}
                               <span className="font-mono text-slate-700 font-semibold">{st.parentPhone}</span>
                             </p>
 

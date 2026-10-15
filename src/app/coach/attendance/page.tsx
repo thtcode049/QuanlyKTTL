@@ -843,8 +843,8 @@ function AttendanceContent() {
                         ({std.code})
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500">
-                      PH: {std.parentName} • SĐT: {std.parentPhone}
+                    <p className="text-[11px] font-mono text-slate-500">
+                      SĐT: {std.parentPhone}
                     </p>
                   </div>
                 </div>

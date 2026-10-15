@@ -62,7 +62,7 @@ export function getInvoicesForMonth(month = 10, year = 2026, classId?: string) {
         studentId: student.id,
         studentName: student.fullName,
         studentCode: student.code,
-        parentName: student.parentName,
+        parentName: student.parentName || '',
         parentPhone: student.parentPhone,
         className: cls.name,
         classId: cls.id,

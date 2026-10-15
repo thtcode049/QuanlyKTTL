@@ -49,11 +49,11 @@ export interface StudentData {
   id: string;
   code: string; // VD: HS001
   fullName: string;
-  birthYear: number;
+  birthYear?: number;
   gender?: 'Nam' | 'Nữ';
-  parentName: string;
+  parentName?: string; // Đã loại bỏ khỏi UI/hệ thống, giữ optional để tương thích ngược
   parentPhone: string;
-  currentLevel: string;
+  currentLevel?: string; // Trình độ học viên đã loại bỏ (chỉ dùng trình độ lớp), giữ optional tương thích
   eloRating?: number; // Đã loại bỏ khỏi UI/hệ thống đánh giá
   notes?: string;
   classIds: string[];

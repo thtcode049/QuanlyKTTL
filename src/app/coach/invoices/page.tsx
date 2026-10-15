@@ -210,7 +210,6 @@ function InvoicesContent() {
         studentCode: student?.code || "",
         fullName: student?.fullName || "",
         birthYear: student?.birthYear || 0,
-        parentName: student?.parentName || "",
         parentPhone: student?.parentPhone || "",
         presentCount: inv.presentCount,
         feePerSession: inv.feePerSession,
@@ -443,8 +442,8 @@ function InvoicesContent() {
                       </span>
                       <h4 className="text-xs font-bold text-slate-900">{student?.fullName}</h4>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      PH: {student?.parentName} • {student?.parentPhone}
+                    <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                      SĐT: {student?.parentPhone}
                     </p>
                   </div>
 
@@ -517,7 +516,7 @@ function InvoicesContent() {
               <tr>
                 <th className="px-4 py-3">Mã HV</th>
                 <th className="px-4 py-3">Họ và Tên</th>
-                <th className="px-4 py-3">Phụ Huynh & SĐT</th>
+                <th className="px-4 py-3">Số Điện Thoại</th>
                 <th className="px-4 py-3 text-center">Buổi Có Mặt</th>
                 <th className="px-4 py-3">Ngày Đi Học</th>
                 <th className="px-4 py-3 text-right">Đơn Giá</th>
@@ -540,8 +539,7 @@ function InvoicesContent() {
                       {student?.fullName}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-slate-800">{student?.parentName}</p>
-                      <p className="font-mono text-[11px] text-slate-500">{student?.parentPhone}</p>
+                      <span className="font-mono text-xs font-bold text-slate-800">{student?.parentPhone}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 font-extrabold text-brand-primary border border-emerald-200">
@@ -781,7 +779,7 @@ function InvoicesContent() {
             studentId: student?.id || "",
             studentCode: student?.code || "HS",
             studentName: student?.fullName || "Học viên",
-            parentName: student?.parentName || "",
+            parentName: "",
             parentPhone: student?.parentPhone || "",
             cleanParentPhone: (student?.parentPhone || "").replace(/[^0-9]/g, ""),
             className: selectedClass?.name || "",

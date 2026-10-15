@@ -6,11 +6,11 @@ export interface ParsedStudentRow {
   id: string;
   code: string;
   fullName: string;
-  birthYear: number;
-  gender: "Nam" | "Nữ";
-  parentName: string;
+  birthYear?: number;
+  gender?: "Nam" | "Nữ" | "";
+  parentName?: string;
   parentPhone: string;
-  currentLevel: string;
+  currentLevel?: string;
   customFeePerSession?: number;
   sheetClassName?: string;
   matchedClassId?: string;
@@ -68,10 +68,10 @@ export function normalizePhoneNumber(rawPhone: any): string {
 
 
 /**
- * Trích xuất năm sinh từ chuỗi / số / ngày tháng
+ * Trích xuất năm sinh từ chuỗi / số / ngày tháng (để trống nếu không có)
  */
-export function extractBirthYear(rawVal: any): number {
-  if (!rawVal) return 2018; // Năm sinh mặc định phù hợp độ tuổi cờ vua
+export function extractBirthYear(rawVal: any): number | undefined {
+  if (rawVal === undefined || rawVal === null || String(rawVal).trim() === "") return undefined;
 
   // Nếu là số nguyên 4 chữ số (VD: 2017)
   if (typeof rawVal === "number" && rawVal >= 1990 && rawVal <= 2026) {
@@ -86,25 +86,28 @@ export function extractBirthYear(rawVal: any): number {
     return parseInt(yearMatch[1], 10);
   }
 
-  // Nếu là số tuổi (VD: 6, 7, 8, 9, 10, 11, 12)
+  // Nếu là số tuổi (VD: 4 đến 20)
   const num = parseInt(str, 10);
   if (!isNaN(num) && num >= 4 && num <= 20) {
     return new Date().getFullYear() - num;
   }
 
-  return 2018;
+  return undefined;
 }
 
 /**
- * Chuẩn hóa giới tính
+ * Chuẩn hóa giới tính (để trống nếu không có)
  */
-export function normalizeGender(val: any): "Nam" | "Nữ" {
-  if (!val) return "Nam";
+export function normalizeGender(val: any): "Nam" | "Nữ" | "" {
+  if (!val) return "";
   const str = String(val).toLowerCase().trim();
   if (str.includes("nữ") || str.includes("nu") || str === "f" || str.includes("female") || str.includes("gái")) {
     return "Nữ";
   }
-  return "Nam";
+  if (str.includes("nam") || str === "m" || str.includes("male") || str.includes("trai")) {
+    return "Nam";
+  }
+  return "";
 }
 
 /**
@@ -125,10 +128,10 @@ export function normalizeLevel(val: any): string {
  */
 export function normalizeFee(val: any): number | undefined {
   if (!val) return undefined;
-  if (typeof val === "number" && val > 0) return Math.round(val);
   const clean = String(val).replace(/[^0-9]/g, "");
   const num = parseInt(clean, 10);
-  if (!isNaN(num) && num > 0) return num;
+  // Tránh nhận diện nhầm số điện thoại (10 chữ số) thành học phí
+  if (!isNaN(num) && num >= 10000 && num <= 5000000) return num;
   return undefined;
 }
 
@@ -138,15 +141,12 @@ export function normalizeFee(val: any): number | undefined {
 export function downloadStudentImportTemplate(availableClasses: ClassroomData[] = []) {
   const headers = [
     "Họ và tên (*)",
-    "Năm sinh (*)",
-    "Giới tính",
-    "Tên phụ huynh",
     "Số điện thoại phụ huynh (*)",
-    "Trình độ",
-    "Học phí riêng (VNĐ/buổi)",
+    "Năm sinh",
+    "Giới tính",
     "Lớp học",
+    "Học phí riêng (VNĐ/buổi)",
     "Trường học",
-    "Địa chỉ",
     "Ghi chú",
   ];
 
@@ -156,55 +156,33 @@ export function downloadStudentImportTemplate(availableClasses: ClassroomData[] 
   const rows = [
     [
       "Nguyễn Gia Huy",
+      "0912345678",
       2017,
       "Nam",
-      "Nguyễn Văn Hùng",
-      "0912345678",
-      "Nhập môn",
-      150000,
       sampleClassName1,
+      150000,
       "TH Thăng Long",
-      "257 Bạch Mai, Hà Nội",
       "Rất tập trung và có tư duy logic tốt",
     ],
     [
       "Trần Phương Linh",
+      "0987654321",
       2018,
       "Nữ",
-      "Lê Thị Thu",
-      "0987654321",
-      "Cơ bản",
-      "",
       sampleClassName2,
+      "",
       "TH Kim Đồng",
-      "111 Thái Hà, Đống Đa, Hà Nội",
       "Điềm đạm, thích học tàn cuộc Xe",
     ],
     [
       "Phạm Hoàng Nam",
-      2016,
-      "Nam",
-      "Phạm Văn Tuấn",
       "0903123456",
-      "Nâng cao",
-      180000,
+      "",
+      "",
       sampleClassName1,
+      180000,
       "TH Dịch Vọng A",
-      "106 Hoàng Quốc Việt, Cầu Giấy",
-      "Đã có thành tích giải cấp Quận",
-    ],
-    [
-      "Vũ Bảo An",
-      2019,
-      "Nam",
-      "Vũ Minh Tâm",
-      "0916611258",
-      "Vỡ lòng",
-      "",
-      "",
-      "Mầm non Hoa Sen",
-      "Hoàng Mai, Hà Nội",
-      "Làm quen mặt quân và quy tắc đi cờ",
+      "Năm sinh và giới tính có thể để trống",
     ],
   ];
 
@@ -214,15 +192,12 @@ export function downloadStudentImportTemplate(availableClasses: ClassroomData[] 
   // Cài đặt độ rộng cột tối ưu
   worksheet["!cols"] = [
     { wch: 22 }, // Họ và tên
-    { wch: 12 }, // Năm sinh
-    { wch: 10 }, // Giới tính
-    { wch: 20 }, // Tên PH
     { wch: 24 }, // SĐT PH
-    { wch: 14 }, // Trình độ
-    { wch: 24 }, // Học phí riêng
+    { wch: 12 }, // Năm sinh
+    { wch: 12 }, // Giới tính
     { wch: 24 }, // Lớp học
+    { wch: 24 }, // Học phí riêng
     { wch: 20 }, // Trường học
-    { wch: 26 }, // Địa chỉ
     { wch: 30 }, // Ghi chú
   ];
 
@@ -233,21 +208,20 @@ export function downloadStudentImportTemplate(availableClasses: ClassroomData[] 
   const guideData = [
     ["HƯỚNG DẪN NHẬP DỮ LIỆU HỌC VIÊN CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTLL)"],
     [],
-    ["1. Các trường bắt buộc gồm: Họ và tên (*), Số điện thoại phụ huynh (*), Năm sinh (*)."],
-    ["2. Cột 'Giới tính': Điền 'Nam' hoặc 'Nữ' (mặc định là Nam nếu để trống)."],
-    ["3. Cột 'Năm sinh': Điền năm sinh 4 chữ số (VD: 2017) hoặc ngày sinh (VD: 15/08/2017). Hệ thống sẽ tự trích xuất năm sinh."],
-    ["4. Cột 'Trình độ': Điền 'Vỡ lòng', 'Nhập môn', 'Cơ bản', 'Nâng cao' hoặc 'Đội tuyển' (mặc định là 'Nhập môn')."],
-    ["5. Cột 'Học phí riêng (VNĐ/buổi)': Điền số tiền (VD: 150000). Nếu để trống sẽ tự áp dụng mức học phí chung của lớp học."],
-    ["6. Cột 'Lớp học': Điền đúng tên lớp hoặc mã lớp. Nếu để trống, bạn có thể chọn lớp để ghi danh hàng loạt trên phần mềm."],
-    ["7. Bạn có thể sao chép trực tiếp các cột từ Google Sheets hoặc Excel rồi DÁN (Ctrl+V) vào ứng dụng."],
+    ["1. Hai cột bắt buộc tối thiểu: 'Họ và tên (*)' và 'Số điện thoại phụ huynh (*)'. Các cột khác có thể để trống."],
+    ["2. Cột 'Năm sinh': Điền năm sinh 4 chữ số (VD: 2017). Có thể để trống nếu chưa có thông tin."],
+    ["3. Cột 'Giới tính': Điền 'Nam' hoặc 'Nữ'. Có thể để trống."],
+    ["4. Cột 'Học phí riêng (VNĐ/buổi)': Điền số tiền (VD: 150000). Nếu để trống sẽ tự áp dụng mức học phí chung của lớp học."],
+    ["5. Cột 'Lớp học': Điền đúng tên lớp hoặc mã lớp. Có thể để trống để chọn lớp chung trên phần mềm."],
+    ["6. Bạn có thể sao chép trực tiếp từng cột (Họ tên, SĐT) từ Google Sheets hoặc Excel rồi DÁN (Ctrl+V) vào ứng dụng."],
     [],
     ["DANH SÁCH LỚP HỌC HIỆN CÓ CỦA BẠN:"],
-    ["STT", "Tên Lớp Học", "Trình Độ", "Học Phí Buổi (VNĐ)"],
+    ["STT", "Tên Lớp Học", "Trình Độ Của Lớp", "Học Phí Buổi (VNĐ)"],
     ...availableClasses.map((c, i) => [i + 1, c.name, c.level, c.feePerSession]),
   ];
 
   const guideSheet = XLSX.utils.aoa_to_sheet(guideData);
-  guideSheet["!cols"] = [{ wch: 6 }, { wch: 30 }, { wch: 15 }, { wch: 20 }];
+  guideSheet["!cols"] = [{ wch: 6 }, { wch: 30 }, { wch: 18 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(workbook, guideSheet, "HuongDan_LopHoc");
 
   XLSX.writeFile(workbook, "Mau_Nhap_Hoc_Vien_KTTLL.xlsx");
@@ -423,7 +397,7 @@ export function parseMatrixToStudents(
     const parentPhone = normalizePhoneNumber(rawParentPhone);
     const birthYear = extractBirthYear(rawBirthYear);
     const gender = normalizeGender(rawGender);
-    const parentName = String(rawParentName || "").trim() || (fullName ? `Phụ huynh ${fullName}` : "Phụ huynh");
+    const parentName = String(rawParentName || "").trim();
     const currentLevel = normalizeLevel(rawLevel);
     const customFeePerSession = normalizeFee(rawFee);
     const school = String(rawSchool || "").trim() || undefined;
@@ -481,7 +455,7 @@ export function parseMatrixToStudents(
     }
 
     // Kiểm tra năm sinh
-    if (birthYear < 2000 || birthYear > new Date().getFullYear()) {
+    if (birthYear && (birthYear < 2000 || birthYear > new Date().getFullYear())) {
       warnings.push(`Năm sinh ${birthYear} có thể bất thường`);
     }
 
@@ -583,27 +557,25 @@ export function parsePastedText(
 export interface EditableStudentRow {
   id: string;
   fullName: string;
-  birthYear: string;
-  gender: "Nam" | "Nữ";
-  parentName: string;
   parentPhone: string;
-  currentLevel: string;
+  birthYear: string;
+  gender: "Nam" | "Nữ" | "";
   classId: string;
   customFee: string;
   school: string;
   address?: string;
   notes: string;
+  parentName?: string;
+  currentLevel?: string;
 }
 
 export function createEmptyStudentRow(defaultClassId: string = "NONE"): EditableStudentRow {
   return {
     id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
     fullName: "",
-    birthYear: "2018",
-    gender: "Nam",
-    parentName: "",
     parentPhone: "",
-    currentLevel: "Nhập môn",
+    birthYear: "",
+    gender: "",
     classId: defaultClassId && defaultClassId !== "AUTO" ? defaultClassId : "NONE",
     customFee: "",
     school: "",
@@ -646,6 +618,15 @@ export function parseMatrixToEditableRows(
       ) {
         testMap["fullName"] = idx;
       } else if (
+        norm.includes("sodienthoai") ||
+        norm.includes("sdt") ||
+        norm.includes("dienthoai") ||
+        norm.includes("phone") ||
+        norm.includes("tel") ||
+        norm.includes("mobile")
+      ) {
+        testMap["parentPhone"] = idx;
+      } else if (
         norm.includes("namsinh") ||
         norm.includes("ngaysinh") ||
         norm === "ns" ||
@@ -655,25 +636,6 @@ export function parseMatrixToEditableRows(
         testMap["birthYear"] = idx;
       } else if (norm.includes("gioitinh") || norm === "gt" || norm.includes("gender") || norm === "sex") {
         testMap["gender"] = idx;
-      } else if (
-        norm.includes("tenphuhuynh") ||
-        norm.includes("hotenphuhuynh") ||
-        norm.includes("phuhuynh") ||
-        norm.includes("tenph") ||
-        norm.includes("parent")
-      ) {
-        testMap["parentName"] = idx;
-      } else if (
-        norm.includes("sodienthoai") ||
-        norm.includes("sdt") ||
-        norm.includes("dienthoai") ||
-        norm.includes("phone") ||
-        norm.includes("tel") ||
-        norm.includes("mobile")
-      ) {
-        testMap["parentPhone"] = idx;
-      } else if (norm.includes("trinhdo") || norm.includes("capdo") || norm.includes("level")) {
-        testMap["currentLevel"] = idx;
       } else if (norm.includes("hocphi") || norm.includes("dongia") || norm.includes("fee")) {
         testMap["customFee"] = idx;
       } else if (norm.includes("lophoc") || norm.includes("tenlop") || norm === "lop" || norm.includes("class")) {
@@ -702,11 +664,9 @@ export function parseMatrixToEditableRows(
     if (!Array.isArray(row) || row.every((c) => c === undefined || c === null || String(c).trim() === "")) continue;
 
     let fullName = "";
-    let birthYear = "";
-    let gender: "Nam" | "Nữ" = "Nam";
-    let parentName = "";
     let parentPhone = "";
-    let currentLevel = "Nhập môn";
+    let birthYear = "";
+    let gender: "Nam" | "Nữ" | "" = "";
     let classId = defaultClassId !== "AUTO" && defaultClassId !== "NONE" ? defaultClassId : "NONE";
     let customFee = "";
     let school = "";
@@ -715,11 +675,12 @@ export function parseMatrixToEditableRows(
 
     if (headerRowIndex >= 0) {
       fullName = colMap["fullName"] !== undefined ? String(row[colMap["fullName"]] || "").trim() : "";
-      birthYear = colMap["birthYear"] !== undefined ? String(extractBirthYear(row[colMap["birthYear"]])) : "";
-      gender = colMap["gender"] !== undefined ? normalizeGender(row[colMap["gender"]]) : "Nam";
-      parentName = colMap["parentName"] !== undefined ? String(row[colMap["parentName"]] || "").trim() : "";
       parentPhone = colMap["parentPhone"] !== undefined ? normalizePhoneNumber(row[colMap["parentPhone"]]) : "";
-      currentLevel = colMap["currentLevel"] !== undefined ? normalizeLevel(row[colMap["currentLevel"]]) : "Nhập môn";
+      
+      const parsedYear = colMap["birthYear"] !== undefined ? extractBirthYear(row[colMap["birthYear"]]) : undefined;
+      birthYear = parsedYear ? String(parsedYear) : "";
+      
+      gender = colMap["gender"] !== undefined ? normalizeGender(row[colMap["gender"]]) : "";
       customFee =
         colMap["customFee"] !== undefined && row[colMap["customFee"]]
           ? String(normalizeFee(row[colMap["customFee"]]) || "")
@@ -764,21 +725,14 @@ export function parseMatrixToEditableRows(
         }
 
         // Nếu là giới tính
-        if (val.toLowerCase() === "nam" || val.toLowerCase() === "nữ" || val.toLowerCase() === "nu") {
+        if (!gender && (val.toLowerCase() === "nam" || val.toLowerCase() === "nữ" || val.toLowerCase() === "nu")) {
           gender = normalizeGender(val);
           continue;
         }
 
-        // Nếu là trình độ
-        const lvl = normalizeLevel(val);
-        if (lvl !== "Nhập môn" || val.toLowerCase().includes("nhập môn") || val.toLowerCase().includes("nhap mon")) {
-          currentLevel = lvl;
-          continue;
-        }
-
-        // Nếu là học phí riêng (số >= 10000)
+        // Nếu là học phí riêng (số từ 10.000 đến 5.000.000)
         const fee = normalizeFee(val);
-        if (!customFee && fee && fee >= 10000) {
+        if (!customFee && fee) {
           customFee = String(fee);
           continue;
         }
@@ -790,10 +744,8 @@ export function parseMatrixToEditableRows(
           continue;
         }
 
-        // Fallback vào tên phụ huynh / trường / ghi chú
-        if (!parentName && c <= 3) {
-          parentName = val;
-        } else if (!school) {
+        // Fallback vào trường / ghi chú
+        if (!school) {
           school = val;
         } else if (!notes) {
           notes = val;
@@ -804,11 +756,9 @@ export function parseMatrixToEditableRows(
     result.push({
       id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
       fullName,
-      birthYear: birthYear || "2018",
-      gender,
-      parentName: parentName || (fullName ? `Phụ huynh ${fullName}` : ""),
       parentPhone,
-      currentLevel,
+      birthYear,
+      gender,
       classId,
       customFee,
       school,

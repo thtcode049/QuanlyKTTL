@@ -5,12 +5,12 @@ export interface InvoiceExportRow {
   studentCode: string;
   fullName: string;
   birthYear: number;
-  parentName: string;
   parentPhone: string;
   presentCount: number;
   feePerSession: number;
   totalAmount: number;
   statusText: string;
+  parentName?: string;
 }
 
 export function exportInvoicesToExcel(
@@ -30,7 +30,6 @@ export function exportInvoicesToExcel(
       "Mã Học Viên",
       "Họ và Tên",
       "Năm Sinh",
-      "Phụ Huynh",
       "Số Điện Thoại",
       "Số Buổi Có Mặt",
       "Đơn Giá (VNĐ)",
@@ -42,7 +41,6 @@ export function exportInvoicesToExcel(
       r.studentCode,
       r.fullName,
       r.birthYear,
-      r.parentName,
       r.parentPhone,
       r.presentCount,
       r.feePerSession,

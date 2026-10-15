@@ -76,11 +76,11 @@ model Student {
   id           String              @id @default(uuid())
   code         String?
   fullName     String
-  birthYear    Int
+  birthYear    Int?
   gender       String?
-  parentName   String
+  parentName   String?             @default("")
   parentPhone  String
-  currentLevel String              @default("Nhập môn")
+  currentLevel String?             @default("Nhập môn")
   eloRating    Int                 @default(1000)
   notes        String?
   customFeePerSession Float?

@@ -13,7 +13,7 @@ export interface StudentInvoiceDetail {
   studentId: string;
   studentName: string;
   studentCode: string;
-  parentName: string;
+  parentName?: string;
   parentPhone: string;
   className: string;
   classId: string;
@@ -173,7 +173,7 @@ export function getCoachInvoices(month = 10, year = 2026): CoachInvoiceBundle[] 
           studentId: student.id,
           studentName: student.fullName,
           studentCode: student.code,
-          parentName: student.parentName,
+          parentName: student.parentName || '',
           parentPhone: student.parentPhone,
           className: cls.name,
           classId: cls.id,

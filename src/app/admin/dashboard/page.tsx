@@ -347,7 +347,9 @@ export default function AdminDashboardPage() {
                       </span>
                       <span className="font-bold text-slate-800">{std.fullName}</span>
                     </div>
-                    <span className="font-semibold text-slate-500">{std.currentLevel}</span>
+                    <span className="font-semibold text-slate-500">
+                      {dataStore.classes.find((c) => std.classIds.includes(c.id))?.name || "Chưa xếp lớp"}
+                    </span>
                   </div>
                 ))}
             </div>

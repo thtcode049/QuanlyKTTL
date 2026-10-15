@@ -90,11 +90,9 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
   // Form states when editing
   const [fullName, setFullName] = useState("");
-  const [birthYear, setBirthYear] = useState<number>(2018);
-  const [gender, setGender] = useState<"Nam" | "Nữ">("Nam");
-  const [parentName, setParentName] = useState("");
+  const [birthYear, setBirthYear] = useState<number | string>(2018);
+  const [gender, setGender] = useState<"Nam" | "Nữ" | "">("Nam");
   const [parentPhone, setParentPhone] = useState("");
-  const [currentLevel, setCurrentLevel] = useState("Nhập môn");
   const [school, setSchool] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -105,11 +103,9 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   React.useEffect(() => {
     if (student) {
       setFullName(student.fullName || "");
-      setBirthYear(student.birthYear || 2018);
-      setGender(student.gender || "Nam");
-      setParentName(student.parentName || "");
+      setBirthYear(student.birthYear ?? "");
+      setGender(student.gender || "");
       setParentPhone(student.parentPhone || "");
-      setCurrentLevel(student.currentLevel || "Nhập môn");
       setSchool(student.school || "");
       setAddress(student.address || "");
       setNotes(student.notes || "");
@@ -166,11 +162,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     e.preventDefault();
     const updatedData: Partial<StudentData> = {
       fullName,
-      birthYear: Number(birthYear),
-      gender,
-      parentName,
+      birthYear: birthYear !== "" ? Number(birthYear) : undefined,
+      gender: (gender as "Nam" | "Nữ" | "") || undefined,
+      parentName: "",
       parentPhone,
-      currentLevel,
+      currentLevel: currentClassInfo?.level || undefined,
       school,
       address,
       notes,
@@ -186,7 +182,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   };
 
   const studentAvatar = avatar || getStudentAvatarUrl(student.avatar, student.fullName);
-  const age = new Date().getFullYear() - (student.birthYear || 2018);
+  const age = student.birthYear ? new Date().getFullYear() - student.birthYear : null;
 
   // Thống kê buổi học của học viên trong lớp hiện tại
   const sessionsOfClass = dataStore.sessions.filter((s) => s.classId === currentClassInfo?.id);
@@ -253,8 +249,8 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 <span className="rounded-lg bg-black/40 px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider text-emerald-300 border border-emerald-500/30">
                   {student.code}
                 </span>
-                <span className="rounded-lg bg-white/20 px-2 py-0.5 text-[11px] font-bold text-white backdrop-blur-sm">
-                  {student.currentLevel}
+                <span className="rounded-lg bg-emerald-500/30 px-2.5 py-0.5 text-[11px] font-bold text-emerald-200 border border-emerald-400/30 backdrop-blur-sm">
+                  {currentClassInfo?.level || "Lớp cờ vua"}
                 </span>
               </div>
 
@@ -263,9 +259,10 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               </h2>
 
               <p className="mt-0.5 text-xs text-white/80">
-                {student.birthYear} ({age} tuổi) • {student.gender || "Nam"} • Lớp:{" "}
+                {student.birthYear ? `${student.birthYear} (${age} tuổi)` : "Năm sinh: —"} •{" "}
+                {student.gender || "—"} • Lớp:{" "}
                 <span className="font-bold text-white underline decoration-brand-primary">
-                  {currentClassInfo?.name}
+                  {currentClassInfo?.name || "Chưa xếp lớp"}
                 </span>
               </p>
             </div>
@@ -408,7 +405,8 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <input
                       type="number"
                       value={birthYear}
-                      onChange={(e) => setBirthYear(Number(e.target.value))}
+                      onChange={(e) => setBirthYear(e.target.value)}
+                      placeholder="Để trống"
                       className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
                     />
                   </div>
@@ -416,23 +414,14 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <label className="block font-bold text-slate-700">Giới tính</label>
                     <select
                       value={gender}
-                      onChange={(e) => setGender(e.target.value as "Nam" | "Nữ")}
+                      onChange={(e) => setGender(e.target.value as "Nam" | "Nữ" | "")}
                       className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white"
                     >
+                      <option value="">-- Để trống --</option>
                       <option value="Nam">Nam</option>
                       <option value="Nữ">Nữ</option>
                     </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700">Phụ huynh (Họ tên)</label>
-                  <input
-                    type="text"
-                    value={parentName}
-                    onChange={(e) => setParentName(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
-                  />
                 </div>
 
                 <div>
@@ -444,20 +433,6 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     onChange={(e) => setParentPhone(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700">Trình độ hiện tại</label>
-                  <select
-                    value={currentLevel}
-                    onChange={(e) => setCurrentLevel(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white"
-                  >
-                    <option value="Nhập môn">Nhập môn</option>
-                    <option value="Cơ bản">Cơ bản</option>
-                    <option value="Nâng cao">Nâng cao</option>
-                    <option value="Đội tuyển">Đội tuyển</option>
-                  </select>
                 </div>
 
                 <div>
@@ -575,14 +550,10 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-soft space-y-3">
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                     <User className="h-4 w-4 text-brand-primary" />
-                    <h3 className="font-bold text-slate-900">Liên Hệ & Phụ Huynh</h3>
+                    <h3 className="font-bold text-slate-900">Thông Tin Liên Hệ</h3>
                   </div>
 
                   <div className="space-y-2 text-slate-700">
-                    <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                      <span className="text-slate-400">Phụ huynh:</span>
-                      <span className="font-bold text-slate-900">{student.parentName || "—"}</span>
-                    </div>
 
                     <div className="flex justify-between items-center py-1 border-b border-slate-50">
                       <span className="text-slate-400">Số điện thoại:</span>

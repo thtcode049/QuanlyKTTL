@@ -120,11 +120,15 @@ export default function StudentsDirectoryPage() {
     const matchSearch =
       s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.parentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.parentPhone.includes(searchTerm);
 
     const matchClass = filterClass === "ALL" || s.classIds.includes(filterClass);
-    const matchLevel = filterLevel === "ALL" || s.currentLevel === filterLevel;
+    const matchLevel =
+      filterLevel === "ALL" ||
+      s.classIds.some((cid) => {
+        const cls = classes.find((c) => c.id === cid);
+        return cls?.level === filterLevel;
+      });
 
     return matchSearch && matchClass && matchLevel;
   });
@@ -334,7 +338,7 @@ export default function StudentsDirectoryPage() {
           {filteredStudents.map((std, idx) => {
             const avatarUrl = std.avatar || getStudentAvatarUrl(std.avatar, std.fullName, idx);
             const studentClass = classes.find((c) => std.classIds.includes(c.id));
-            const age = new Date().getFullYear() - std.birthYear;
+            const age = std.birthYear ? new Date().getFullYear() - std.birthYear : null;
 
             return (
               <div
@@ -374,7 +378,7 @@ export default function StudentsDirectoryPage() {
                         {std.fullName}
                       </h3>
                       <p className="text-xs text-slate-500">
-                        {std.birthYear} ({age} tuổi) • {std.gender || "Nam"}
+                        {std.birthYear ? `${std.birthYear} (${age} tuổi)` : "Năm sinh: —"} • {std.gender || "—"}
                       </p>
                     </div>
                   </div>
@@ -382,13 +386,15 @@ export default function StudentsDirectoryPage() {
                   {/* Level & Class Info */}
                   <div className="mt-3.5 space-y-1.5 border-t border-slate-100 pt-2.5 text-xs text-slate-600">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400 text-[11px]">Trình độ:</span>
-                      <span className="font-bold text-slate-800 text-[11px]">{std.currentLevel}</span>
+                      <span className="text-slate-400 text-[11px]">Trình độ lớp:</span>
+                      <span className="font-bold text-emerald-700 text-[11px]">
+                        {classes.find((c) => std.classIds.includes(c.id))?.level || "—"}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 text-[11px]">Lớp:</span>
-                      <div className="text-right max-w-[150px] truncate">
+                      <div className="text-right max-w-[160px] truncate">
                         {classes.filter((c) => std.classIds.includes(c.id)).length > 1 ? (
                           <span className="inline-flex items-center gap-1 font-bold text-brand-primary text-[11px]">
                             <span className="rounded bg-brand-primary/10 px-1 py-0.2 text-[10px]">
@@ -407,13 +413,6 @@ export default function StudentsDirectoryPage() {
                           </span>
                         )}
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 text-[11px]">Phụ huynh:</span>
-                      <span className="font-medium text-slate-800 text-[11px] truncate max-w-[140px]">
-                        {std.parentName}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -449,9 +448,7 @@ export default function StudentsDirectoryPage() {
                   <th className="px-4 py-3">Mã HV</th>
                   <th className="px-4 py-3">Học Viên</th>
                   <th className="px-4 py-3">Năm Sinh</th>
-                  <th className="px-4 py-3">Trình Độ</th>
-                  <th className="px-4 py-3">Lớp Học</th>
-                  <th className="px-4 py-3">Phụ Huynh</th>
+                  <th className="px-4 py-3">Lớp Học (Trình Độ)</th>
                   <th className="px-4 py-3">Số Điện Thoại</th>
                   <th className="px-4 py-3 text-center">Thao Tác</th>
                 </tr>
@@ -486,13 +483,9 @@ export default function StudentsDirectoryPage() {
                       </td>
 
                       <td className="px-4 py-3 text-slate-600">
-                        {std.birthYear} ({new Date().getFullYear() - std.birthYear} tuổi)
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
-                          {std.currentLevel}
-                        </span>
+                        {std.birthYear
+                          ? `${std.birthYear} (${new Date().getFullYear() - std.birthYear}t)`
+                          : "—"}
                       </td>
 
                       <td className="px-4 py-3 font-medium text-slate-800">
@@ -501,20 +494,23 @@ export default function StudentsDirectoryPage() {
                             <span className="rounded bg-brand-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-primary">
                               {classes.filter((c) => std.classIds.includes(c.id)).length} lớp
                             </span>
-                            <span className="text-slate-700 text-xs truncate max-w-[160px]">
+                            <span className="text-slate-700 text-xs truncate max-w-[180px]">
                               {classes
                                 .filter((c) => std.classIds.includes(c.id))
-                                .map((c) => c.name.split("-")[0]?.trim() || c.name)
+                                .map((c) => `${c.name.split("-")[0]?.trim() || c.name} (${c.level})`)
                                 .join(", ")}
                             </span>
                           </div>
+                        ) : studentClass ? (
+                          <span>
+                            {studentClass.name}{" "}
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 ml-1">
+                              {studentClass.level}
+                            </span>
+                          </span>
                         ) : (
-                          <span>{classes.find((c) => std.classIds.includes(c.id))?.name || "Chưa xếp lớp"}</span>
+                          <span className="text-slate-400">Chưa xếp lớp</span>
                         )}
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-700">
-                        {std.parentName}
                       </td>
 
                       <td className="px-4 py-3 font-mono text-slate-700">

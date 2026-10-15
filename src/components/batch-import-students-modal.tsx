@@ -8,7 +8,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Trash2,
-  AlertTriangle,
   Users,
   Sparkles,
   ClipboardPaste,
@@ -16,8 +15,6 @@ import {
   Upload,
   RotateCcw,
   Check,
-  Info,
-  Layers,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { ClassroomData, StudentData, dataStore } from "@/lib/data-store";
@@ -65,6 +62,9 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
   const [importedCount, setImportedCount] = useState(0);
   const [toastMessage, setToastMessage] = useState<string>("");
   const [showPasteModal, setShowPasteModal] = useState(false);
+  const [manualPasteTargetField, setManualPasteTargetField] = useState<
+    "ALL" | keyof EditableStudentRow
+  >("ALL");
   const [manualPasteText, setManualPasteText] = useState("");
 
   // Cập nhật khi mở modal hoặc đổi initialClassId
@@ -121,7 +121,202 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
     );
   };
 
-  // Thêm dữ liệu từ chuỗi dán (Clipboard TSV / CSV)
+  // Dán dọc một cột bắt đầu từ dòng rowIndex
+  const applyColumnLinesToRows = (
+    field: keyof EditableStudentRow,
+    rawLines: string[],
+    startRowIndex: number = 0
+  ) => {
+    if (rawLines.length === 0) return;
+
+    // Lọc tiêu đề nếu người dùng copy cả ô tiêu đề Excel
+    let processedLines = [...rawLines];
+    const firstLower = processedLines[0].toLowerCase();
+    if (
+      field === "fullName" &&
+      /^(họ\s*(và\s*)?tên|họ\s*tên|tên\s*học\s*viên|tên\s*học\s*sinh|tên|full\s*name|name)$/i.test(
+        firstLower
+      )
+    ) {
+      processedLines.shift();
+    } else if (
+      field === "parentPhone" &&
+      /^(số\s*điện\s*thoại|sđt|điện\s*thoại|sđt\s*phụ\s*huynh|phone|mobile|tel)$/i.test(firstLower)
+    ) {
+      processedLines.shift();
+    } else if (
+      field === "birthYear" &&
+      /^(năm\s*sinh|ngày\s*sinh|ns|dob|birth)$/i.test(firstLower)
+    ) {
+      processedLines.shift();
+    }
+
+    if (processedLines.length === 0) return;
+
+    setRows((prev) => {
+      const updated = [...prev];
+      const defaultCls = targetClassId && targetClassId !== "AUTO" ? targetClassId : "NONE";
+
+      // Mở rộng thêm dòng nếu thiếu
+      while (updated.length < startRowIndex + processedLines.length) {
+        updated.push(createEmptyStudentRow(defaultCls));
+      }
+
+      processedLines.forEach((val, i) => {
+        const targetIdx = startRowIndex + i;
+        let finalVal = val;
+        if (field === "parentPhone") {
+          finalVal = normalizePhoneNumber(val);
+        } else if (field === "birthYear") {
+          const by = extractBirthYear(val);
+          finalVal = by ? String(by) : "";
+        } else if (field === "customFee") {
+          const fee = normalizeFee(val);
+          finalVal = fee ? String(fee) : "";
+        }
+
+        updated[targetIdx] = {
+          ...updated[targetIdx],
+          [field]: finalVal,
+        };
+      });
+
+      return updated;
+    });
+
+    const fieldLabels: Record<string, string> = {
+      fullName: "Họ và tên",
+      parentPhone: "SĐT phụ huynh",
+      birthYear: "Năm sinh",
+      gender: "Giới tính",
+      school: "Trường học",
+      customFee: "Học phí riêng",
+      notes: "Ghi chú",
+    };
+    notify(
+      `✨ Đã dán ${processedLines.length} dòng vào cột "${fieldLabels[String(field)] || String(field)}"!`
+    );
+  };
+
+  // Dán ma trận nhiều cột bắt đầu từ (startRowIndex, startField)
+  const applyMatrixPasteStartingAt = (
+    text: string,
+    startRowIndex: number,
+    startField: keyof EditableStudentRow
+  ) => {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length === 0) return;
+
+    const colOrder: (keyof EditableStudentRow)[] = [
+      "fullName",
+      "parentPhone",
+      "birthYear",
+      "gender",
+      "classId",
+      "customFee",
+      "school",
+      "notes",
+    ];
+
+    let startColIdx = colOrder.indexOf(startField);
+    if (startColIdx === -1) startColIdx = 0;
+
+    setRows((prev) => {
+      const updated = [...prev];
+      const defaultCls = targetClassId && targetClassId !== "AUTO" ? targetClassId : "NONE";
+
+      while (updated.length < startRowIndex + lines.length) {
+        updated.push(createEmptyStudentRow(defaultCls));
+      }
+
+      lines.forEach((line, rIdx) => {
+        const cells = line.split("\t");
+        const targetRow = startRowIndex + rIdx;
+
+        cells.forEach((cellVal, cIdx) => {
+          const fieldIdx = startColIdx + cIdx;
+          if (fieldIdx < colOrder.length) {
+            const f = colOrder[fieldIdx];
+            const raw = cellVal.trim();
+            let finalVal: any = raw;
+            if (f === "parentPhone") {
+              finalVal = normalizePhoneNumber(raw);
+            } else if (f === "birthYear") {
+              const by = extractBirthYear(raw);
+              finalVal = by ? String(by) : "";
+            } else if (f === "customFee") {
+              const fee = normalizeFee(raw);
+              finalVal = fee ? String(fee) : "";
+            }
+            updated[targetRow] = {
+              ...updated[targetRow],
+              [f]: finalVal,
+            };
+          }
+        });
+      });
+
+      return updated;
+    });
+
+    notify(`✨ Đã dán ${lines.length} dòng dữ liệu vào bảng!`);
+  };
+
+  // Bắt sự kiện Paste trên từng ô (cell)
+  const handleCellPaste = (
+    e: React.ClipboardEvent<HTMLInputElement | HTMLSelectElement>,
+    rowIndex: number,
+    field: keyof EditableStudentRow
+  ) => {
+    const text = e.clipboardData.getData("text");
+    if (!text) return;
+
+    // Nếu chỉ là chuỗi ngắn không có xuống dòng hay tab -> để trình duyệt paste bình thường vào ô đó
+    if (!text.includes("\n") && !text.includes("\r") && !text.includes("\t")) {
+      return;
+    }
+
+    e.preventDefault();
+
+    if (text.includes("\t")) {
+      // Dán ma trận nhiều cột
+      applyMatrixPasteStartingAt(text, rowIndex, field);
+    } else {
+      // Dán 1 cột dọc nhiều dòng
+      const lines = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+      applyColumnLinesToRows(field, lines, rowIndex);
+    }
+  };
+
+  // Nút Dán nhanh theo Cột ở Header (Họ tên, SĐT, ...)
+  const handlePasteColumn = async (field: keyof EditableStudentRow) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          const lines = text
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0);
+
+          if (lines.length > 0) {
+            applyColumnLinesToRows(field, lines, 0);
+            return;
+          }
+        }
+      }
+      setManualPasteTargetField(field);
+      setShowPasteModal(true);
+    } catch (err) {
+      setManualPasteTargetField(field);
+      setShowPasteModal(true);
+    }
+  };
+
+  // Thêm dữ liệu từ chuỗi dán toàn bộ bảng (Clipboard TSV / CSV)
   const applyPastedTextToRows = (text: string) => {
     const parsed = parseClipboardToEditableRows(text, targetClassId, availableClasses);
     if (parsed.length === 0) {
@@ -145,15 +340,20 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
 
   // Bắt sự kiện Paste toàn cục trên bảng
   const handleContainerPaste = (e: React.ClipboardEvent) => {
+    // Nếu sự kiện xuất phát từ ô input/select con thì ô con đã xử lý
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "TEXTAREA") {
+      return;
+    }
+
     const text = e.clipboardData.getData("text");
-    // Nếu nội dung dán có dấu xuống dòng hoặc tab -> là dữ liệu bảng từ Excel/Sheets
     if (text && (text.includes("\n") || text.includes("\t"))) {
       e.preventDefault();
       applyPastedTextToRows(text);
     }
   };
 
-  // Xử lý nút "Dán từ Clipboard"
+  // Xử lý nút "Dán từ Clipboard" chính
   const handlePasteButtonClick = async () => {
     try {
       if (navigator.clipboard && navigator.clipboard.readText) {
@@ -163,10 +363,10 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
           return;
         }
       }
-      // Nếu không đọc được trực tiếp, mở modal dán thủ công
+      setManualPasteTargetField("ALL");
       setShowPasteModal(true);
     } catch (err) {
-      // Trình duyệt chặn quyền truy cập Clipboard -> mở modal dán
+      setManualPasteTargetField("ALL");
       setShowPasteModal(true);
     }
   };
@@ -174,7 +374,17 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
   // Xử lý dán qua Modal thủ công
   const handleApplyManualPaste = () => {
     if (!manualPasteText.trim()) return;
-    applyPastedTextToRows(manualPasteText);
+
+    if (manualPasteTargetField === "ALL") {
+      applyPastedTextToRows(manualPasteText);
+    } else {
+      const lines = manualPasteText
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+      applyColumnLinesToRows(manualPasteTargetField, lines, 0);
+    }
+
     setManualPasteText("");
     setShowPasteModal(false);
   };
@@ -225,7 +435,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
   const rowStatuses = rows.map((r) => {
     const name = r.fullName.trim();
     const phone = normalizePhoneNumber(r.parentPhone);
-    const isBlank = !name && !phone && !r.parentName.trim();
+    const isBlank = !name && !phone && !r.school.trim() && !r.notes.trim();
     const hasName = name.length >= 2;
     const hasPhone = phone.length >= 9 && phone.length <= 11;
     const isValid = hasName && hasPhone;
@@ -271,21 +481,27 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
           classIds.push(targetClassId);
         }
 
+        // Trình độ học viên kế thừa theo lớp học
+        let classLevel = "";
+        if (classIds.length > 0) {
+          const foundCls = availableClasses.find((c) => c.id === classIds[0]);
+          if (foundCls) classLevel = foundCls.level;
+        }
+
         const birthYear = extractBirthYear(r.birthYear);
         const fee = normalizeFee(r.customFee);
         const phone = normalizePhoneNumber(r.parentPhone);
         const name = r.fullName.trim();
-        const parent = r.parentName.trim() || `Phụ huynh ${name}`;
 
         return {
           id: `std-bulk-${Date.now()}-${i + 1}-${Math.random().toString(36).substring(2, 6)}`,
           code: `HS${(nextCodeNum++).toString().padStart(3, "0")}`,
           fullName: name,
-          birthYear,
-          gender: r.gender || "Nam",
-          parentName: parent,
+          birthYear, // undefined nếu để trống
+          gender: (r.gender as "Nam" | "Nữ") || undefined, // undefined nếu để trống
+          parentName: "", // Xóa bỏ hoàn toàn trường Tên phụ huynh
           parentPhone: phone,
-          currentLevel: r.currentLevel || "Nhập môn",
+          currentLevel: classLevel || undefined, // Trình độ chỉ theo lớp
           classIds,
           customFeePerSession: fee,
           school: r.school.trim() || undefined,
@@ -340,13 +556,14 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   Nhập Bảng Học Viên Hàng Loạt
                 </h3>
                 <span className="hidden sm:inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800">
-                  Nhập & Dán trực tiếp trên Web
+                  Dán từng cột hoặc cả bảng linh hoạt
                 </span>
               </div>
               <p className="text-xs text-slate-500 line-clamp-1">
-                Điền trực tiếp vào bảng hoặc copy các ô từ Excel / Google Sheets rồi bấm{" "}
-                <span className="font-bold text-slate-700">Dán (Ctrl+V)</span>. Các trường không bắt
-                buộc có thể để trống.
+                Điền hoặc copy từ Excel dán từng cột (bấm nút{" "}
+                <span className="font-bold text-emerald-700">Dán cột</span> ở đầu mỗi cột hoặc{" "}
+                <span className="font-bold text-slate-700">Ctrl+V</span> vào ô đầu tiên). Các cột
+                năm sinh, giới tính nếu không có thì để trống.
               </p>
             </div>
           </div>
@@ -378,7 +595,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
         )}
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-5 space-y-3.5">
+        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-5 space-y-3">
           {step === "TABLE" && (
             <>
               {/* Quick Toolbar */}
@@ -436,7 +653,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
                   >
                     <ClipboardPaste className="h-4 w-4" />
-                    <span>Dán từ Clipboard (Ctrl + V)</span>
+                    <span>Dán toàn bảng (Ctrl + V)</span>
                   </button>
 
                   {/* Thêm 1 dòng */}
@@ -502,14 +719,21 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               </div>
 
               {/* Tips Banner */}
-              <div className="flex items-center justify-between rounded-xl bg-amber-50/70 px-3 py-1.5 border border-amber-200/80 text-[11px] text-amber-900">
+              <div className="flex items-center justify-between rounded-xl bg-amber-50/80 px-3.5 py-2 border border-amber-200 text-[11px] text-amber-900">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
                   <span>
-                    <strong>Mẹo dán dữ liệu:</strong> Bạn chỉ cần bôi đen các ô trong Excel/Google
-                    Sheets bấm <strong>Ctrl+C</strong>, sau đó quay lại trang này bấm{" "}
-                    <strong>Ctrl+V</strong> (hoặc bấm nút "Dán từ Clipboard"). Các cột không cần
-                    thiết có thể để trống, hệ thống sẽ tự động chuẩn hóa!
+                    <strong>Dán linh hoạt theo từng cột:</strong> Bạn có thể copy riêng cột Họ tên
+                    trong Excel rồi bấm nút{" "}
+                    <span className="font-bold text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded">
+                      📋 Dán cột
+                    </span>{" "}
+                    ở cột Họ và tên, sau đó copy cột SĐT phụ huynh rồi bấm{" "}
+                    <span className="font-bold text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded">
+                      📋 Dán cột
+                    </span>{" "}
+                    ở cột SĐT! Hoặc chọn ô đầu tiên và bấm <strong>Ctrl+V</strong> để điền dọc
+                    xuống. Các cột năm sinh, giới tính nếu không có sẽ tự động để trống.
                   </span>
                 </div>
               </div>
@@ -519,24 +743,55 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 ref={tableContainerRef}
                 className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white shadow-inner max-h-[56vh]"
               >
-                <table className="w-full border-collapse text-left text-xs min-w-[1250px]">
+                <table className="w-full border-collapse text-left text-xs min-w-[1100px]">
                   <thead className="sticky top-0 z-20 bg-slate-100 font-extrabold text-slate-700 uppercase text-[10px] tracking-wider border-b border-slate-300">
                     <tr>
                       <th className="px-2 py-2.5 text-center w-12 bg-slate-100">#</th>
-                      <th className="px-3 py-2.5 w-52 bg-slate-100">
-                        <span className="text-emerald-700">Họ và tên (*)</span>
+                      {/* Cột 1: Họ và tên (*) với nút Dán cột */}
+                      <th className="px-3 py-2 w-64 bg-slate-100">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-emerald-700 font-extrabold">Họ và tên (*)</span>
+                          <button
+                            type="button"
+                            onClick={() => handlePasteColumn("fullName")}
+                            title="Dán danh sách Họ và tên từ Clipboard vào cột này"
+                            className="inline-flex items-center gap-1 rounded bg-emerald-600 hover:bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white transition-all shadow-xs cursor-pointer"
+                          >
+                            <ClipboardPaste className="h-3 w-3" />
+                            <span>Dán cột</span>
+                          </button>
+                        </div>
                       </th>
-                      <th className="px-2 py-2.5 w-24 bg-slate-100">Năm sinh</th>
-                      <th className="px-2 py-2.5 w-24 bg-slate-100">Giới tính</th>
-                      <th className="px-3 py-2.5 w-44 bg-slate-100">Tên phụ huynh</th>
-                      <th className="px-3 py-2.5 w-40 bg-slate-100">
-                        <span className="text-emerald-700">SĐT Phụ huynh (*)</span>
+                      {/* Cột 2: SĐT Phụ huynh (*) với nút Dán cột */}
+                      <th className="px-3 py-2 w-56 bg-slate-100">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-emerald-700 font-extrabold">
+                            SĐT Phụ huynh (*)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handlePasteColumn("parentPhone")}
+                            title="Dán danh sách Số điện thoại từ Clipboard vào cột này"
+                            className="inline-flex items-center gap-1 rounded bg-emerald-600 hover:bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white transition-all shadow-xs cursor-pointer"
+                          >
+                            <ClipboardPaste className="h-3 w-3" />
+                            <span>Dán cột</span>
+                          </button>
+                        </div>
                       </th>
-                      <th className="px-2 py-2.5 w-32 bg-slate-100">Trình độ</th>
-                      <th className="px-3 py-2.5 w-52 bg-slate-100">Lớp học</th>
-                      <th className="px-2 py-2.5 w-32 bg-slate-100">Học phí riêng (VNĐ)</th>
+                      {/* Cột 3: Năm sinh (cho phép để trống) */}
+                      <th className="px-2 py-2.5 w-24 bg-slate-100 text-center">Năm sinh</th>
+                      {/* Cột 4: Giới tính (cho phép để trống) */}
+                      <th className="px-2 py-2.5 w-28 bg-slate-100">Giới tính</th>
+                      {/* Cột 5: Lớp học */}
+                      <th className="px-3 py-2.5 w-56 bg-slate-100">Lớp học</th>
+                      {/* Cột 6: Học phí riêng */}
+                      <th className="px-2 py-2.5 w-32 bg-slate-100 text-right">Học phí riêng (VNĐ)</th>
+                      {/* Cột 7: Trường học */}
                       <th className="px-3 py-2.5 w-40 bg-slate-100">Trường học</th>
+                      {/* Cột 8: Ghi chú */}
                       <th className="px-3 py-2.5 min-w-[180px] bg-slate-100">Ghi chú</th>
+                      {/* Xóa dòng */}
                       <th className="px-2 py-2.5 text-center w-12 bg-slate-100">Xóa</th>
                     </tr>
                   </thead>
@@ -586,50 +841,13 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               type="text"
                               value={row.fullName}
                               onChange={(e) => handleCellChange(row.id, "fullName", e.target.value)}
+                              onPaste={(e) => handleCellPaste(e, idx, "fullName")}
                               placeholder="VD: Nguyễn Gia Huy"
                               className={`w-full rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none transition-all ${
                                 !row.fullName.trim() && !isRowBlank
                                   ? "border border-rose-400 bg-rose-50 text-rose-900 focus:border-rose-500"
                                   : "border border-slate-200 bg-white text-slate-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
                               }`}
-                            />
-                          </td>
-
-                          {/* Năm sinh */}
-                          <td className="px-2 py-1.5">
-                            <input
-                              type="text"
-                              value={row.birthYear}
-                              onChange={(e) => handleCellChange(row.id, "birthYear", e.target.value)}
-                              placeholder="2018"
-                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-mono text-slate-800 text-center focus:border-emerald-600 focus:outline-none"
-                            />
-                          </td>
-
-                          {/* Giới tính */}
-                          <td className="px-2 py-1.5">
-                            <select
-                              value={row.gender}
-                              onChange={(e) =>
-                                handleCellChange(row.id, "gender", e.target.value as "Nam" | "Nữ")
-                              }
-                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-800 focus:border-emerald-600 focus:outline-none"
-                            >
-                              <option value="Nam">Nam</option>
-                              <option value="Nữ">Nữ</option>
-                            </select>
-                          </td>
-
-                          {/* Tên phụ huynh */}
-                          <td className="px-2 py-1.5">
-                            <input
-                              type="text"
-                              value={row.parentName}
-                              onChange={(e) =>
-                                handleCellChange(row.id, "parentName", e.target.value)
-                              }
-                              placeholder="Tên bố/mẹ..."
-                              className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none"
                             />
                           </td>
 
@@ -641,6 +859,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               onChange={(e) =>
                                 handleCellChange(row.id, "parentPhone", e.target.value)
                               }
+                              onPaste={(e) => handleCellPaste(e, idx, "parentPhone")}
                               placeholder="0912345678"
                               className={`w-full rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold focus:outline-none transition-all ${
                                 !normalizePhoneNumber(row.parentPhone) && !isRowBlank
@@ -650,20 +869,30 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                             />
                           </td>
 
-                          {/* Trình độ */}
+                          {/* Năm sinh (để trống được) */}
+                          <td className="px-2 py-1.5">
+                            <input
+                              type="text"
+                              value={row.birthYear}
+                              onChange={(e) => handleCellChange(row.id, "birthYear", e.target.value)}
+                              onPaste={(e) => handleCellPaste(e, idx, "birthYear")}
+                              placeholder="Trống"
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-mono text-slate-800 text-center focus:border-emerald-600 focus:outline-none placeholder:text-slate-300"
+                            />
+                          </td>
+
+                          {/* Giới tính (để trống được) */}
                           <td className="px-2 py-1.5">
                             <select
-                              value={row.currentLevel}
+                              value={row.gender}
                               onChange={(e) =>
-                                handleCellChange(row.id, "currentLevel", e.target.value)
+                                handleCellChange(row.id, "gender", e.target.value as "Nam" | "Nữ" | "")
                               }
                               className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-800 focus:border-emerald-600 focus:outline-none"
                             >
-                              <option value="Nhập môn">Nhập môn</option>
-                              <option value="Vỡ lòng">Vỡ lòng</option>
-                              <option value="Cơ bản">Cơ bản</option>
-                              <option value="Nâng cao">Nâng cao</option>
-                              <option value="Đội tuyển">Đội tuyển</option>
+                              <option value="">-- Để trống --</option>
+                              <option value="Nam">Nam</option>
+                              <option value="Nữ">Nữ</option>
                             </select>
                           </td>
 
@@ -679,7 +908,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               <option value="NONE">Chưa xếp lớp</option>
                               {availableClasses.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.name}
+                                  {c.name} ({c.level})
                                 </option>
                               ))}
                             </select>
@@ -693,6 +922,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               onChange={(e) =>
                                 handleCellChange(row.id, "customFee", e.target.value)
                               }
+                              onPaste={(e) => handleCellPaste(e, idx, "customFee")}
                               placeholder="Theo lớp"
                               className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-mono text-slate-800 text-right focus:border-emerald-600 focus:outline-none"
                             />
@@ -704,6 +934,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               type="text"
                               value={row.school}
                               onChange={(e) => handleCellChange(row.id, "school", e.target.value)}
+                              onPaste={(e) => handleCellPaste(e, idx, "school")}
                               placeholder="Trường..."
                               className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none"
                             />
@@ -715,6 +946,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               type="text"
                               value={row.notes}
                               onChange={(e) => handleCellChange(row.id, "notes", e.target.value)}
+                              onPaste={(e) => handleCellPaste(e, idx, "notes")}
                               placeholder="Ghi chú thêm..."
                               className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none"
                             />
@@ -725,7 +957,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                             <button
                               type="button"
                               onClick={() => handleDeleteRow(row.id)}
-                              className="text-slate-300 hover:text-rose-600 p-1 rounded-md transition-colors"
+                              className="text-slate-300 hover:text-rose-600 p-1 rounded-md transition-colors cursor-pointer"
                               title="Xóa dòng này"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -766,7 +998,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     Đóng
                   </button>
@@ -775,7 +1007,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                     type="button"
                     disabled={isSubmitting || validRowsCount === 0}
                     onClick={handleSaveStudents}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                   >
                     {isSubmitting ? (
                       <>
@@ -815,7 +1047,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 transition-all"
+                  className="rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
                 >
                   Hoàn Tất & Xem Danh Sách
                 </button>
@@ -825,7 +1057,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                     setStep("TABLE");
                     setRows(initDefaultRows(targetClassId));
                   }}
-                  className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Tiếp Tục Nhập Bảng Khác
                 </button>
@@ -842,25 +1074,46 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2 font-bold text-slate-800 text-sm">
                 <ClipboardPaste className="h-4 w-4 text-emerald-600" />
-                <span>Dán dữ liệu từ Excel / Google Sheets</span>
+                <span>
+                  {manualPasteTargetField === "fullName"
+                    ? "Dán cột Họ và tên học sinh"
+                    : manualPasteTargetField === "parentPhone"
+                    ? "Dán cột Số điện thoại phụ huynh"
+                    : "Dán dữ liệu từ Excel / Google Sheets"}
+                </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPasteModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <p className="text-xs text-slate-500">
-              Nhấn <strong>Ctrl + V</strong> vào khung bên dưới rồi bấm{" "}
-              <strong>Nhập Vào Bảng</strong>:
+              {manualPasteTargetField !== "ALL" ? (
+                <>
+                  Dán (<strong>Ctrl + V</strong>) danh sách dữ liệu cho cột này vào khung dưới đây
+                  (mỗi học sinh một dòng):
+                </>
+              ) : (
+                <>
+                  Nhấn <strong>Ctrl + V</strong> vào khung bên dưới rồi bấm{" "}
+                  <strong>Nhập Vào Bảng</strong>:
+                </>
+              )}
             </p>
             <textarea
               rows={8}
               value={manualPasteText}
               onChange={(e) => setManualPasteText(e.target.value)}
-              placeholder="Nguyễn Gia Huy&#9;2017&#9;Nam&#9;0912345678&#9;Nhập môn&#10;Trần Phương Linh&#9;2018&#9;Nữ&#9;0987654321&#9;Cơ bản"
+              placeholder={
+                manualPasteTargetField === "fullName"
+                  ? "Nguyễn Gia Huy\nTrần Phương Linh\nĐào Lê Nguyên Đức"
+                  : manualPasteTargetField === "parentPhone"
+                  ? "0912345678\n0987654321\n0901234567"
+                  : "Nguyễn Gia Huy\t0912345678\t2017\tNam\nTrần Phương Linh\t0987654321\t2018\tNữ"
+              }
               className="w-full rounded-xl border border-slate-200 p-3 text-xs font-mono focus:border-emerald-600 focus:outline-none"
               autoFocus
             />
@@ -868,7 +1121,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               <button
                 type="button"
                 onClick={() => setShowPasteModal(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Hủy
               </button>
@@ -876,7 +1129,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 type="button"
                 disabled={!manualPasteText.trim()}
                 onClick={handleApplyManualPaste}
-                className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-50"
+                className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
               >
                 Nhập Vào Bảng
               </button>

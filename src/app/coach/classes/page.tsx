@@ -106,8 +106,7 @@ export default function CoachClassesPage() {
   const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
   const [inlineForm, setInlineForm] = useState({
     fullName: "",
-    birthYear: 2018,
-    parentName: "",
+    birthYear: 2018 as number | string,
     parentPhone: "",
     customFee: "",
     notes: "",
@@ -119,8 +118,7 @@ export default function CoachClassesPage() {
   const [addStudentTab, setAddStudentTab] = useState<"EXISTING" | "NEW">("EXISTING");
   const [existingSearch, setExistingSearch] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
-  const [newStudentBirthYear, setNewStudentBirthYear] = useState("2018");
-  const [newParentName, setNewParentName] = useState("");
+  const [newStudentBirthYear, setNewStudentBirthYear] = useState("");
   const [newParentPhone, setNewParentPhone] = useState("");
   const [newStudentNotes, setNewStudentNotes] = useState("");
   const [newCustomFee, setNewCustomFee] = useState("");
@@ -154,7 +152,6 @@ export default function CoachClassesPage() {
       s.classIds.includes(selectedClass?.id || "") &&
       (s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.parentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.parentPhone.includes(searchTerm))
   );
 
@@ -193,8 +190,7 @@ export default function CoachClassesPage() {
     setInlineEditingId(student.id);
     setInlineForm({
       fullName: student.fullName,
-      birthYear: student.birthYear,
-      parentName: student.parentName,
+      birthYear: student.birthYear ?? "",
       parentPhone: student.parentPhone,
       customFee: student.customFeePerSession ? String(student.customFeePerSession) : "",
       notes: student.notes || "",
@@ -209,8 +205,8 @@ export default function CoachClassesPage() {
     }
     const updated = dataStore.updateStudent(studentId, {
       fullName: inlineForm.fullName.trim(),
-      birthYear: Number(inlineForm.birthYear) || 2018,
-      parentName: inlineForm.parentName.trim(),
+      birthYear: inlineForm.birthYear !== "" ? Number(inlineForm.birthYear) : undefined,
+      parentName: "",
       parentPhone: inlineForm.parentPhone.trim(),
       customFeePerSession: inlineForm.customFee.trim() ? Number(inlineForm.customFee) : undefined,
       notes: inlineForm.notes.trim(),
@@ -254,10 +250,10 @@ export default function CoachClassesPage() {
       id: `std-${Date.now()}`,
       code: newCode,
       fullName: newStudentName,
-      birthYear: parseInt(newStudentBirthYear) || 2018,
-      parentName: newParentName || "Phụ huynh " + newStudentName,
+      birthYear: newStudentBirthYear.trim() ? parseInt(newStudentBirthYear) : undefined,
+      parentName: "",
       parentPhone: newParentPhone,
-      currentLevel: selectedClass?.level || "Nhập môn",
+      currentLevel: selectedClass?.level || undefined,
       notes: newStudentNotes,
       classIds: [selectedClass.id],
       customFeePerSession: newCustomFee ? Number(newCustomFee) : undefined,
@@ -272,7 +268,6 @@ export default function CoachClassesPage() {
 
     // Reset form
     setNewStudentName("");
-    setNewParentName("");
     setNewParentPhone("");
     setNewStudentNotes("");
     setNewCustomFee("");
@@ -688,9 +683,6 @@ export default function CoachClassesPage() {
                         alt={std.fullName}
                         className="h-full w-full rounded-xl object-cover ring-1 ring-slate-200 shadow-sm"
                       />
-                      <span className="absolute -bottom-1 -right-1 rounded bg-emerald-100 px-1 text-[9px] font-bold text-emerald-800 border border-emerald-300">
-                        {std.currentLevel}
-                      </span>
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -700,7 +692,7 @@ export default function CoachClassesPage() {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                        PH: {std.parentName}
+                        {std.birthYear ? `Năm sinh: ${std.birthYear}` : "Năm sinh: —"}
                       </p>
                     </div>
                   </div>
@@ -758,9 +750,7 @@ export default function CoachClassesPage() {
                 <th className="px-4 py-3">Mã HV</th>
                 <th className="px-4 py-3">Học Viên</th>
                 <th className="px-4 py-3">Năm Sinh</th>
-                <th className="px-4 py-3">Phụ Huynh</th>
                 <th className="px-4 py-3">Số Điện Thoại</th>
-                <th className="px-4 py-3">Trình Độ</th>
                 <th className="px-4 py-3">Học Phí / Buổi</th>
                 <th className="px-4 py-3">Ghi Chú HLV</th>
                 <th className="px-4 py-3 text-center">Thao Tác</th>
@@ -806,30 +796,14 @@ export default function CoachClassesPage() {
                           type="number"
                           value={inlineForm.birthYear}
                           onChange={(e) =>
-                            setInlineForm({ ...inlineForm, birthYear: Number(e.target.value) })
+                            setInlineForm({ ...inlineForm, birthYear: e.target.value })
                           }
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleSaveInlineEdit(std.id);
                             if (e.key === "Escape") handleCancelInlineEdit();
                           }}
+                          placeholder="Trống"
                           className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-brand-primary focus:outline-none"
-                        />
-                      </td>
-
-                      {/* Parent Name input */}
-                      <td className="px-3 py-2">
-                        <input
-                          type="text"
-                          value={inlineForm.parentName}
-                          onChange={(e) =>
-                            setInlineForm({ ...inlineForm, parentName: e.target.value })
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSaveInlineEdit(std.id);
-                            if (e.key === "Escape") handleCancelInlineEdit();
-                          }}
-                          placeholder="Phụ huynh..."
-                          className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-brand-primary focus:outline-none"
                         />
                       </td>
 
@@ -848,13 +822,6 @@ export default function CoachClassesPage() {
                           placeholder="0912..."
                           className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-mono focus:border-brand-primary focus:outline-none"
                         />
-                      </td>
-
-                      {/* Trình độ */}
-                      <td className="px-3 py-2 font-medium text-slate-600">
-                        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-200">
-                          {std.currentLevel}
-                        </span>
                       </td>
 
                       {/* Custom Fee input */}
@@ -947,21 +914,15 @@ export default function CoachClassesPage() {
                           <p className="font-bold text-slate-900 group-hover:text-brand-primary transition-colors">
                             {std.fullName}
                           </p>
-                          <span className="text-[10px] text-slate-400">
-                            {std.currentLevel}
-                          </span>
                         </div>
                       </div>
                     </td>
 
                     {/* Năm sinh & Tuổi */}
                     <td className="px-4 py-3 text-slate-600">
-                      {std.birthYear} ({new Date().getFullYear() - std.birthYear} tuổi)
-                    </td>
-
-                    {/* Phụ huynh */}
-                    <td className="px-4 py-3 font-medium text-slate-800">
-                      {std.parentName}
+                      {std.birthYear
+                        ? `${std.birthYear} (${new Date().getFullYear() - std.birthYear} tuổi)`
+                        : "—"}
                     </td>
 
                     {/* Số điện thoại */}
@@ -976,13 +937,6 @@ export default function CoachClassesPage() {
                           <Phone className="h-3 w-3" />
                         </a>
                       </div>
-                    </td>
-
-                    {/* Trình độ */}
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-200">
-                        {std.currentLevel}
-                      </span>
                     </td>
 
                     {/* Học phí / Buổi */}
@@ -1195,78 +1149,65 @@ export default function CoachClassesPage() {
                                 <span className="font-mono text-[10px] text-slate-400">
                                   ({std.code})
                                 </span>
-                                <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 border border-emerald-200">
-                                  {std.currentLevel}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-500 truncate">
-                                PH: {std.parentName} • {std.parentPhone}
-                              </p>
-                              {enrolledOtherClasses.length > 0 && (
-                                <p className="text-[10px] text-brand-primary font-medium truncate">
-                                  Đang học: {enrolledOtherClasses.map((c) => c.name).join(", ")}
+                                </div>
+                                <p className="text-[11px] text-slate-500 truncate">
+                                  SĐT: {std.parentPhone}
                                 </p>
-                              )}
+                                {enrolledOtherClasses.length > 0 && (
+                                  <p className="text-[10px] text-brand-primary font-medium truncate">
+                                    Đang học: {enrolledOtherClasses.map((c) => c.name).join(", ")}
+                                  </p>
+                                )}
+                              </div>
                             </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEnrollExisting(std.id)}
+                              className="flex-shrink-0 flex items-center gap-1 rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover active:scale-95 shadow-sm transition-all"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Thêm Vào Lớp</span>
+                            </button>
                           </div>
+                        );
+                      })}
 
-                          <button
-                            type="button"
-                            onClick={() => handleEnrollExisting(std.id)}
-                            className="flex-shrink-0 flex items-center gap-1 rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover active:scale-95 shadow-sm transition-all"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            <span>Thêm Vào Lớp</span>
-                          </button>
-                        </div>
-                      );
-                    })}
-
-                  {dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length === 0 && (
-                    <div className="py-8 text-center text-xs text-slate-500">
-                      Tất cả học viên trong CLB đã được ghi danh vào lớp này.
-                    </div>
-                  )}
+                    {dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length === 0 && (
+                      <div className="py-8 text-center text-xs text-slate-500">
+                        Tất cả học viên trong CLB đã được ghi danh vào lớp này.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              /* TAB 2: Tạo học viên mới tinh */
-              <form onSubmit={handleCreateStudent} className="mt-4 space-y-3.5 text-xs">
-                <div>
-                  <label className="font-bold text-slate-700">Họ và tên học viên mới *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newStudentName}
-                    onChange={(e) => setNewStudentName(e.target.value)}
-                    placeholder="VD: Nguyễn Tuấn Anh"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                  />
-                </div>
+              ) : (
+                /* TAB 2: Tạo học viên mới tinh */
+                <form onSubmit={handleCreateStudent} className="mt-4 space-y-3.5 text-xs">
+                  <div>
+                    <label className="font-bold text-slate-700">Họ và tên học viên mới *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newStudentName}
+                      onChange={(e) => setNewStudentName(e.target.value)}
+                      placeholder="VD: Nguyễn Tuấn Anh"
+                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="font-bold text-slate-700">Năm sinh</label>
-                  <input
-                    type="number"
-                    value={newStudentBirthYear}
-                    onChange={(e) => setNewStudentBirthYear(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                  />
-                </div>
+                  <div>
+                    <label className="font-bold text-slate-700">Năm sinh</label>
+                    <input
+                      type="number"
+                      value={newStudentBirthYear}
+                      onChange={(e) => setNewStudentBirthYear(e.target.value)}
+                      placeholder="Để trống"
+                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="font-bold text-slate-700">Tên phụ huynh</label>
-                  <input
-                    type="text"
-                    value={newParentName}
-                    onChange={(e) => setNewParentName(e.target.value)}
-                    placeholder="VD: Nguyễn Văn Hùng"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">Số điện thoại phụ huynh *</label>
+                  <div>
+                    <label className="font-bold text-slate-700">Số điện thoại phụ huynh *</label>
                   <input
                     type="tel"
                     required

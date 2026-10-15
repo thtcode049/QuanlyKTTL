@@ -35,11 +35,11 @@ export async function POST(request: Request) {
           continue;
         }
 
-        const birthYear = parseInt(s.birthYear) || 2018;
-        const parentName = String(s.parentName || "").trim() || `Phụ huynh ${fullName}`;
-        const currentLevel = String(s.currentLevel || "Nhập môn");
-        const gender = String(s.gender || "Nam");
-        const code = s.code ? String(s.code).trim() : `HS${String(birthYear).slice(-2)}`;
+        const birthYear = s.birthYear ? parseInt(s.birthYear) : null;
+        const parentName = String(s.parentName || "").trim();
+        const currentLevel = String(s.currentLevel || "");
+        const gender = s.gender ? String(s.gender).trim() : null;
+        const code = s.code ? String(s.code).trim() : (birthYear ? `HS${String(birthYear).slice(-2)}` : "HS00");
         const notes = s.notes ? String(s.notes).trim() : "";
         const school = s.school ? String(s.school).trim() : null;
         const address = s.address ? String(s.address).trim() : null;
