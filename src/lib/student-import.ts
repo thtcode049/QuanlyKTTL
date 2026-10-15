@@ -50,20 +50,57 @@ function normalizeHeader(str: string): string {
  */
 export function normalizePhoneNumber(rawPhone: any): string {
   if (rawPhone === undefined || rawPhone === null) return "";
-  let phone = String(rawPhone).trim();
-  // Xóa các ký tự phân cách như . - dấu cách
-  phone = phone.replace(/[\s\.\-\(\)]/g, "");
-  // Chuyển +84 thành 0
+  const raw = String(rawPhone).trim();
+  if (!raw) return "";
+
+  // 1. Trích xuất các chữ số (bỏ các chữ cái như 'mẹ', 'bố', 'PH', v.v.)
+  const digits = raw.replace(/\D/g, "");
+
+  // Trường hợp có tiền tố quốc tế 84 hoặc 0084
+  if (digits.startsWith("0084") && digits.length >= 12) {
+    return "0" + digits.slice(4);
+  }
+  if (digits.startsWith("84") && digits.length === 11) {
+    return "0" + digits.slice(2);
+  }
+  // Trường hợp chuẩn 10 chữ số bắt đầu bằng 0 (03, 05, 07, 08, 09)
+  if (digits.length === 10 && digits.startsWith("0")) {
+    return digits;
+  }
+  // Trường hợp 9 chữ số (Excel tự cắt mất số 0 ở đầu)
+  if (digits.length === 9 && /^[35789]/.test(digits)) {
+    return "0" + digits;
+  }
+  // Nếu có nhiều hơn 10 chữ số nhưng chứa cụm số điện thoại hợp lệ 10 số (03x, 05x, 07x, 08x, 09x)
+  if (digits.length > 10) {
+    const match = digits.match(/0[35789]\d{8}/);
+    if (match) return match[0];
+  }
+
+  // 2. Fallback nếu không khớp dạng chữ số ở trên
+  let phone = raw.replace(/[\s\.\-\(\)]/g, "");
   if (phone.startsWith("+84")) {
     phone = "0" + phone.slice(3);
   } else if (phone.startsWith("84") && phone.length >= 11) {
     phone = "0" + phone.slice(2);
   }
-  // Nếu chỉ có 9 chữ số và không bắt đầu bằng 0 (do Excel cắt mất số 0 ở đầu)
   if (phone.length === 9 && !phone.startsWith("0")) {
     phone = "0" + phone;
   }
   return phone;
+}
+
+/**
+ * Tách nội dung clipboard thành các dòng, giữ nguyên 100% các ô/dòng trống ở giữa.
+ * Chỉ cắt bỏ đúng 1 ký tự xuống dòng thừa ở cuối cùng do Excel/Google Sheets tự thêm vào.
+ */
+export function splitClipboardIntoLines(text: string): string[] {
+  if (!text) return [];
+  let raw = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (raw.endsWith("\n")) {
+    raw = raw.slice(0, -1);
+  }
+  return raw.split("\n").map((line) => line.trim());
 }
 
 

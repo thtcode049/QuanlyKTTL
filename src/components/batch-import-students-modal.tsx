@@ -27,6 +27,7 @@ import {
   normalizePhoneNumber,
   extractBirthYear,
   normalizeFee,
+  splitClipboardIntoLines,
 } from "@/lib/student-import";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
@@ -204,7 +205,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
     startRowIndex: number,
     startField: keyof EditableStudentRow
   ) => {
-    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    const lines = splitClipboardIntoLines(text);
     if (lines.length === 0) return;
 
     const colOrder: (keyof EditableStudentRow)[] = [
@@ -282,11 +283,8 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
       // Dán ma trận nhiều cột
       applyMatrixPasteStartingAt(text, rowIndex, field);
     } else {
-      // Dán 1 cột dọc nhiều dòng
-      const lines = text
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0);
+      // Dán 1 cột dọc nhiều dòng (giữ nguyên 100% dòng trống)
+      const lines = splitClipboardIntoLines(text);
       applyColumnLinesToRows(field, lines, rowIndex);
     }
   };
@@ -296,12 +294,8 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
     try {
       if (navigator.clipboard && navigator.clipboard.readText) {
         const text = await navigator.clipboard.readText();
-        if (text && text.trim()) {
-          const lines = text
-            .split(/\r?\n/)
-            .map((l) => l.trim())
-            .filter((l) => l.length > 0);
-
+        if (text) {
+          const lines = splitClipboardIntoLines(text);
           if (lines.length > 0) {
             applyColumnLinesToRows(field, lines, 0);
             return;
@@ -373,15 +367,12 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
 
   // Xử lý dán qua Modal thủ công
   const handleApplyManualPaste = () => {
-    if (!manualPasteText.trim()) return;
+    if (!manualPasteText) return;
 
     if (manualPasteTargetField === "ALL") {
       applyPastedTextToRows(manualPasteText);
     } else {
-      const lines = manualPasteText
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0);
+      const lines = splitClipboardIntoLines(manualPasteText);
       applyColumnLinesToRows(manualPasteTargetField, lines, 0);
     }
 
