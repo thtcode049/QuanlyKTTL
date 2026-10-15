@@ -29,9 +29,7 @@ import {
 } from "@/lib/data-store";
 import { formatCurrencyVND, generateVietQrUrl } from "@/lib/vietqr";
 import { exportInvoicesToExcel, InvoiceExportRow } from "@/lib/excel";
-import { ZaloStudentInvoicePayload } from "@/lib/zalo";
 import VietQrModal from "@/components/vietqr-modal";
-import ZaloSimulatorModal from "@/components/zalo-simulator";
 import ZaloParentSenderModal, { StudentParentInvoiceItem } from "@/components/zalo-parent-sender-modal";
 
 function InvoicesContent() {
@@ -93,11 +91,7 @@ function InvoicesContent() {
     accountHolder?: string;
   } | null>(null);
 
-  // Modal Zalo Simulator State
-  const [zaloModalOpen, setZaloModalOpen] = useState(false);
-  const [activeZaloPayload, setActiveZaloPayload] = useState<ZaloStudentInvoicePayload | null>(null);
-
-  // Modal HLV Gửi Thẻ Học Phí Đến Phụ Huynh
+  // Modal HLV Gửi Thẻ Học Phí Bằng Tool Zalo EXE
   const [zaloParentModalOpen, setZaloParentModalOpen] = useState(false);
   const [selectedStudentForParentModal, setSelectedStudentForParentModal] = useState<string | undefined>(undefined);
 
@@ -207,47 +201,6 @@ function InvoicesContent() {
     setVietQrModalOpen(true);
   };
 
-  // Mở Zalo OA Simulator
-  const handleOpenZalo = (inv: MonthlyInvoiceData, student: StudentData) => {
-    const bank = dataStore.bankConfig;
-    const presentDates = getPresentDatesForStudent(student.id);
-    const transferContent = `HP ${student.code} T${selectedMonth}`;
-    const qrUrl = bank.useCustomQr && bank.customQrImage
-      ? bank.customQrImage
-      : generateVietQrUrl({
-          bankId: bank.bankId,
-          accountNo: bank.bankAccount,
-          accountName: bank.accountHolder,
-          template: (bank.qrTemplate as any) || "compact2",
-          amount: inv.totalAmount,
-          description: transferContent,
-        });
-
-    const payload: ZaloStudentInvoicePayload = {
-      studentName: student.fullName,
-      studentCode: student.code,
-      parentName: student.parentName,
-      parentPhone: student.parentPhone,
-      className: selectedClass?.name || "Lớp cờ vua",
-      branchName: branchInfo?.name || "Cơ sở CLB",
-      month: selectedMonth,
-      year: selectedYear,
-      presentCount: inv.presentCount,
-      presentDates,
-      feePerSession: inv.feePerSession,
-      totalAmount: inv.totalAmount,
-      vietQrUrl: qrUrl,
-      customQrUrl: bank.useCustomQr && bank.customQrImage ? bank.customQrImage : undefined,
-      transferContent,
-      bankName: bank.bankName,
-      bankAccount: bank.bankAccount,
-      accountHolder: bank.accountHolder,
-    };
-
-    setActiveZaloPayload(payload);
-    setZaloModalOpen(true);
-  };
-
   // Xuất file Excel
   const handleExportExcel = () => {
     const rows: InvoiceExportRow[] = invoices.map((inv, idx) => {
@@ -297,23 +250,37 @@ function InvoicesContent() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Nút tải trực tiếp Tool EXE */}
+          <a
+            href="/api/tool/download"
+            download="Zalo_Bulk_Sender.exe"
+            className="flex items-center gap-2 rounded-xl border border-amber-400/60 bg-amber-500 hover:bg-amber-600 px-3.5 py-2.5 text-xs font-black text-slate-950 shadow-md active:scale-95 transition-all"
+            title="Tải phần mềm Zalo_Bulk_Sender.exe cho máy tính chưa cài tool"
+          >
+            <Download className="h-4 w-4" />
+            <span>Tải File Tool (.exe)</span>
+          </a>
+
+          {/* Nút Mở Tool Gửi Thẻ Học Phí */}
           <button
             onClick={() => {
               setSelectedStudentForParentModal(undefined);
               setZaloParentModalOpen(true);
             }}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
+            title="Mở hướng dẫn & nạp dữ liệu vào phần mềm Zalo Bulk Sender"
           >
             <Send className="h-4 w-4" />
-            <span>Gửi Thẻ Học Phí Đến Phụ Huynh (Zalo)</span>
+            <span>Gửi Bằng Tool Zalo (EXE)</span>
           </button>
+
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover transition-all"
+            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-3.5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover transition-all"
           >
             <Download className="h-4 w-4" />
-            <span>Xuất File Excel (.xlsx)</span>
+            <span>Xuất Excel (.xlsx)</span>
           </button>
         </div>
       </div>
@@ -510,11 +477,16 @@ function InvoicesContent() {
                     <span>Mã VietQR</span>
                   </button>
                   <button
-                    onClick={() => student && handleOpenZalo(inv, student)}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2 text-xs font-bold text-blue-700 border border-blue-200 active:bg-blue-100"
+                    onClick={() => {
+                      if (student) {
+                        setSelectedStudentForParentModal(student.id);
+                        setZaloParentModalOpen(true);
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
                   >
-                    <Send className="h-3.5 w-3.5" />
-                    <span>Zalo OA</span>
+                    <Send className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Tool Zalo</span>
                   </button>
                 </div>
               </div>
@@ -627,7 +599,7 @@ function InvoicesContent() {
                           <QrCode className="h-4 w-4" />
                         </button>
 
-                        {/* Nút Gửi Zalo Phụ Huynh */}
+                        {/* Nút Gửi Qua Tool Zalo */}
                         <button
                           onClick={() => {
                             if (student) {
@@ -642,19 +614,19 @@ function InvoicesContent() {
                           }`}
                           title={
                             inv.zaloSentAt
-                              ? `Đã gửi Zalo lúc ${new Date(inv.zaloSentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Bấm để xem hoặc gửi lại.`
-                              : "Mở gửi thẻ học phí qua Zalo cho phụ huynh em này"
+                              ? `Đã gửi qua Tool lúc ${new Date(inv.zaloSentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Bấm để xem.`
+                              : "Mở Tool Zalo để gửi thẻ học phí cho phụ huynh em này"
                           }
                         >
                           {inv.zaloSentAt ? (
                             <>
                               <Check className="h-3 w-3 text-emerald-600" />
-                              <span>Đã gửi Zalo</span>
+                              <span>Đã gửi Tool</span>
                             </>
                           ) : (
                             <>
                               <Send className="h-3 w-3" />
-                              <span>Gửi Zalo</span>
+                              <span>Tool Zalo</span>
                             </>
                           )}
                         </button>
@@ -769,15 +741,7 @@ function InvoicesContent() {
         />
       )}
 
-      {activeZaloPayload && (
-        <ZaloSimulatorModal
-          isOpen={zaloModalOpen}
-          onClose={() => setZaloModalOpen(false)}
-          payload={activeZaloPayload}
-        />
-      )}
-
-      {/* Modal HLV Gửi Thẻ Học Phí Trực Tiếp Đến Phụ Huynh */}
+      {/* Modal HLV Gửi Thẻ Học Phí Bằng Tool Zalo EXE */}
       <ZaloParentSenderModal
         isOpen={zaloParentModalOpen}
         onClose={() => setZaloParentModalOpen(false)}

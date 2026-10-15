@@ -154,78 +154,37 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const fs = await import("fs");
-    const path = await import("path");
     const body = await req.json();
-    const { classId, studentCode, dryRun, customStudents } = body;
+    const { action, studentId, studentIds, month, year } = body;
 
-    // Lưu danh sách học viên của lớp hiện tại vào file queue để bot đọc chính xác
-    if (customStudents && Array.isArray(customStudents) && customStudents.length > 0) {
-      try {
-        const queueFile = path.join(process.cwd(), "scripts", "custom_queue.json");
-        fs.writeFileSync(queueFile, JSON.stringify(customStudents, null, 2), "utf-8");
-      } catch (e) {}
+    // Đánh dấu học viên đã gửi thẻ học phí qua Tool Zalo
+    if (action === "mark_sent") {
+      const now = new Date().toISOString();
+      if (studentId) {
+        dataStore.invoices.forEach((inv) => {
+          if (inv.studentId === studentId && (!month || inv.month === month) && (!year || inv.year === year)) {
+            inv.zaloSentAt = now;
+          }
+        });
+      } else if (Array.isArray(studentIds)) {
+        dataStore.invoices.forEach((inv) => {
+          if (studentIds.includes(inv.studentId) && (!month || inv.month === month) && (!year || inv.year === year)) {
+            inv.zaloSentAt = now;
+          }
+        });
+      }
+      dataStore.saveToLocalStorage();
+      return NextResponse.json({ success: true, message: "Đã cập nhật trạng thái gửi thẻ học phí qua Tool Zalo!" });
     }
 
-    const scriptPath = path.join(process.cwd(), "scripts", "send-invoices-to-parents.js");
-    const scriptExists = fs.existsSync(scriptPath);
-
-    // Nếu chạy trên môi trường serverless/cloud hoặc không tìm thấy script Puppeteer desktop
-    if (!scriptExists || process.cwd().startsWith("/var/task") || process.env.VERCEL) {
-      return NextResponse.json({
-        success: true,
-        mode: "web_queue",
-        message: "Hệ thống sẵn sàng gửi tự động trên trình duyệt web.",
-        dryRun: !!dryRun,
-      });
-    }
-
-    const { exec } = await import("child_process");
-    const { promisify } = await import("util");
-    const execAsync = promisify(exec);
-
-    let cmd = `node "${scriptPath}"`;
-    if (classId) {
-      cmd += ` --class=${classId}`;
-    }
-    if (studentCode) {
-      cmd += ` --student=${studentCode}`;
-    }
-    if (dryRun) {
-      cmd += ` --dry-run`;
-    }
-
-    try {
-      // Thực thi script Puppeteer tự động trên desktop cục bộ (nếu có môi trường Chrome GUI)
-      const { stdout, stderr } = await execAsync(cmd, {
-        cwd: process.cwd(),
-        timeout: 120000,
-      });
-
-      return NextResponse.json({
-        success: true,
-        mode: "puppeteer",
-        message: dryRun
-          ? "Đã chạy thử nghiệm (Dry-Run) và chuẩn bị xong toàn bộ thẻ học phí!"
-          : "Đã kích hoạt tool tự động gửi thẻ học phí đến phụ huynh!",
-        command: cmd,
-        output: stdout || stderr,
-      });
-    } catch (execErr: any) {
-      // Nếu Puppeteer máy chủ không thể khởi động Chrome GUI, chuyển mượt mà sang chế độ web_queue
-      return NextResponse.json({
-        success: true,
-        mode: "web_queue",
-        message: "Chuyển sang chế độ tiến trình gửi tự động trực tiếp trên trình duyệt.",
-        notice: execErr.message || String(execErr),
-      });
-    }
-  } catch (error: any) {
     return NextResponse.json({
       success: true,
-      mode: "web_queue",
-      message: "Chuyển sang chế độ tiến trình gửi tự động trực tiếp trên trình duyệt.",
-      error: error.message || String(error),
+      message: "Phương thức gửi thẻ học phí tiêu chuẩn hiện tại là Tool Zalo Bulk Sender (EXE).",
     });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      error: error.message || String(error),
+    }, { status: 500 });
   }
 }
