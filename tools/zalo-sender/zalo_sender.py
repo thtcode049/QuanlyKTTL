@@ -652,11 +652,12 @@ class ZaloWorker(threading.Thread):
         except Exception as e:
             self.log(f"Lỗi tạo ảnh cho {item.get('studentName')}: {e}", "error")
 
-    # --- TÌM KIẾM VÀ MỞ CHAT VỚI SĐT (ĐA TẦNG) ---
+    # --- TÌM KIẾM VÀ MỞ CHAT VỚI SĐT (ĐA TẦNG, AN TOÀN TUYỆT ĐỐI) ---
     def _open_chat_by_phone(self, phone: str, timeout: float = 8.0) -> bool:
         """
         Tìm kiếm và mở khung chat với số điện thoại trên Zalo Web.
-        Thử nghiệm liên tục cả điều hướng phím (ArrowDown + Enter) và click kết quả tìm kiếm danh bạ.
+        Chỉ mở khi tìm thấy đúng bạn bè / danh bạ liên quan đến SĐT.
+        TUYỆT ĐỐI KHÔNG BAO GIỜ fallback vào hội thoại ghim ở sidebar!
         """
         page = self.page
         try:
@@ -668,62 +669,42 @@ class ZaloWorker(threading.Thread):
             # Chờ Zalo truy vấn danh bạ qua mạng
             page.wait_for_timeout(1500)
 
-            chat_input = page.locator("#chatView div#richInput, .chat-input div#richInput, div#richInput").first
+            found = False
 
-            # 2. Điều hướng bằng phím (ArrowDown -> Enter) - Cơ chế chuẩn nhất của Zalo Web
-            page.keyboard.press("ArrowDown")
-            page.wait_for_timeout(300)
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(800)
-
-            # Nhấn Escape để đóng menu popup search nếu còn nổi lên
-            page.keyboard.press("Escape")
-            page.wait_for_timeout(300)
-
-            if chat_input.is_visible():
-                return True
-
-            # 3. Click vào các selector phần tử kết quả tìm kiếm trong dropdown danh bạ (.search-list)
-            # TUYỆT ĐỐI KHÔNG DÙNG div.conv-item để tránh click nhầm vào các nhóm chat gần đây ở sidebar!
-            selectors = [
-                ".search-list div[id^='friend-item-']",
-                ".search-list div[data-id^='friend-item-']",
-                ".search-list div[class*='friend-item']",
-                ".search-list div[class*='search-item']",
-                ".search-list div[tabindex]",
-                "div[id^='friend-item-']",
-                "div[data-id^='friend-item-']",
-            ]
-            for sel in selectors:
-                f = page.locator(sel).first
-                if f.count() and f.is_visible():
-                    f.click()
+            # 2. Tìm kết quả trong dropdown tìm kiếm:
+            # Zalo Web LUÔN tạo div[id^='friend-item-'] khi tìm thấy người dùng (bạn bè hoặc qua SĐT)
+            friend_items = page.locator("div[id^='friend-item-']")
+            if friend_items.count() > 0 and friend_items.first.is_visible():
+                friend_items.first.click()
+                found = True
+                page.wait_for_timeout(800)
+            else:
+                # Kiểm tra nếu có kết quả tìm kiếm theo SĐT trong danh sách tìm kiếm
+                phone_items = page.locator(f".search-list div:has-text('{phone}')")
+                if phone_items.count() > 0 and phone_items.first.is_visible():
+                    phone_items.first.click()
+                    found = True
                     page.wait_for_timeout(800)
-                    page.keyboard.press("Escape")
-                    page.wait_for_timeout(400)
-                    if chat_input.is_visible():
-                        return True
 
-            # 4. Thử nhấn Enter một lần nữa
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(500)
+            # 3. Nếu KHÔNG tìm thấy bất kỳ kết quả nào cho SĐT này:
+            if not found:
+                # Xóa sạch ô tìm kiếm và đóng popup, trả về False ngay lập tức!
+                search.fill("")
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+                return False
+
+            # Đóng popup gợi ý tìm kiếm nếu còn nổi lên
             page.keyboard.press("Escape")
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(400)
+
+            # Kiểm tra ô nhập tin nhắn richInput của cuộc trò chuyện vừa mở
+            chat_input = page.locator("article#chatView div#richInput, div#chatInput div#richInput, div#richInput").first
             if chat_input.is_visible():
                 return True
 
-            # 5. Chờ thêm nếu mạng chậm
-            end_t = time.time() + max(1.0, timeout - 4.5)
-            while time.time() < end_t:
-                if chat_input.is_visible():
-                    return True
-                page.wait_for_timeout(300)
-
-            # Không tìm thấy -> reset ô search
-            search.fill("")
-            page.keyboard.press("Escape")
             return False
-        except Exception:
+        except Exception as e:
             try:
                 page.keyboard.press("Escape")
             except Exception:
@@ -733,13 +714,13 @@ class ZaloWorker(threading.Thread):
     # --- GÕ VÀ GỬI TIN NHẮN VĂN BẢN HOÀN CHỈNH ---
     def _type_and_send_message(self, text: str) -> bool:
         """
-        Gõ và gửi tin nhắn hoàn chỉnh vào khung chat Zalo Web.
+        Gõ và gửi tin nhắn hoàn chỉnh vào khung chat Zalo Web của người nhận hiện tại.
         Dùng Clipboard Paste để giữ nguyên 100% định dạng, xuống dòng, emoji.
-        Tự động nhấn Enter + click nút Gửi + Ctrl+Enter để đảm bảo tin nhắn gửi đi 100%.
+        TUYỆT ĐỐI KHÔNG click vào bất kỳ selector ngoài khung chat (tránh chạm vào hội thoại ghim).
         """
         page = self.page
         try:
-            chat_input = page.locator("#chatView div#richInput, .chat-input div#richInput, div#richInput, div[contenteditable='true']").first
+            chat_input = page.locator("article#chatView div#richInput, div#chatInput div#richInput, div#richInput").first
             chat_input.wait_for(state="visible", timeout=7000)
             chat_input.click()
             page.wait_for_timeout(300)
@@ -771,37 +752,31 @@ class ZaloWorker(threading.Thread):
                         page.keyboard.insert_text(line)
                         page.wait_for_timeout(100)
 
+            page.wait_for_timeout(500)
+
+            # 1. Nhấn Enter để gửi
+            page.keyboard.press("Enter")
             page.wait_for_timeout(600)
 
-            # 1. Thử nhấn Enter để gửi
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(500)
-
-            # 2. Thử click nút Gửi (icon máy bay giấy / send button)
-            try:
-                page.evaluate("""() => {
-                    const sendBtns = document.querySelectorAll('div[data-id="btn_Send"], div[class*="chat-input__send-btn"], div[class*="btn-send"], div[role="button"][data-translate-inner="STR_SEND"]');
-                    for (const b of sendBtns) {
-                        b.click();
-                        return;
-                    }
-                    const icons = document.querySelectorAll('i[class*="send"], span[class*="send"]');
-                    for (const ic of icons) {
-                        const btn = ic.closest('div[role="button"], button, div');
-                        if (btn) { btn.click(); return; }
-                    }
-                }""")
-            except Exception:
-                pass
-
-            page.wait_for_timeout(500)
-
-            # 3. Nếu vẫn còn text (do Zalo cấu hình Ctrl+Enter để gửi)
+            # 2. Nếu tin nhắn vẫn còn trong richInput (do cấu hình Ctrl+Enter)
             if chat_input.inner_text().strip():
                 page.keyboard.press("Control+Enter")
                 page.wait_for_timeout(600)
 
-            page.wait_for_timeout(800)
+            # 3. Nếu vẫn còn text, click nút Gửi ĐƯỢC GIỚI HẠN CHẶT CHẼ TRONG chatInput
+            if chat_input.inner_text().strip():
+                try:
+                    page.evaluate("""() => {
+                        const box = document.querySelector('#chatInput') || document.querySelector('article#chatView');
+                        if (box) {
+                            const btn = box.querySelector('div[data-id="btn_Send"], div[class*="send-btn"], div[class*="btn-send"]');
+                            if (btn) btn.click();
+                        }
+                    }""")
+                except Exception:
+                    pass
+                page.wait_for_timeout(600)
+
             return True
         except Exception as e:
             self.log(f"Lỗi gửi tin nhắn: {e}", "warn")
@@ -819,8 +794,8 @@ class ZaloWorker(threading.Thread):
             if not self._open_chat_by_phone(phone, timeout=cfg.search_timeout):
                 return "NOT_FOUND", "Không tìm thấy trong bạn bè Zalo"
 
-            # 2. Chờ khung chat sẵn sàng (Ưu tiên phần chatView của người nhận hiện tại)
-            chat_input = page.locator("#chatView div#richInput, .chat-input div#richInput, div#richInput, div[contenteditable='true']").first
+            # 2. Chờ khung chat của người nhận hiện tại sẵn sàng
+            chat_input = page.locator("article#chatView div#richInput, div#chatInput div#richInput, div#richInput").first
             chat_input.wait_for(state="visible", timeout=7000)
 
             # 3. Gửi lời chào nếu được cấu hình
@@ -833,101 +808,69 @@ class ZaloWorker(threading.Thread):
                 self._type_and_send_message(greeting)
                 page.wait_for_timeout(800)
 
-            # 4. Upload ảnh thẻ học phí - TẤT CẢ PHẢI ĐƯỢC GIỚI HẠN TRONG #chatView / .chat-input
-            # TUYỆT ĐỐI KHÔNG CLICK VÀO BẤT KỲ SELECTOR NÀO Ở SIDEBAR ĐỂ TRÁNH GỬI NHẦM NHÓM
+            # 4. Upload ảnh thẻ học phí - 100% TRONG article#chatView
+            # TUYỆT ĐỐI KHÔNG CLICK VÀO BẤT KỲ SELECTOR NÀO Ở SIDEBAR
             file_uploaded = False
 
-            # Tầng A: Copy ảnh vào Windows System Clipboard và paste trực tiếp vào chat_input bằng Control+V
-            # Đây là cách tự nhiên nhất, an toàn 100%, không bao giờ bị lệch sang chat khác!
+            # Cách 1 (Chuẩn nhất của Zalo Web): Dùng expect_file_chooser trên nút "Gửi hình ảnh"
             try:
-                if copy_image_to_windows_clipboard(img_path):
-                    chat_input.click()
-                    page.wait_for_timeout(300)
-                    page.keyboard.press("Control+V")
-                    page.wait_for_timeout(1500)
+                photo_btn = page.locator("article#chatView div[title='Gửi hình ảnh'], article#chatView div[data-translate-title='STR_SEND_PHOTO'], div#chatInput div[title='Gửi hình ảnh'], div[title='Gửi hình ảnh']").first
+                if photo_btn.count() and photo_btn.is_visible():
+                    with page.expect_file_chooser(timeout=3500) as fc_info:
+                        photo_btn.click()
+                    file_chooser = fc_info.value
+                    file_chooser.set_files(str(img_path))
                     file_uploaded = True
+                    page.wait_for_timeout(1500)
             except Exception as e:
-                self.log(f"Clipboard paste error: {e}", "warn")
-                file_uploaded = False
+                pass
 
-            # Tầng B: Nếu Tầng A chưa gửi được, dùng input[type='file'] TRONG #chatView hoặc .chat-input
+            # Cách 2: Paste trực tiếp từ clipboard vào richInput của khung chat hiện tại
             if not file_uploaded:
                 try:
-                    scoped_file_inputs = page.locator("#chatView input[type='file'], .chat-input input[type='file']")
-                    if scoped_file_inputs.count():
-                        scoped_file_inputs.first.set_input_files(str(img_path))
+                    if copy_image_to_windows_clipboard(img_path):
+                        chat_input.click()
+                        page.wait_for_timeout(300)
+                        page.keyboard.press("Control+V")
+                        page.wait_for_timeout(1500)
+                        file_uploaded = True
+                except Exception as e:
+                    self.log(f"Clipboard paste error: {e}", "warn")
+
+            # Cách 3: Gán file trực tiếp vào input[type='file'] nếu có
+            if not file_uploaded:
+                try:
+                    file_inputs = page.locator("article#chatView input[type='file'], div#chatInput input[type='file']")
+                    if file_inputs.count():
+                        file_inputs.first.set_input_files(str(img_path))
                         file_uploaded = True
                         page.wait_for_timeout(1500)
                 except Exception:
                     pass
 
-            # Tầng C: Click icon Gửi ảnh TRONG THANH CÔNG CỤ CỦA CHATVIEW bằng expect_file_chooser
-            if not file_uploaded:
-                photo_selectors = [
-                    "#chatView div[data-translate-inner='STR_SEND_PHOTO']",
-                    "#chatView div[data-id='btn_SendPhoto']",
-                    "#chatView div[data-id*='Photo']",
-                    "#chatView div[data-id*='photo']",
-                    "#chatView .chat-input__tools > *:nth-child(2)",
-                    "#chatView div[class*='chat-input__tools'] > *:nth-child(2)",
-                    "#chatView .chat-input div[title*='ảnh']",
-                    "#chatView .chat-input div[title*='Ảnh']",
-                    "#chatView .chat-input div[title*='hình ảnh']",
-                    "#chatView .chat-input div[title*='Photo']",
-                    ".chat-input div[title*='ảnh']",
-                    ".chat-input div[title*='Ảnh']",
-                    ".chat-input div[title*='hình ảnh']",
-                    ".chat-input div[title*='Photo']",
-                    ".chat-input .chat-input__tools > *:nth-child(2)",
-                    ".chat-input div[class*='chat-input__tools'] > *:nth-child(2)",
-                ]
+            page.wait_for_timeout(1000)
 
-                for psel in photo_selectors:
-                    btn = page.locator(psel).first
-                    if btn.count() and btn.is_visible():
-                        try:
-                            with page.expect_file_chooser(timeout=3000) as fc_info:
-                                btn.click()
-                            file_chooser = fc_info.value
-                            file_chooser.set_files(str(img_path))
-                            file_uploaded = True
-                            page.wait_for_timeout(1500)
-                            break
-                        except Exception:
-                            pass
-
-            page.wait_for_timeout(1500)
-
-            # 5. Bấm gửi media (Enter hoặc click nút Gửi media TRONG #chatView)
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(600)
+            # 5. Xác nhận gửi ảnh
+            # Khi upload ảnh, Zalo Web mở popup xem trước ảnh với nút "Gửi"
+            # Thử click nút "Gửi" trong modal xem trước ảnh nếu có
             try:
-                page.evaluate("""() => {
-                    const chatBox = document.querySelector('#chatView') || document.querySelector('.chat-input') || document;
-                    const btns = chatBox.querySelectorAll('button, div[role="button"], .btn-primary, div[data-id*="Send"], div[data-id*="send"]');
-                    for (const b of btns) {
-                        const txt = (b.innerText || '').trim().toLowerCase();
-                        const dataId = (b.getAttribute('data-id') || '').toLowerCase();
-                        if (txt === 'gửi' || txt === 'send' || dataId.includes('sendmedia') || dataId === 'btn_send') {
-                            b.click();
-                            return;
-                        }
-                    }
-                    const icons = chatBox.querySelectorAll('i[class*="send"], span[class*="send"]');
-                    for (const ic of icons) {
-                        const btn = ic.closest('div[role="button"], button, div');
-                        if (btn) { btn.click(); return; }
-                    }
-                }""")
+                modal_send = page.locator(".modal-dialog button:has-text('Gửi'), .modal-dialog div[role='button']:has-text('Gửi'), .modal button:has-text('Gửi'), .modal div[role='button']:has-text('Gửi')").first
+                if modal_send.count() and modal_send.is_visible():
+                    modal_send.click()
+                    page.wait_for_timeout(1000)
             except Exception:
                 pass
 
-            page.wait_for_timeout(1500)
+            # Nhấn Enter để gửi ảnh đi
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(1200)
+
             return "OK", ""
         except PWTimeout as e:
             return "ERROR", f"Timeout: {str(e).splitlines()[0]}"
         except PWError as e:
             return "ERROR", str(e).splitlines()[0]
+
 
     def _send_cards_batch(self, items: list[dict], cfg: SendConfig):
         if not self._ensure_logged_in():
