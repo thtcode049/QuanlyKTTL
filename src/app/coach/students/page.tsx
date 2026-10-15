@@ -18,6 +18,7 @@ import {
   Camera,
   Edit2,
   Trash2,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   dataStore,
@@ -30,6 +31,7 @@ import { formatCurrencyVND } from "@/lib/vietqr";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import { StudentProfileModal } from "@/components/student-profile-modal";
 import { StudentContextMenu, ContextMenuPosition } from "@/components/student-context-menu";
+import { BatchImportStudentsModal } from "@/components/batch-import-students-modal";
 
 export default function StudentsDirectoryPage() {
   const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
@@ -83,6 +85,29 @@ export default function StudentsDirectoryPage() {
   // Profile Modal State
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Batch Import Modal State
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
+
+  const handleImportSuccess = (count: number) => {
+    let coachId = currentCoachId;
+    let isAdmin = false;
+    let coachEmail = "";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+        if (u.email) coachEmail = u.email;
+        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
+      } catch (e) {}
+    }
+    const myStudents = isAdmin
+      ? dataStore.students
+      : getCoachStudents(coachId, coachEmail);
+    setStudents([...myStudents]);
+    showToast(`Đã nhập thành công ${count} học viên vào hệ thống!`);
+  };
 
   // Context Menu State
   const [contextMenuStudent, setContextMenuStudent] = useState<StudentData | null>(null);
@@ -177,6 +202,15 @@ export default function StudentsDirectoryPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsBatchImportOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>Nhập Hàng Loạt Từ Sheet</span>
+          </button>
+
           <Link
             href="/coach/classes"
             className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
@@ -273,13 +307,24 @@ export default function StudentsDirectoryPage() {
           <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
             Hệ thống đã tự động lọc bỏ toàn bộ dữ liệu học sinh mẫu đối với tài khoản thực của bạn. Hãy vào mục Lớp Học để tạo lớp và ghi danh học sinh thực tế.
           </p>
-          <Link
-            href="/coach/classes"
-            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
-          >
-            <GraduationCap className="h-4 w-4" />
-            <span>Đi Đến Quản Lý Lớp Học & Thêm Học Viên</span>
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsBatchImportOpen(true)}
+              className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 transition-all"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Nhập Hàng Loạt Bằng Sheet / Excel</span>
+            </button>
+
+            <Link
+              href="/coach/classes"
+              className="flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+            >
+              <GraduationCap className="h-4 w-4" />
+              <span>Đi Đến Quản Lý Lớp Học & Thêm Học Viên</span>
+            </Link>
+          </div>
         </div>
       ) : (
         <>
@@ -516,6 +561,14 @@ export default function StudentsDirectoryPage() {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onUpdate={handleStudentUpdated}
+      />
+
+      {/* Batch Import From Sheet Modal */}
+      <BatchImportStudentsModal
+        isOpen={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        availableClasses={coachClasses}
+        onImportSuccess={handleImportSuccess}
       />
     </div>
   );

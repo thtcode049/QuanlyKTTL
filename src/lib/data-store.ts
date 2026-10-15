@@ -1030,6 +1030,51 @@ class InMemoryDataStore {
     return student;
   }
 
+  // Thêm hàng loạt học viên từ Sheet / Excel (đồng bộ Supabase DB)
+  public async addStudentsBatch(
+    newStudents: StudentData[],
+    defaultClassId?: string
+  ): Promise<{ success: boolean; count: number }> {
+    for (const student of newStudents) {
+      const existingIdx = this.students.findIndex((s) => s.id === student.id);
+      if (existingIdx >= 0) {
+        this.students[existingIdx] = student;
+      } else {
+        this.students.push(student);
+      }
+    }
+    this.recalculateAllInvoices(10, 2026);
+    this.saveToLocalStorage();
+
+    // Đồng bộ lên Supabase Database
+    try {
+      if (typeof window !== "undefined") {
+        const res = await fetch("/api/students/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ students: newStudents, defaultClassId }),
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.created)) {
+          data.created.forEach((createdStd: any) => {
+            const localStd = this.students.find(
+              (s) => s.parentPhone === createdStd.parentPhone && s.fullName === createdStd.fullName
+            );
+            if (localStd && localStd.id.startsWith("std-bulk-")) {
+              localStd.id = createdStd.id;
+            }
+          });
+          this.saveToLocalStorage();
+        }
+        return { success: true, count: data.count || newStudents.length };
+      }
+    } catch (e) {
+      console.warn("Lỗi lưu hàng loạt học sinh lên DB:", e);
+    }
+
+    return { success: true, count: newStudents.length };
+  }
+
   // Cập nhật thông tin học viên (đồng bộ Supabase DB)
   public updateStudent(studentId: string, data: Partial<StudentData>) {
     const student = this.students.find((s) => s.id === studentId);

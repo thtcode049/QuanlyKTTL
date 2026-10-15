@@ -26,6 +26,7 @@ import {
   Info,
   User,
   HelpCircle,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   dataStore,
@@ -38,6 +39,7 @@ import { formatCurrencyVND } from "@/lib/vietqr";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import { StudentProfileModal } from "@/components/student-profile-modal";
 import { StudentContextMenu, ContextMenuPosition } from "@/components/student-context-menu";
+import { BatchImportStudentsModal } from "@/components/batch-import-students-modal";
 
 export default function CoachClassesPage() {
   const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
@@ -113,6 +115,7 @@ export default function CoachClassesPage() {
 
   // Modal State: Thêm học viên mới
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [addStudentTab, setAddStudentTab] = useState<"EXISTING" | "NEW">("EXISTING");
   const [existingSearch, setExistingSearch] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
@@ -412,6 +415,14 @@ export default function CoachClassesPage() {
           >
             <Plus className="h-4 w-4" />
             <span>Tạo Lớp Mới</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsBatchImportOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-700 shadow-sm hover:bg-emerald-100 transition-colors"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+            <span>Nhập từ Sheet</span>
           </button>
           <button
             onClick={() => setIsAddStudentOpen(true)}
@@ -1018,15 +1029,25 @@ export default function CoachClassesPage() {
                     <div className="flex flex-col items-center justify-center">
                       <Users className="h-8 w-8 text-slate-300 mb-2" />
                       <p className="text-xs font-bold text-slate-700">Lớp học này chưa có học viên nào</p>
-                      <p className="text-[11px] text-slate-400 mt-1">Bấm "Thêm Học Viên" ở góc trên để ghi danh học sinh thực tế vào lớp.</p>
-                      <button
-                        type="button"
-                        onClick={() => setIsAddStudentOpen(true)}
-                        className="mt-3 flex items-center gap-1.5 rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm"
-                      >
-                        <UserPlus className="h-3.5 w-3.5" />
-                        <span>Thêm Học Viên Vào Lớp</span>
-                      </button>
+                      <p className="text-[11px] text-slate-400 mt-1">Bấm "Thêm Học Viên" hoặc "Nhập Từ Sheet" để ghi danh học sinh thực tế vào lớp.</p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddStudentOpen(true)}
+                          className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm"
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          <span>Thêm Học Viên</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsBatchImportOpen(true)}
+                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5" />
+                          <span>Nhập Từ Sheet</span>
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -1081,8 +1102,8 @@ export default function CoachClassesPage() {
               </button>
             </div>
 
-            {/* Dual Tabs Switcher */}
-            <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold">
+            {/* Dual / Triple Tabs Switcher */}
+            <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setAddStudentTab("EXISTING")}
@@ -1093,7 +1114,7 @@ export default function CoachClassesPage() {
                 }`}
               >
                 <Users className="h-3.5 w-3.5 text-brand-primary" />
-                <span>Học Viên Có Sẵn ({dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length})</span>
+                <span>Có Sẵn ({dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length})</span>
               </button>
 
               <button
@@ -1106,7 +1127,19 @@ export default function CoachClassesPage() {
                 }`}
               >
                 <UserPlus className="h-3.5 w-3.5 text-brand-secondary" />
-                <span>Tạo Mới Học Viên</span>
+                <span>Tạo Mới</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddStudentOpen(false);
+                  setIsBatchImportOpen(true);
+                }}
+                className="flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Nhập Từ Sheet</span>
               </button>
             </div>
 
@@ -1583,6 +1616,20 @@ export default function CoachClassesPage() {
           </div>
         </div>
       )}
+
+      {/* Batch Import From Sheet Modal */}
+      <BatchImportStudentsModal
+        isOpen={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        availableClasses={classes}
+        initialClassId={selectedClass?.id}
+        onImportSuccess={(count) => {
+          const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
+          const myClassIds = myClasses.map((c) => c.id);
+          setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
+          showToast(`Đã thêm thành công ${count} học viên vào lớp ${selectedClass?.name || ""}!`);
+        }}
+      />
     </div>
   );
 }
