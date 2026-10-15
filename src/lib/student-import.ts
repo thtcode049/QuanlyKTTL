@@ -59,8 +59,13 @@ export function normalizePhoneNumber(rawPhone: any): string {
   } else if (phone.startsWith("84") && phone.length >= 11) {
     phone = "0" + phone.slice(2);
   }
+  // Nếu chỉ có 9 chữ số và không bắt đầu bằng 0 (do Excel cắt mất số 0 ở đầu)
+  if (phone.length === 9 && !phone.startsWith("0")) {
+    phone = "0" + phone;
+  }
   return phone;
 }
+
 
 /**
  * Trích xuất năm sinh từ chuỗi / số / ngày tháng
@@ -574,3 +579,287 @@ export function parsePastedText(
 
   return parseMatrixToStudents(matrix, defaultClassId, availableClasses, existingStudents);
 }
+
+export interface EditableStudentRow {
+  id: string;
+  fullName: string;
+  birthYear: string;
+  gender: "Nam" | "Nữ";
+  parentName: string;
+  parentPhone: string;
+  currentLevel: string;
+  classId: string;
+  customFee: string;
+  school: string;
+  address?: string;
+  notes: string;
+}
+
+export function createEmptyStudentRow(defaultClassId: string = "NONE"): EditableStudentRow {
+  return {
+    id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    fullName: "",
+    birthYear: "2018",
+    gender: "Nam",
+    parentName: "",
+    parentPhone: "",
+    currentLevel: "Nhập môn",
+    classId: defaultClassId && defaultClassId !== "AUTO" ? defaultClassId : "NONE",
+    customFee: "",
+    school: "",
+    address: "",
+    notes: "",
+  };
+}
+
+/**
+ * Phân tích ma trận (Row/Col) thành danh sách các dòng chỉnh sửa trực tiếp trên web
+ */
+export function parseMatrixToEditableRows(
+  matrix: any[][],
+  defaultClassId: string = "NONE",
+  availableClasses: ClassroomData[] = []
+): EditableStudentRow[] {
+  if (!matrix || matrix.length === 0) return [];
+
+  // 1. Kiểm tra xem có dòng header không (tìm trong 5 dòng đầu)
+  let headerRowIndex = -1;
+  const colMap: Record<string, number> = {};
+
+  for (let r = 0; r < Math.min(matrix.length, 5); r++) {
+    const row = matrix[r];
+    if (!Array.isArray(row)) continue;
+
+    const testMap: Record<string, number> = {};
+    row.forEach((cell, idx) => {
+      const norm = normalizeHeader(String(cell));
+      if (!norm) return;
+
+      if (
+        norm.includes("hovaten") ||
+        norm.includes("hoten") ||
+        norm.includes("tenhocvien") ||
+        norm.includes("tenhocsinh") ||
+        norm === "ten" ||
+        norm === "fullname" ||
+        norm === "name"
+      ) {
+        testMap["fullName"] = idx;
+      } else if (
+        norm.includes("namsinh") ||
+        norm.includes("ngaysinh") ||
+        norm === "ns" ||
+        norm.includes("birth") ||
+        norm === "dob"
+      ) {
+        testMap["birthYear"] = idx;
+      } else if (norm.includes("gioitinh") || norm === "gt" || norm.includes("gender") || norm === "sex") {
+        testMap["gender"] = idx;
+      } else if (
+        norm.includes("tenphuhuynh") ||
+        norm.includes("hotenphuhuynh") ||
+        norm.includes("phuhuynh") ||
+        norm.includes("tenph") ||
+        norm.includes("parent")
+      ) {
+        testMap["parentName"] = idx;
+      } else if (
+        norm.includes("sodienthoai") ||
+        norm.includes("sdt") ||
+        norm.includes("dienthoai") ||
+        norm.includes("phone") ||
+        norm.includes("tel") ||
+        norm.includes("mobile")
+      ) {
+        testMap["parentPhone"] = idx;
+      } else if (norm.includes("trinhdo") || norm.includes("capdo") || norm.includes("level")) {
+        testMap["currentLevel"] = idx;
+      } else if (norm.includes("hocphi") || norm.includes("dongia") || norm.includes("fee")) {
+        testMap["customFee"] = idx;
+      } else if (norm.includes("lophoc") || norm.includes("tenlop") || norm === "lop" || norm.includes("class")) {
+        testMap["classId"] = idx;
+      } else if (norm.includes("truong") || norm.includes("school")) {
+        testMap["school"] = idx;
+      } else if (norm.includes("diachi") || norm.includes("noio") || norm.includes("address")) {
+        testMap["address"] = idx;
+      } else if (norm.includes("ghichu") || norm.includes("notes") || norm.includes("note")) {
+        testMap["notes"] = idx;
+      }
+    });
+
+    if (testMap["fullName"] !== undefined || testMap["parentPhone"] !== undefined) {
+      headerRowIndex = r;
+      Object.assign(colMap, testMap);
+      break;
+    }
+  }
+
+  const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
+  const result: EditableStudentRow[] = [];
+
+  for (let r = startRow; r < matrix.length; r++) {
+    const row = matrix[r];
+    if (!Array.isArray(row) || row.every((c) => c === undefined || c === null || String(c).trim() === "")) continue;
+
+    let fullName = "";
+    let birthYear = "";
+    let gender: "Nam" | "Nữ" = "Nam";
+    let parentName = "";
+    let parentPhone = "";
+    let currentLevel = "Nhập môn";
+    let classId = defaultClassId !== "AUTO" && defaultClassId !== "NONE" ? defaultClassId : "NONE";
+    let customFee = "";
+    let school = "";
+    let address = "";
+    let notes = "";
+
+    if (headerRowIndex >= 0) {
+      fullName = colMap["fullName"] !== undefined ? String(row[colMap["fullName"]] || "").trim() : "";
+      birthYear = colMap["birthYear"] !== undefined ? String(extractBirthYear(row[colMap["birthYear"]])) : "";
+      gender = colMap["gender"] !== undefined ? normalizeGender(row[colMap["gender"]]) : "Nam";
+      parentName = colMap["parentName"] !== undefined ? String(row[colMap["parentName"]] || "").trim() : "";
+      parentPhone = colMap["parentPhone"] !== undefined ? normalizePhoneNumber(row[colMap["parentPhone"]]) : "";
+      currentLevel = colMap["currentLevel"] !== undefined ? normalizeLevel(row[colMap["currentLevel"]]) : "Nhập môn";
+      customFee =
+        colMap["customFee"] !== undefined && row[colMap["customFee"]]
+          ? String(normalizeFee(row[colMap["customFee"]]) || "")
+          : "";
+      school = colMap["school"] !== undefined ? String(row[colMap["school"]] || "").trim() : "";
+      address = colMap["address"] !== undefined ? String(row[colMap["address"]] || "").trim() : "";
+      notes = colMap["notes"] !== undefined ? String(row[colMap["notes"]] || "").trim() : "";
+
+      if (colMap["classId"] !== undefined && row[colMap["classId"]]) {
+        const clsName = String(row[colMap["classId"]]).trim().toLowerCase();
+        const found = availableClasses.find((c) => c.name.toLowerCase().includes(clsName) || c.id === clsName);
+        if (found) classId = found.id;
+      }
+    } else {
+      // Tự động nhận diện cột thông minh theo kiểu dữ liệu
+      let startCol = 0;
+      const firstVal = String(row[0] || "").trim();
+      const secondVal = row.length > 1 ? String(row[1] || "").trim() : "";
+      if (/^\d+$/.test(firstVal) && parseInt(firstVal, 10) <= 999 && /[a-zA-ZÀ-ỹ]/.test(secondVal)) {
+        fullName = secondVal;
+        startCol = 2;
+      } else {
+        fullName = firstVal;
+        startCol = 1;
+      }
+
+      for (let c = startCol; c < row.length; c++) {
+        const val = String(row[c] || "").trim();
+        if (!val) continue;
+
+        // Nếu là số điện thoại (9-11 chữ số)
+        const cleanP = normalizePhoneNumber(val);
+        if (!parentPhone && cleanP.length >= 9 && cleanP.length <= 11) {
+          parentPhone = cleanP;
+          continue;
+        }
+
+        // Nếu là năm sinh (4 chữ số 19xx hoặc 20xx)
+        if (!birthYear && /^(19|20)\d{2}$/.test(val)) {
+          birthYear = val;
+          continue;
+        }
+
+        // Nếu là giới tính
+        if (val.toLowerCase() === "nam" || val.toLowerCase() === "nữ" || val.toLowerCase() === "nu") {
+          gender = normalizeGender(val);
+          continue;
+        }
+
+        // Nếu là trình độ
+        const lvl = normalizeLevel(val);
+        if (lvl !== "Nhập môn" || val.toLowerCase().includes("nhập môn") || val.toLowerCase().includes("nhap mon")) {
+          currentLevel = lvl;
+          continue;
+        }
+
+        // Nếu là học phí riêng (số >= 10000)
+        const fee = normalizeFee(val);
+        if (!customFee && fee && fee >= 10000) {
+          customFee = String(fee);
+          continue;
+        }
+
+        // Nếu là tên lớp
+        const foundCls = availableClasses.find((cls) => cls.name.toLowerCase().includes(val.toLowerCase()));
+        if (foundCls && classId === "NONE") {
+          classId = foundCls.id;
+          continue;
+        }
+
+        // Fallback vào tên phụ huynh / trường / ghi chú
+        if (!parentName && c <= 3) {
+          parentName = val;
+        } else if (!school) {
+          school = val;
+        } else if (!notes) {
+          notes = val;
+        }
+      }
+    }
+
+    result.push({
+      id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      fullName,
+      birthYear: birthYear || "2018",
+      gender,
+      parentName: parentName || (fullName ? `Phụ huynh ${fullName}` : ""),
+      parentPhone,
+      currentLevel,
+      classId,
+      customFee,
+      school,
+      address,
+      notes,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Phân tích dữ liệu copy-paste từ Excel/Google Sheets trực tiếp thành các dòng trên bảng web
+ */
+export function parseClipboardToEditableRows(
+  text: string,
+  defaultClassId: string = "NONE",
+  availableClasses: ClassroomData[] = []
+): EditableStudentRow[] {
+  if (!text || !text.trim()) return [];
+
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length === 0) return [];
+
+  const hasTabs = lines.some((l) => l.includes("\t"));
+  const delimiter = hasTabs ? "\t" : ",";
+
+  const matrix = lines.map((line) => {
+    if (delimiter === "\t") {
+      return line.split("\t").map((c) => c.trim());
+    } else {
+      return line.split(",").map((c) => c.replace(/^["']|["']$/g, "").trim());
+    }
+  });
+
+  return parseMatrixToEditableRows(matrix, defaultClassId, availableClasses);
+}
+
+/**
+ * Đọc file Excel / CSV dạng ArrayBuffer và chuyển trực tiếp thành danh sách các dòng trên bảng web
+ */
+export function parseExcelBufferToEditableRows(
+  buffer: ArrayBuffer,
+  defaultClassId: string = "NONE",
+  availableClasses: ClassroomData[] = []
+): EditableStudentRow[] {
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheetName];
+  const matrix = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
+  return parseMatrixToEditableRows(matrix, defaultClassId, availableClasses);
+}
+
+
