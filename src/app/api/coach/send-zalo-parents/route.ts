@@ -21,11 +21,16 @@ export async function GET(req: NextRequest) {
       const os = await import("os");
       const { spawn } = await import("child_process");
 
+      const home = os.homedir();
       const candidatePaths = [
+        path.join(home, "Desktop", "Zalo_Bulk_Sender.exe"),
+        path.join(home, "Downloads", "Zalo_Bulk_Sender.exe"),
+        path.join(home, "Downloads", "Zalo_Bulk_Sender", "Zalo_Bulk_Sender.exe"),
         path.join(process.cwd(), "Zalo_Bulk_Sender.exe"),
         path.join(process.cwd(), "public", "downloads", "Zalo_Bulk_Sender.exe"),
         path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender.exe"),
         path.join(process.cwd(), "tools", "zalo-sender", "dist", "Zalo_Bulk_Sender", "Zalo_Bulk_Sender.exe"),
+        path.join(home, ".kttl_zalo_sender", "Zalo_Bulk_Sender.exe"),
       ];
 
       let foundExe = "";
@@ -39,7 +44,7 @@ export async function GET(req: NextRequest) {
       if (!foundExe) {
         return NextResponse.json({
           success: false,
-          message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy chủ.",
+          message: "Không tìm thấy file Zalo_Bulk_Sender.exe trên máy. Vui lòng bấm nút 'Tải Tool (.exe)' để tải về!",
         });
       }
 
@@ -143,13 +148,27 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Khởi động trực tiếp EXE qua spawn với đường dẫn UTF-16 Unicode không bị lỗi tiếng Việt
-      const child = spawn(foundExe, args, {
-        cwd: workDir,
-        detached: true,
-        stdio: "ignore",
-      });
-      child.unref();
+      // Khởi động trực tiếp EXE qua spawn với start trên Windows để hiển thị cửa sổ GUI trên Desktop
+      if (process.platform === "win32") {
+        const cmdArgs = ["/c", "start", '""', foundExe];
+        if (args.length > 0) {
+          cmdArgs.push(...args);
+        }
+        const child = spawn("cmd.exe", cmdArgs, {
+          cwd: workDir,
+          detached: true,
+          stdio: "ignore",
+          windowsVerbatimArguments: true,
+        });
+        child.unref();
+      } else {
+        const child = spawn(foundExe, args, {
+          cwd: workDir,
+          detached: true,
+          stdio: "ignore",
+        });
+        child.unref();
+      }
 
       return NextResponse.json({
         success: true,

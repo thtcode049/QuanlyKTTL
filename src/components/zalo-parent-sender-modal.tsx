@@ -109,10 +109,14 @@ export default function ZaloParentSenderModal({
   });
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [launchStatus, setLaunchStatus] = useState<{
+    type: "loading" | "success" | "warn" | "error";
+    message: string;
+  } | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 4500);
   };
 
   useEffect(() => {
@@ -282,20 +286,43 @@ export default function ZaloParentSenderModal({
   // Khởi động trực tiếp Tool EXE trên máy tính (nạp sẵn danh sách học viên lớp này)
   const handleDirectLaunchTool = async () => {
     try {
+      // 1. Tự động kết xuất và tải file JSON vào thư mục Downloads của máy
+      exportInvoicesJsonForTool();
+
+      setLaunchStatus({
+        type: "loading",
+        message: "⏳ Đang kết nối và khởi động Tool Zalo Bulk Sender trên máy tính...",
+      });
       showToast("⏳ Đang khởi động Tool Zalo Bulk Sender trên máy tính...");
+
+      // 2. Kích hoạt mở Tool trên máy
       const res = await fetch(
         `/api/coach/send-zalo-parents?action=open_tool&classId=${classroom.id}&month=${month}&year=${year}`
       );
       const data = await res.json();
       if (data.success) {
-        showToast("🚀 Đã mở Tool Zalo trên máy tính của bạn kèm dữ liệu lớp này!");
+        setLaunchStatus({
+          type: "success",
+          message:
+            "🚀 Đã kích hoạt Tool Zalo thành công và nạp sẵn dữ liệu học phí của lớp! Nếu cửa sổ Tool chưa nổi lên trên cùng, bạn vui lòng bấm vào biểu tượng Tool trên thanh Taskbar.",
+        });
+        showToast("🚀 Đã mở Tool Zalo trên máy tính!");
       } else {
-        showToast(
-          "⚠️ " + (data.message || "Chưa tìm thấy Tool trên máy. Hãy bấm nút 'Tải Tool' bên cạnh để tải về!")
-        );
+        setLaunchStatus({
+          type: "warn",
+          message:
+            data.message ||
+            "💡 File dữ liệu học phí (.json) đã được tải vào thư mục Downloads của bạn. Bạn hãy mở file Zalo_Bulk_Sender.exe trên Desktop hoặc thư mục Downloads, rồi bấm nút xanh '⚡ Nhận file mới từ Downloads' trong Tool là xong ngay!",
+        });
+        showToast("💡 File dữ liệu đã tải vào Downloads. Vui lòng mở Tool để gửi!");
       }
     } catch (e: any) {
-      showToast("⚠️ Vui lòng mở trực tiếp file Zalo_Bulk_Sender.exe trên máy tính để gửi!");
+      setLaunchStatus({
+        type: "warn",
+        message:
+          "💡 File dữ liệu học phí (.json) đã được tải vào thư mục Downloads của bạn. Bạn hãy mở file Zalo_Bulk_Sender.exe trên Desktop hoặc thư mục Downloads, rồi bấm nút xanh '⚡ Nhận file mới từ Downloads' trong Tool là xong ngay!",
+      });
+      showToast("💡 Vui lòng mở file Zalo_Bulk_Sender.exe trên máy tính để gửi!");
     }
   };
 
@@ -327,11 +354,17 @@ export default function ZaloParentSenderModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      {/* Toast Popup */}
+      {/* Toast Popup - đặt ở góc trên bên phải với z-[99999] để không bao giờ bị che khuất */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-60 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-5">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-6 right-6 z-[99999] flex items-center gap-3 rounded-2xl bg-slate-950/95 px-5 py-3.5 text-xs font-bold text-white shadow-2xl border border-slate-700/80 animate-in fade-in slide-in-from-top-4 backdrop-blur-md max-w-md ring-1 ring-white/10">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+          <span className="leading-snug flex-1">{toastMessage}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg text-sm"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -383,7 +416,7 @@ export default function ZaloParentSenderModal({
               {/* NÚT 1: TẢI TOOL EXE & ZIP */}
               <div className="inline-flex rounded-xl shadow-md">
                 <a
-                  href="/downloads/Zalo_Bulk_Sender.exe"
+                  href="/api/tool/download"
                   download="Zalo_Bulk_Sender.exe"
                   className="rounded-l-xl border border-amber-400/50 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-2 text-xs font-black text-slate-950 active:scale-95 transition-all flex items-center gap-1.5"
                   title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
@@ -392,7 +425,7 @@ export default function ZaloParentSenderModal({
                   <span>📥 Tải Tool (.exe)</span>
                 </a>
                 <a
-                  href="/downloads/Zalo_Bulk_Sender.zip"
+                  href="/api/tool/download?format=zip"
                   download="Zalo_Bulk_Sender.zip"
                   className="rounded-r-xl border-y border-r border-amber-400/50 bg-amber-600 hover:bg-amber-500 px-2.5 py-2 text-[11px] font-black text-slate-950 active:scale-95 transition-all flex items-center"
                   title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
@@ -438,6 +471,39 @@ export default function ZaloParentSenderModal({
               </button>
             </div>
           </div>
+
+          {/* Banner Thông Báo Khởi Động Tool Trực Tiếp Trong Modal */}
+          {launchStatus && (
+            <div
+              className={`mt-3.5 rounded-2xl p-3.5 text-xs flex items-start gap-3 border shadow-md ${
+                launchStatus.type === "success"
+                  ? "bg-emerald-950/80 text-emerald-200 border-emerald-500/40"
+                  : launchStatus.type === "loading"
+                  ? "bg-indigo-950/80 text-indigo-200 border-indigo-500/40 animate-pulse"
+                  : "bg-amber-950/80 text-amber-200 border-amber-500/40"
+              }`}
+            >
+              <span className="text-lg flex-shrink-0">
+                {launchStatus.type === "success"
+                  ? "🚀"
+                  : launchStatus.type === "loading"
+                  ? "⏳"
+                  : "💡"}
+              </span>
+              <div className="flex-1 space-y-1">
+                <div className="font-bold">{launchStatus.message}</div>
+                <div className="text-[11px] opacity-85 leading-relaxed">
+                  <strong>Thao tác nhanh:</strong> Trong cửa sổ phần mềm <strong>Zalo Bulk Sender</strong>, chỉ cần bấm nút xanh <strong>⚡ Nhận file mới từ Downloads</strong> là danh sách học phí vừa tải sẽ được nạp vào ngay lập tức!
+                </div>
+              </div>
+              <button
+                onClick={() => setLaunchStatus(null)}
+                className="text-slate-400 hover:text-white p-1 rounded"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Collapsible Quick Guide */}
           {showGuide && (
