@@ -33,21 +33,32 @@ export default function AdminLayout({
       );
       const user = dbUser ? { ...u, ...dbUser } : u;
 
-      // Chỉ tài khoản có role ADMIN hoặc được Admin cấp quyền (hasAdminAccess) mới được vào
+      // Chỉ tài khoản có role ADMIN hoặc được Admin cấp quyền (hasAdminAccess, CHUCOSO, PHOCHUNHIEM, CHUNHIEM) mới được vào
       if (
         user.role === "ADMIN" ||
         user.hasAdminAccess === true ||
+        user.systemRole === "CHUNHIEM" ||
+        user.systemRole === "PHOCHUNHIEM" ||
+        user.systemRole === "CHUCOSO" ||
         canonicalId === "user-admin" ||
         canonicalId === "user-coach-1" ||
         canonicalId === "user-coach-2"
       ) {
         setIsAuthorized(true);
         setAdminName(user.name || "Ban Quản Trị CLB");
-        setAdminTitle(
-          user.role === "ADMIN"
+        const branchObj = dataStore.branches.find((b) => b.id === user.branchId);
+        const branchShortName = branchObj ? branchObj.name.split("–")[0].trim() : "Cơ sở";
+        const roleLabel =
+          user.systemRole === "CHUNHIEM"
+            ? "Chủ nhiệm CLB"
+            : user.systemRole === "PHOCHUNHIEM"
+            ? "Phó chủ nhiệm CLB"
+            : user.systemRole === "CHUCOSO"
+            ? `Chủ cơ sở • ${branchShortName}`
+            : user.role === "ADMIN"
             ? (user.title || "Quản trị toàn bộ cơ sở")
-            : `${user.title || "HLV Quốc gia"} • Quản trị viên`
-        );
+            : `${user.title || "HLV Quốc gia"} • Quản trị viên`;
+        setAdminTitle(roleLabel);
       } else {
         setIsAuthorized(false);
         // Tự động đẩy về trang HLV sau 1.5 giây

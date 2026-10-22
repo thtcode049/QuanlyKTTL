@@ -1879,8 +1879,10 @@ export function resolveCanonicalCoachId(coachIdOrEmail?: string): string {
     str === "user-coach-2" ||
     str === "102dedb3-2dbe-4f91-a9dd-80ff4e31caa0" ||
     str === "00477341-c15a-430a-8d1f-a64e39c03a9c" ||
+    str === "fc5ecc9d-e553-4e36-bf88-82705d032da0" ||
     str === "hlv2@kttll.vn" ||
-    str === "trantrang66c@gmail.com"
+    str === "trantrang66c@gmail.com" ||
+    str === "trantrang.cv.chess@gmail.com"
   ) {
     return "00477341-c15a-430a-8d1f-a64e39c03a9c";
   }
