@@ -30,29 +30,36 @@ model Branch {
   phone     String?
   classes   Classroom[]
   coaches   User[]
+  tasks     Task[]
   createdAt DateTime    @default(now())
 }
 
 model User {
-  id             String      @id @default(uuid())
-  name           String
-  email          String      @unique
-  phone          String
-  passwordHash   String
-  role           Role        @default(COACH)
-  title          String?     // Danh hiệu: Đại Kiện Tướng, HLV Quốc Gia, v.v.
-  experience     String?     // Số năm kinh nghiệm / Thành tích
-  bio            String?     // Giới thiệu bản thân
-  bankAccount    String?     // STK nhận thù lao
-  bankName       String?     // Tên ngân hàng
-  accountHolder  String?     // Chủ tài khoản
-  elo            Int?        @default(2000)
-  hasAdminAccess Boolean     @default(false)
-  branchId       String?
-  branch         Branch?     @relation(fields: [branchId], references: [id])
-  classes        Classroom[]
-  baseRate       Float       @default(200000) // Đơn giá thù lao/ca dạy của HLV
-  createdAt      DateTime    @default(now())
+  id                 String         @id @default(uuid())
+  name               String
+  email              String         @unique
+  phone              String
+  passwordHash       String
+  role               Role           @default(COACH)
+  systemRole         String?        @default("COACH") // CHUNHIEM, PHOCHUNHIEM, CHUCOSO, COACH
+  title              String?        // Danh hiệu: Đại Kiện Tướng, HLV Quốc Gia, v.v.
+  experience         String?        // Số năm kinh nghiệm / Thành tích
+  bio                String?        // Giới thiệu bản thân
+  bankAccount        String?        // STK nhận thù lao
+  bankName           String?        // Tên ngân hàng
+  accountHolder      String?        // Chủ tài khoản
+  elo                Int?           @default(2000)
+  hasAdminAccess     Boolean        @default(false)
+  branchId           String?
+  branch             Branch?        @relation(fields: [branchId], references: [id])
+  classes            Classroom[]
+  baseRate           Float          @default(200000) // Đơn giá thù lao/ca dạy của HLV
+  tuitionRatePercent Float?         @default(50) // % học phí nhận được
+  bookRatePercent    Float?         @default(30) // % tiền sách nhận được
+  assignedTasks      Task[]         @relation("AssignedTasks")
+  createdTasks       Task[]         @relation("CreatedTasks")
+  notifications      Notification[]
+  createdAt          DateTime       @default(now())
 }
 
 model Classroom {
@@ -154,3 +161,41 @@ model StudentEvaluation {
   endgame     Int      @default(3) // Tàn cuộc (1 - 5 sao)
   generalNote String?
 }
+
+model Task {
+  id                String    @id @default(uuid())
+  title             String
+  description       String?
+  category          String?   @default("CHUYEN_MON") // CHUYEN_MON, GIAO_AN, TUYEN_SINH, SU_KIEN, CO_SO, KHAC
+  priority          String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status            String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED_PENDING_REVIEW, APPROVED, REJECTED
+  kpiPoints         Int       @default(10)
+  dueDate           DateTime?
+  branchId          String?
+  branch            Branch?   @relation(fields: [branchId], references: [id])
+  assigneeId        String
+  assignee          User      @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  creatorId         String?
+  creator           User?     @relation("CreatedTasks", fields: [creatorId], references: [id])
+  reportNote        String?
+  reportAttachments String?
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
+  reviewFeedback    String?
+  isCompletedOnTime Boolean?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String   @default("TASK") // TASK_ASSIGNED, TASK_SUBMITTED, TASK_APPROVED, TASK_REJECTED, SYSTEM
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+

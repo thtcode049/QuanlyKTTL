@@ -18,8 +18,11 @@ export interface UserData {
   phone: string;
   password?: string;
   role: 'ADMIN' | 'COACH';
+  systemRole?: 'CHUNHIEM' | 'PHOCHUNHIEM' | 'CHUCOSO' | 'COACH'; // Phân quyền: Chủ nhiệm, Phó chủ nhiệm, Chủ từng cơ sở, HLV
   branchId?: string;
   baseRate: number; // 200.000đ/ca
+  tuitionRatePercent?: number; // % học phí nhận được (mặc định 50%)
+  bookRatePercent?: number; // % tiền sách nhận được (mặc định 30%)
   title?: string;
   experience?: string; // Số năm kinh nghiệm / Thành tích
   bio?: string; // Giới thiệu / triết lý dạy
@@ -130,6 +133,55 @@ export interface ZaloConfig {
   oaId?: string;
 }
 
+export type TaskCategory = 'CHUYEN_MON' | 'GIAO_AN' | 'TUYEN_SINH' | 'SU_KIEN' | 'CO_SO' | 'KHAC';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED_PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+export interface TaskData {
+  id: string;
+  title: string;
+  description: string;
+  category: TaskCategory;
+  priority: TaskPriority;
+  status: TaskStatus;
+  kpiPoints: number; // 5 - 100
+  dueDate: string; // YYYY-MM-DD
+  branchId?: string;
+  assigneeId: string; // ID HLV
+  creatorId?: string; // ID Quản lý giao việc
+  creatorName?: string;
+  reportNote?: string; // Báo cáo kết quả của HLV
+  reportAttachments?: string; // Link/chứng minh kết quả
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewerId?: string;
+  reviewFeedback?: string;
+  isCompletedOnTime?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type NotificationType =
+  | 'TASK_ASSIGNED'
+  | 'TASK_SUBMITTED'
+  | 'TASK_APPROVED'
+  | 'TASK_REJECTED'
+  | 'SYSTEM'
+  | 'PAYROLL';
+
+export interface NotificationData {
+  id: string;
+  userId: string; // ID người nhận, hoặc "ALL_ADMIN", "ALL_COACH"
+  title: string;
+  message: string;
+  type: NotificationType;
+  link?: string;
+  taskId?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+
 // Khởi tạo cơ sở dữ liệu mẫu ban đầu theo đúng chuẩn web kientuongtuonglai.com
 export const initialBranches: BranchData[] = [
   {
@@ -189,7 +241,10 @@ export const initialUsers: UserData[] = [
     email: "admin@kttll.vn",
     phone: "0904.555.666",
     role: "ADMIN",
+    systemRole: "CHUNHIEM",
     baseRate: 0,
+    tuitionRatePercent: 50,
+    bookRatePercent: 30,
     title: "Chủ nhiệm CLB",
     hasAdminAccess: true,
   },
@@ -199,8 +254,11 @@ export const initialUsers: UserData[] = [
     email: "hlv1@kttll.vn",
     phone: "0912.345.678",
     role: "COACH",
+    systemRole: "PHOCHUNHIEM",
     branchId: "branch-1",
     baseRate: 250000,
+    tuitionRatePercent: 55,
+    bookRatePercent: 35,
     title: "Đại Kiện Tướng Quốc Tế",
     hasAdminAccess: true,
   },
@@ -210,9 +268,12 @@ export const initialUsers: UserData[] = [
     email: "trantrang66c@gmail.com",
     phone: "0833.599.495",
     role: "COACH",
+    systemRole: "CHUCOSO",
     branchId: "branch-3",
     baseRate: 200000,
-    title: "HLV Quốc gia",
+    tuitionRatePercent: 50,
+    bookRatePercent: 30,
+    title: "HLV Quốc gia • Quản lý CS Hoàng Quốc Việt",
     hasAdminAccess: true,
   },
 ];
@@ -636,6 +697,146 @@ export const initialZaloConfig: ZaloConfig = {
   oaId: "",
 };
 
+export const initialTasks: TaskData[] = [
+  {
+    id: "task-1",
+    title: "Tổ chức Giải Cờ chớp nội bộ Tháng 10/2026 tại Cơ sở Hoàng Quốc Việt",
+    description: "Lên danh sách 20-30 kỳ thủ nhí, chuẩn bị đồng hồ thi đấu, xếp cặp hệ Thụy Sĩ 5 ván và chuẩn bị phần thưởng cho các em.",
+    category: "SU_KIEN",
+    priority: "HIGH",
+    status: "COMPLETED_PENDING_REVIEW",
+    kpiPoints: 40,
+    dueDate: "2026-10-25",
+    branchId: "branch-3",
+    assigneeId: "00477341-c15a-430a-8d1f-a64e39c03a9c", // HLV Huyền Trang
+    creatorId: "user-admin",
+    creatorName: "Ban Chủ Nhiệm CLB",
+    reportNote: "Đã hoàn thành xuất sắc giải đấu với 24 kỳ thủ nhí tham gia. 3 em đạt giải Nhất, Nhì, Ba nhận cúp và sách cờ vua. Phụ huynh đánh giá rất cao tinh thần thi đấu của các con.",
+    reportAttachments: "https://kientuongtuonglai.com/gallery/giai-co-chop-t10",
+    submittedAt: "2026-10-22T08:30:00Z",
+    createdAt: "2026-10-15T09:00:00Z",
+  },
+  {
+    id: "task-2",
+    title: "Soạn đề cương & Giáo án Chuyên đề Phòng thủ Sicilian cho Đội Tuyển",
+    description: "Tổng hợp các biến thế hiện đại của Biến thể Najdorf 6.Bg5 và Scheveningen để huấn luyện cho đội tuyển thi đấu giải Trẻ Quốc gia.",
+    category: "GIAO_AN",
+    priority: "HIGH",
+    status: "APPROVED",
+    kpiPoints: 50,
+    dueDate: "2026-10-18",
+    branchId: "branch-1",
+    assigneeId: "c5d28630-d676-4746-adf3-481504084b3a", // GM Bùi Vinh
+    creatorId: "user-admin",
+    creatorName: "Ban Chủ Nhiệm CLB",
+    reportNote: "Đã hoàn thành tập tài liệu 45 trang gồm 20 bài tập tính biến sâu và 15 ván đấu mẫu của các Đại Kiện Tướng thế giới.",
+    submittedAt: "2026-10-17T15:20:00Z",
+    reviewedAt: "2026-10-18T10:00:00Z",
+    reviewerId: "user-admin",
+    reviewFeedback: "Giáo trình rất chất lượng và công phu, đã đưa vào giảng dạy ngay từ tuần này.",
+    isCompletedOnTime: true,
+    createdAt: "2026-10-10T08:00:00Z",
+  },
+  {
+    id: "task-3",
+    title: "Kiểm tra cơ sở vật chất, bàn cờ, đồng hồ DGT tại Cơ sở 1 - Bạch Mai",
+    description: "Rà soát lại số lượng quân cờ còn thiếu, thay pin đồng hồ thi đấu DGT 2010 và vệ sinh bàn cờ trước kỳ học mới.",
+    category: "CO_SO",
+    priority: "MEDIUM",
+    status: "APPROVED",
+    kpiPoints: 20,
+    dueDate: "2026-10-12",
+    branchId: "branch-1",
+    assigneeId: "c5d28630-d676-4746-adf3-481504084b3a", // GM Bùi Vinh
+    creatorId: "user-admin",
+    creatorName: "Ban Chủ Nhiệm CLB",
+    reportNote: "Đã kiểm tra đủ 15 bộ bàn cờ tiêu chuẩn, thay pin cho 10 đồng hồ, bổ sung 2 quân hậu trắng bị thiếu.",
+    submittedAt: "2026-10-11T16:00:00Z",
+    reviewedAt: "2026-10-12T09:00:00Z",
+    reviewerId: "user-admin",
+    reviewFeedback: "Tốt, cơ sở vật chất đảm bảo tiêu chuẩn thi đấu.",
+    isCompletedOnTime: true,
+    createdAt: "2026-10-08T09:00:00Z",
+  },
+  {
+    id: "task-4",
+    title: "Tư vấn và hỗ trợ học thử cho 10 học viên mới đăng ký qua Fanpage",
+    description: "Liên hệ phụ huynh hẹn lịch học thử tại Cơ sở 3 (Hoàng Quốc Việt) và Cơ sở 2 (Thái Hà), đánh giá trình độ ban đầu để xếp lớp phù hợp.",
+    category: "TUYEN_SINH",
+    priority: "HIGH",
+    status: "IN_PROGRESS",
+    kpiPoints: 35,
+    dueDate: "2026-10-28",
+    branchId: "branch-3",
+    assigneeId: "00477341-c15a-430a-8d1f-a64e39c03a9c", // HLV Huyền Trang
+    creatorId: "user-admin",
+    creatorName: "Ban Chủ Nhiệm CLB",
+    createdAt: "2026-10-20T10:00:00Z",
+  },
+  {
+    id: "task-5",
+    title: "Soạn tuyển tập 50 bài tập Tàn cuộc Xe cơ bản: Thế cờ Lucena & Philidor",
+    description: "Biên soạn file bài tập kèm lời giải chi tiết để phát cho các học viên lớp Nâng cao rèn luyện kỹ năng tàn cuộc.",
+    category: "CHUYEN_MON",
+    priority: "MEDIUM",
+    status: "PENDING",
+    kpiPoints: 30,
+    dueDate: "2026-10-30",
+    branchId: "branch-1",
+    assigneeId: "c5d28630-d676-4746-adf3-481504084b3a", // GM Bùi Vinh
+    creatorId: "user-admin",
+    creatorName: "Ban Chủ Nhiệm CLB",
+    createdAt: "2026-10-21T14:00:00Z",
+  },
+];
+
+export const initialNotifications: NotificationData[] = [
+  {
+    id: "notif-1",
+    userId: "00477341-c15a-430a-8d1f-a64e39c03a9c",
+    title: "Nhiệm vụ mới được giao",
+    message: "Ban Chủ Nhiệm vừa giao nhiệm vụ 'Tư vấn và hỗ trợ học thử cho 10 học viên mới'. Hạn chót: 28/10/2026.",
+    type: "TASK_ASSIGNED",
+    link: "/coach/tasks",
+    taskId: "task-4",
+    isRead: false,
+    createdAt: "2026-10-20T10:05:00Z",
+  },
+  {
+    id: "notif-2",
+    userId: "user-admin",
+    title: "Báo cáo hoàn thành nhiệm vụ mới",
+    message: "HLV Trần Huyền Trang đã nộp báo cáo hoàn thành cho nhiệm vụ 'Tổ chức Giải Cờ chớp nội bộ Tháng 10/2026'. Vui lòng kiểm tra và duyệt KPI.",
+    type: "TASK_SUBMITTED",
+    link: "/admin/tasks",
+    taskId: "task-1",
+    isRead: false,
+    createdAt: "2026-10-22T08:35:00Z",
+  },
+  {
+    id: "notif-3",
+    userId: "c5d28630-d676-4746-adf3-481504084b3a",
+    title: "Nhiệm vụ đã được duyệt (+50 KPI)",
+    message: "Nhiệm vụ 'Soạn đề cương & Giáo án Sicilian' của bạn đã được duyệt thành công! Bạn nhận được +50 điểm KPI.",
+    type: "TASK_APPROVED",
+    link: "/coach/tasks",
+    taskId: "task-2",
+    isRead: true,
+    createdAt: "2026-10-18T10:05:00Z",
+  },
+  {
+    id: "notif-4",
+    userId: "c5d28630-d676-4746-adf3-481504084b3a",
+    title: "Nhiệm vụ mới được giao",
+    message: "Ban Chủ Nhiệm vừa giao nhiệm vụ 'Soạn tuyển tập 50 bài tập Tàn cuộc Xe cơ bản'. Hạn chót: 30/10/2026.",
+    type: "TASK_ASSIGNED",
+    link: "/coach/tasks",
+    taskId: "task-5",
+    isRead: false,
+    createdAt: "2026-10-21T14:05:00Z",
+  },
+];
+
 /**
  * Singleton DataStore State Manager
  */
@@ -648,6 +849,8 @@ class InMemoryDataStore {
   public evaluations: StudentEvaluationData[] = [...initialEvaluations];
   public bankConfig: BankConfig = { ...initialBankConfig };
   public zaloConfig: ZaloConfig = { ...initialZaloConfig };
+  public tasks: TaskData[] = [...initialTasks];
+  public notifications: NotificationData[] = [...initialNotifications];
   public invoices: MonthlyInvoiceData[] = [];
 
   constructor() {
@@ -673,6 +876,8 @@ class InMemoryDataStore {
         classes: this.classes,
         students: this.students,
         branches: this.branches,
+        tasks: this.tasks,
+        notifications: this.notifications,
         bankConfig: this.bankConfig,
         zaloConfig: this.zaloConfig,
         zaloSentMap,
@@ -710,6 +915,12 @@ class InMemoryDataStore {
           if (idx >= 0) this.classes[idx] = { ...this.classes[idx], ...c };
           else this.classes.push(c);
         });
+      }
+      if (data.tasks && Array.isArray(data.tasks)) {
+        this.tasks = data.tasks;
+      }
+      if (data.notifications && Array.isArray(data.notifications)) {
+        this.notifications = data.notifications;
       }
       if (data.bankConfig) {
         this.bankConfig = { ...this.bankConfig, ...data.bankConfig };
@@ -1243,7 +1454,12 @@ class InMemoryDataStore {
           (inv) => classIds.includes(inv.classId) && inv.month === month && inv.year === year
         );
         const totalTuition = coachInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-        const tuitionCommission = Math.round(totalTuition * 0.5); // 50% Tổng học phí
+
+        // Mức % học phí & % tiền sách tùy chỉnh theo từng HLV (mặc định 50% & 30%)
+        const tuitionRate = coach.tuitionRatePercent !== undefined ? coach.tuitionRatePercent : 50;
+        const bookRate = coach.bookRatePercent !== undefined ? coach.bookRatePercent : 30;
+
+        const tuitionCommission = Math.round(totalTuition * (tuitionRate / 100));
 
         // Tiền sách phát cho học viên trong các buổi dạy của HLV trong tháng
         let totalBooksCount = 0;
@@ -1256,9 +1472,9 @@ class InMemoryDataStore {
             }
           });
         });
-        const bookCommission = Math.round(totalBookRevenue * 0.3); // 30% Tiền sách
+        const bookCommission = Math.round(totalBookRevenue * (bookRate / 100));
 
-        // Công thức mới: Thu nhập HLV = Tổng học phí * 50% + Tiền sách * 30%
+        // Công thức: Thu nhập HLV = Tổng học phí * % học phí + Tiền sách * % tiền sách
         const totalSessions = sessionsInMonth.length;
         const totalIncome = tuitionCommission + bookCommission;
 
@@ -1269,9 +1485,11 @@ class InMemoryDataStore {
           branchName: this.branches.find((b) => b.id === coach.branchId)?.name || "Chưa gán",
           totalSessions,
           totalTuition,
+          tuitionRatePercent: tuitionRate,
           tuitionCommission,
           totalBooksCount,
           totalBookRevenue,
+          bookRatePercent: bookRate,
           bookCommission,
           totalIncome,
           totalSalary: totalIncome, // compatibility alias
@@ -1281,6 +1499,302 @@ class InMemoryDataStore {
           sessionsList: sessionsInMonth,
         };
       });
+  }
+
+  // Cập nhật mức % học phí và % tiền sách cho Huấn luyện viên
+  public updateCoachSalaryRates(coachId: string, tuitionRatePercent: number, bookRatePercent: number) {
+    const canonical = resolveCanonicalCoachId(coachId);
+    const coach = this.users.find(
+      (u) => u.id === coachId || resolveCanonicalCoachId(u.id) === canonical || (u.email && resolveCanonicalCoachId(u.email) === canonical)
+    );
+    if (coach) {
+      coach.tuitionRatePercent = Number(tuitionRatePercent);
+      coach.bookRatePercent = Number(bookRatePercent);
+      this.saveToLocalStorage();
+      return coach;
+    }
+    return null;
+  }
+
+  // Cập nhật phân quyền người dùng: Chủ nhiệm, Phó chủ nhiệm, Chủ cơ sở, HLV
+  public updateUserRole(
+    userId: string,
+    systemRole: 'CHUNHIEM' | 'PHOCHUNHIEM' | 'CHUCOSO' | 'COACH',
+    branchId?: string,
+    hasAdminAccess?: boolean
+  ) {
+    const canonical = resolveCanonicalCoachId(userId);
+    const user = this.users.find(
+      (u) => u.id === userId || resolveCanonicalCoachId(u.id) === canonical || (u.email && resolveCanonicalCoachId(u.email) === canonical)
+    );
+    if (user) {
+      user.systemRole = systemRole;
+      if (systemRole === 'CHUNHIEM' || systemRole === 'PHOCHUNHIEM') {
+        user.hasAdminAccess = true;
+        user.role = 'ADMIN';
+        if (systemRole === 'CHUNHIEM') user.title = user.title || "Chủ nhiệm CLB";
+        if (systemRole === 'PHOCHUNHIEM') user.title = user.title || "Phó chủ nhiệm CLB";
+      } else if (systemRole === 'CHUCOSO') {
+        user.hasAdminAccess = true;
+        if (branchId) user.branchId = branchId;
+        const br = this.branches.find((b) => b.id === user.branchId);
+        user.title = `${user.title?.split('•')[0].trim() || 'HLV Quốc gia'} • Quản lý ${br ? br.name.split('–')[0].trim() : 'Cơ sở'}`;
+      } else {
+        user.role = 'COACH';
+        user.hasAdminAccess = hasAdminAccess ?? false;
+      }
+      this.saveToLocalStorage();
+      return user;
+    }
+    return null;
+  }
+
+  // Quản lý Nhiệm vụ (Task Assignment)
+  public createTask(data: Omit<TaskData, 'id' | 'createdAt'>): TaskData {
+    const id = `task-${Date.now()}`;
+    const newTask: TaskData = {
+      ...data,
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    this.tasks.unshift(newTask);
+
+    // Tự động gửi thông báo cho HLV được giao
+    this.createNotification({
+      userId: data.assigneeId,
+      title: "Nhiệm vụ mới được giao",
+      message: `Ban Quản Lý vừa giao nhiệm vụ: "${data.title}". Hạn hoàn thành: ${data.dueDate}.`,
+      type: "TASK_ASSIGNED",
+      link: "/coach/tasks",
+      taskId: id,
+      isRead: false,
+    });
+
+    this.saveToLocalStorage();
+    return newTask;
+  }
+
+  public updateTask(id: string, data: Partial<TaskData>): TaskData | null {
+    const task = this.tasks.find((t) => t.id === id);
+    if (task) {
+      Object.assign(task, data);
+      task.updatedAt = new Date().toISOString();
+      this.saveToLocalStorage();
+      return task;
+    }
+    return null;
+  }
+
+  public submitTaskReport(taskId: string, reportNote: string, reportAttachments?: string): TaskData | null {
+    const task = this.tasks.find((t) => t.id === taskId);
+    if (!task) return null;
+
+    task.status = 'COMPLETED_PENDING_REVIEW';
+    task.reportNote = reportNote;
+    task.reportAttachments = reportAttachments;
+    task.submittedAt = new Date().toISOString();
+
+    const due = new Date(task.dueDate + "T23:59:59");
+    task.isCompletedOnTime = new Date() <= due;
+
+    const coach = this.users.find(
+      (u) => u.id === task.assigneeId || resolveCanonicalCoachId(u.id) === resolveCanonicalCoachId(task.assigneeId)
+    );
+
+    // Gửi thông báo đến Admin / Quản lý
+    this.createNotification({
+      userId: task.creatorId || "user-admin",
+      title: "HLV đã nộp báo cáo hoàn thành",
+      message: `HLV ${coach?.name || 'Huấn luyện viên'} đã gửi báo cáo kết quả cho nhiệm vụ: "${task.title}". Vui lòng duyệt kết quả & KPI.`,
+      type: "TASK_SUBMITTED",
+      link: "/admin/tasks",
+      taskId: task.id,
+      isRead: false,
+    });
+
+    this.saveToLocalStorage();
+    return task;
+  }
+
+  public reviewTask(
+    taskId: string,
+    approved: boolean,
+    feedback?: string,
+    reviewerId?: string
+  ): TaskData | null {
+    const task = this.tasks.find((t) => t.id === taskId);
+    if (!task) return null;
+
+    task.reviewedAt = new Date().toISOString();
+    task.reviewerId = reviewerId || "user-admin";
+    task.reviewFeedback = feedback;
+
+    if (approved) {
+      task.status = 'APPROVED';
+      this.createNotification({
+        userId: task.assigneeId,
+        title: `Nhiệm vụ đã được duyệt (+${task.kpiPoints} KPI)`,
+        message: `Nhiệm vụ "${task.title}" của bạn đã được duyệt thành công! Bạn được cộng +${task.kpiPoints} điểm KPI.${feedback ? ` Nhận xét: "${feedback}"` : ''}`,
+        type: "TASK_APPROVED",
+        link: "/coach/tasks",
+        taskId: task.id,
+        isRead: false,
+      });
+    } else {
+      task.status = 'REJECTED';
+      this.createNotification({
+        userId: task.assigneeId,
+        title: "Yêu cầu chỉnh sửa / Bổ sung nhiệm vụ",
+        message: `Nhiệm vụ "${task.title}" chưa đạt yêu cầu. Nhận xét của Quản lý: "${feedback || 'Cần bổ sung thêm thông tin'}". Vui lòng cập nhật lại.`,
+        type: "TASK_REJECTED",
+        link: "/coach/tasks",
+        taskId: task.id,
+        isRead: false,
+      });
+    }
+
+    this.saveToLocalStorage();
+    return task;
+  }
+
+  public deleteTask(taskId: string): boolean {
+    const prevLen = this.tasks.length;
+    this.tasks = this.tasks.filter((t) => t.id !== taskId);
+    if (this.tasks.length !== prevLen) {
+      this.saveToLocalStorage();
+      return true;
+    }
+    return false;
+  }
+
+  public getCoachTasks(coachId?: string, coachEmail?: string): TaskData[] {
+    if (!coachId && !coachEmail) return [];
+    const canonical = resolveCanonicalCoachId(coachId || coachEmail);
+    return this.tasks.filter((t) => {
+      if (coachId && t.assigneeId === coachId) return true;
+      if (canonical && resolveCanonicalCoachId(t.assigneeId) === canonical) return true;
+      return false;
+    });
+  }
+
+  // Thống kê KPI Đội ngũ HLV
+  public getKpiStats(branchId?: string) {
+    const filteredTasks = this.tasks.filter((t) => {
+      if (!branchId || branchId === 'ALL') return true;
+      return t.branchId === branchId;
+    });
+
+    const coaches = this.users.filter((u) => u.role === 'COACH');
+
+    const coachStats = coaches.map((coach) => {
+      const canonical = resolveCanonicalCoachId(coach.id || coach.email);
+      const coachTasks = filteredTasks.filter((t) => {
+        return t.assigneeId === coach.id || resolveCanonicalCoachId(t.assigneeId) === canonical;
+      });
+
+      const totalTasks = coachTasks.length;
+      const approvedTasks = coachTasks.filter((t) => t.status === 'APPROVED').length;
+      const pendingReviewTasks = coachTasks.filter((t) => t.status === 'COMPLETED_PENDING_REVIEW').length;
+      const inProgressTasks = coachTasks.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'PENDING').length;
+      const onTimeTasks = coachTasks.filter((t) => t.status === 'APPROVED' && t.isCompletedOnTime !== false).length;
+      const kpiPoints = coachTasks
+        .filter((t) => t.status === 'APPROVED')
+        .reduce((sum, t) => sum + (t.kpiPoints || 0), 0);
+
+      const completionRate = totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0;
+      let rating = "Chưa có đánh giá";
+      if (totalTasks > 0) {
+        if (completionRate >= 90) rating = "Xuất sắc";
+        else if (completionRate >= 75) rating = "Tốt";
+        else if (completionRate >= 50) rating = "Khá";
+        else rating = "Cần cải thiện";
+      }
+
+      return {
+        coachId: coach.id,
+        coachName: coach.name,
+        coachPhone: coach.phone,
+        title: coach.title || "HLV Quốc gia",
+        branchName: this.branches.find((b) => b.id === coach.branchId)?.name || "Chưa gán",
+        totalTasks,
+        approvedTasks,
+        pendingReviewTasks,
+        inProgressTasks,
+        onTimeTasks,
+        kpiPoints,
+        completionRate,
+        rating,
+        tasks: coachTasks,
+      };
+    });
+
+    const totalAllTasks = filteredTasks.length;
+    const totalApproved = filteredTasks.filter((t) => t.status === 'APPROVED').length;
+    const totalPendingReview = filteredTasks.filter((t) => t.status === 'COMPLETED_PENDING_REVIEW').length;
+    const totalInProgress = filteredTasks.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'PENDING').length;
+    const totalKpiPoints = filteredTasks
+      .filter((t) => t.status === 'APPROVED')
+      .reduce((sum, t) => sum + (t.kpiPoints || 0), 0);
+    const avgRate = totalAllTasks > 0 ? Math.round((totalApproved / totalAllTasks) * 100) : 0;
+
+    return {
+      coachStats,
+      overall: {
+        totalTasks: totalAllTasks,
+        approvedTasks: totalApproved,
+        pendingReviewTasks: totalPendingReview,
+        inProgressTasks: totalInProgress,
+        totalKpiPoints,
+        avgRate,
+      },
+    };
+  }
+
+  // Quản lý Thông báo (Notification Center)
+  public createNotification(data: Omit<NotificationData, 'id' | 'createdAt'>): NotificationData {
+    const id = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const newNotif: NotificationData = {
+      ...data,
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    this.notifications.unshift(newNotif);
+    this.saveToLocalStorage();
+    return newNotif;
+  }
+
+  public getUserNotifications(userId?: string): NotificationData[] {
+    if (!userId) return this.notifications;
+    const canonical = resolveCanonicalCoachId(userId);
+    return this.notifications.filter((n) => {
+      if (n.userId === userId) return true;
+      if (canonical && resolveCanonicalCoachId(n.userId) === canonical) return true;
+      if (n.userId === "ALL_ADMIN" && (userId === "user-admin" || canonical === "user-admin")) return true;
+      if (n.userId === "ALL_COACH") return true;
+      return false;
+    });
+  }
+
+  public getUnreadNotificationCount(userId?: string): number {
+    return this.getUserNotifications(userId).filter((n) => !n.isRead).length;
+  }
+
+  public markNotificationAsRead(id: string): boolean {
+    const notif = this.notifications.find((n) => n.id === id);
+    if (notif) {
+      notif.isRead = true;
+      this.saveToLocalStorage();
+      return true;
+    }
+    return false;
+  }
+
+  public markAllNotificationsAsRead(userId?: string): void {
+    const userNotifs = this.getUserNotifications(userId);
+    userNotifs.forEach((n) => {
+      n.isRead = true;
+    });
+    this.saveToLocalStorage();
   }
 
   // Cập nhật đơn giá học phí riêng theo từng học viên (học bổng, ưu đãi hoặc thỏa thuận riêng)

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft, Menu } from "lucide-react";
 import { dataStore, resolveCanonicalCoachId } from "@/lib/data-store";
+import NotificationBell from "@/components/common/NotificationBell";
 
 interface HeaderProps {
   userRole: "ADMIN" | "COACH";
@@ -76,6 +77,16 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
   };
 
   const getDisplayTitle = () => {
+    if (currentUser?.systemRole === "CHUNHIEM") {
+      return "Chủ nhiệm CLB • Toàn quyền";
+    }
+    if (currentUser?.systemRole === "PHOCHUNHIEM") {
+      return "Phó chủ nhiệm CLB • Toàn CLB";
+    }
+    if (currentUser?.systemRole === "CHUCOSO") {
+      const b = dataStore.branches.find((x) => x.id === currentUser?.branchId);
+      return b ? `Chủ ${b.name.split("–")[0].trim()}` : "Chủ cơ sở";
+    }
     if (currentUser?.role === "ADMIN") {
       return "Quản trị toàn bộ cơ sở";
     }
@@ -127,6 +138,9 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           <span>Website CLB</span>
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
+
+        {/* Chuông Thông Báo */}
+        <NotificationBell currentUserId={currentUser?.id} userRole={userRole} />
 
         {/* User Badge */}
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-2.5 sm:pr-3 border border-slate-200/70">

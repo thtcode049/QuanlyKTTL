@@ -22,7 +22,7 @@ import {
   QrCode,
   Send,
 } from "lucide-react";
-import { dataStore, BranchData, ClassroomData, MonthlyInvoiceData } from "@/lib/data-store";
+import { dataStore, BranchData, ClassroomData, MonthlyInvoiceData, resolveCanonicalCoachId } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function AdminDashboardPage() {
@@ -30,6 +30,29 @@ export default function AdminDashboardPage() {
   const [month, setMonth] = useState<number>(10);
   const [year, setYear] = useState<number>(2026);
   const [invoices, setInvoices] = useState<MonthlyInvoiceData[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Load user & check role
+  useEffect(() => {
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        const canonicalId = resolveCanonicalCoachId(u.id || u.email);
+        const dbUser = dataStore.users.find(
+          (x) => x.id === u.id || x.id === canonicalId || (u.email && x.email.toLowerCase() === u.email.toLowerCase())
+        );
+        const merged = dbUser ? { ...u, ...dbUser } : u;
+        setCurrentUser(merged);
+        if (merged.systemRole === "CHUCOSO" && merged.branchId) {
+          setSelectedBranchId(merged.branchId);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  const isBranchManager = currentUser?.systemRole === "CHUCOSO";
+  const userBranch = dataStore.branches.find((b) => b.id === (isBranchManager ? currentUser?.branchId : selectedBranchId));
 
   // Load and calculate invoices
   const refreshInvoices = () => {
@@ -61,15 +84,28 @@ export default function AdminDashboardPage() {
   const pendingRevenue = totalRevenue - paidRevenue;
   const paymentRate = totalRevenue > 0 ? Math.round((paidRevenue / totalRevenue) * 100) : 0;
 
+  // Lớp thuộc cơ sở được chọn
+  const branchClasses = selectedBranchId === "ALL"
+    ? adminClasses
+    : adminClasses.filter((c) => c.branchId === selectedBranchId);
+  const branchClassIds = new Set(branchClasses.map((c) => c.id));
+
   // Tổng số học viên
-  const activeStudentsCount = dataStore.students.length;
-  const activeClassesCount = adminClasses.length;
-  const coachesCount = dataStore.users.filter((u) => u.role === "COACH").length;
+  const activeStudentsCount = selectedBranchId === "ALL"
+    ? dataStore.students.length
+    : dataStore.students.filter((s) => s.classIds.some((cid) => branchClassIds.has(cid))).length;
+  const activeClassesCount = branchClasses.length;
+  const coachesCount = selectedBranchId === "ALL"
+    ? dataStore.users.filter((u) => u.role === "COACH").length
+    : dataStore.users.filter(
+        (u) => u.role === "COACH" && (u.branchId === selectedBranchId || branchClasses.some((c) => c.coachId === u.id))
+      ).length;
 
   // Tỷ lệ chuyên cần tháng
   let totalSessionRecords = 0;
   let totalPresentRecords = 0;
   dataStore.sessions.forEach((s) => {
+    if (selectedBranchId !== "ALL" && !branchClassIds.has(s.classId)) return;
     s.records.forEach((r) => {
       totalSessionRecords++;
       if (r.status === "PRESENT") totalPresentRecords++;
@@ -89,8 +125,12 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Doanh thu theo từng cơ sở để vẽ biểu đồ thanh
-  const branchRevenueList = dataStore.branches.map((b) => {
+  // Doanh thu theo từng cơ sở (nếu là chủ cơ sở thì chỉ hiển thị cơ sở của mình)
+  const availableBranches = isBranchManager
+    ? dataStore.branches.filter((b) => b.id === currentUser?.branchId)
+    : dataStore.branches;
+
+  const branchRevenueList = availableBranches.map((b) => {
     const bClasses = adminClasses.filter((c) => c.branchId === b.id).map((c) => c.id);
     const bInvoices = invoices.filter((inv) => bClasses.includes(inv.classId));
     const revenue = bInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
@@ -116,32 +156,48 @@ export default function AdminDashboardPage() {
       {/* Top Banner */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
-            Tổng Quan Doanh Thu & Vận Hành
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
+              Tổng Quan Doanh Thu & Vận Hành
+            </h1>
+            {isBranchManager && (
+              <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                {userBranch?.name.split("–")[0].trim() || "Cơ sở của bạn"}
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-xs text-slate-500">
-            Hệ thống đào tạo cờ vua đa cơ sở • CLB Kiện Tướng Tương Lai.
+            {isBranchManager
+              ? `Thống kê vận hành và doanh thu thuộc riêng cơ sở: ${userBranch?.name}`
+              : "Hệ thống đào tạo cờ vua đa cơ sở • Toàn bộ thông tin CLB Kiện Tướng Tương Lai."}
           </p>
         </div>
 
         {/* Branch & Month Filters */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Branch filter */}
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            <Filter className="ml-2 h-3.5 w-3.5 text-slate-400" />
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="rounded-lg border-0 bg-transparent py-1.5 pl-1 pr-7 text-xs font-bold text-slate-800 focus:outline-none"
-            >
-              <option value="ALL">Toàn Bộ 4 Cơ Sở</option>
-              {dataStore.branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isBranchManager ? (
+            <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+              <Building2 className="h-3.5 w-3.5 text-emerald-600" />
+              <span>{userBranch?.name.split("–")[0].trim() || "Cơ sở của bạn"}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+              <Filter className="ml-2 h-3.5 w-3.5 text-slate-400" />
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                className="rounded-lg border-0 bg-transparent py-1.5 pl-1 pr-7 text-xs font-bold text-slate-800 focus:outline-none"
+              >
+                <option value="ALL">Toàn Bộ 8 Cơ Sở</option>
+                {dataStore.branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Month selector */}
           <select
