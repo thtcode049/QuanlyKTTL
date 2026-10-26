@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   FileSpreadsheet,
   Download,
@@ -18,6 +19,9 @@ import {
   Edit3,
   X,
   GraduationCap,
+  Settings,
+  FileImage,
+  FolderArchive,
 } from "lucide-react";
 import {
   dataStore,
@@ -31,6 +35,12 @@ import { formatCurrencyVND, generateVietQrUrl } from "@/lib/vietqr";
 import { exportInvoicesToExcel, InvoiceExportRow } from "@/lib/excel";
 import VietQrModal from "@/components/vietqr-modal";
 import ZaloParentSenderModal, { StudentParentInvoiceItem } from "@/components/zalo-parent-sender-modal";
+import BatchCardExportModal from "@/components/batch-card-export-modal";
+import {
+  downloadInvoiceCardPng,
+  copyInvoiceCardToClipboard,
+  InvoiceCardData,
+} from "@/lib/invoice-card-generator";
 
 function InvoicesContent() {
   const searchParams = useSearchParams();
@@ -46,7 +56,6 @@ function InvoicesContent() {
   // Tải lớp học của riêng HLV hiện tại
   useEffect(() => {
     let coachId = "";
-    let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
@@ -54,15 +63,13 @@ function InvoicesContent() {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
     const updateDisplay = () => {
-      const myClasses = isAdmin
-        ? dataStore.classes
-        : getCoachClasses(coachId, coachEmail);
+      // Ở giao diện HLV, chỉ hiển thị hóa đơn các lớp của chính HLV phụ trách
+      const myClasses = getCoachClasses(coachId, coachEmail);
       setClasses(myClasses);
       const paramClassId = searchParams.get("classId");
       if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
@@ -94,6 +101,44 @@ function InvoicesContent() {
   // Modal HLV Gửi Thẻ Học Phí Bằng Tool Zalo EXE
   const [zaloParentModalOpen, setZaloParentModalOpen] = useState(false);
   const [selectedStudentForParentModal, setSelectedStudentForParentModal] = useState<string | undefined>(undefined);
+
+  // Modal Xuất Hàng Loạt Ảnh Thẻ Học Phí (PNG / ZIP)
+  const [batchExportModalOpen, setBatchExportModalOpen] = useState(false);
+
+  // Helper tạo dữ liệu thẻ học phí
+  const buildInvoiceCardData = (inv: MonthlyInvoiceData, student: StudentData): InvoiceCardData => {
+    const bank = dataStore.bankConfig;
+    const transferContent = `HP ${student.code} T${selectedMonth}`;
+    const vietQrUrl =
+      bank.useCustomQr && bank.customQrImage
+        ? bank.customQrImage
+        : generateVietQrUrl({
+            bankId: bank.bankId,
+            accountNo: bank.bankAccount,
+            accountName: bank.accountHolder,
+            template: (bank.qrTemplate as any) || "compact2",
+            amount: inv.totalAmount,
+            description: transferContent,
+          });
+
+    return {
+      studentCode: student.code,
+      studentName: student.fullName,
+      className: selectedClass?.name || "",
+      branchName: branchInfo?.name || "",
+      month: selectedMonth,
+      year: selectedYear,
+      presentCount: inv.presentCount,
+      presentDates: getPresentDatesForStudent(student.id),
+      feePerSession: inv.feePerSession,
+      totalAmount: inv.totalAmount,
+      bankName: bank.bankName,
+      bankAccount: bank.bankAccount,
+      accountHolder: bank.accountHolder,
+      transferContent,
+      vietQrUrl,
+    };
+  };
 
   // Modal Chỉnh Sửa Học Phí Riêng Cho Học Viên
   const [editingStudentFee, setEditingStudentFee] = useState<{
@@ -242,14 +287,34 @@ function InvoicesContent() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
-            Tổng Kết Học Phí & Zalo OA
+            Tổng Kết Học Phí
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Học phí = (Số buổi Có mặt thực tế) × (Đơn giá/buổi). Tự động sinh mã VietQR và gửi thông báo phụ huynh.
+            Học phí = (Số buổi Có mặt thực tế) × (Đơn giá/buổi). Tự động sinh mã VietQR và xuất ảnh thẻ PNG gửi phụ huynh.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Nút Cài Đặt QR & Zalo cho HLV */}
+          <Link
+            href="/coach/settings"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-800 shadow-sm transition-all"
+            title="Cài đặt tài khoản ngân hàng nhận học phí VietQR và mẫu tin nhắn Zalo"
+          >
+            <Settings className="h-4 w-4 text-emerald-600" />
+            <span>Cài Đặt QR & Zalo</span>
+          </Link>
+
+          {/* Nút Xuất Hàng Loạt Ảnh Thẻ PNG */}
+          <button
+            onClick={() => setBatchExportModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/50 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 text-xs font-black text-emerald-800 shadow-sm transition-all active:scale-95"
+            title="Xuất hàng loạt ảnh thẻ học phí định dạng PNG thành file nén .ZIP hoặc từng ảnh"
+          >
+            <FileImage className="h-4 w-4 text-emerald-600" />
+            <span>Xuất Ảnh Thẻ (PNG)</span>
+          </button>
+
           {/* Nút tải trực tiếp Tool EXE & ZIP */}
           <div className="inline-flex rounded-xl shadow-md">
             <a
@@ -477,13 +542,21 @@ function InvoicesContent() {
                 </div>
 
                 {/* Quick Action Buttons on Mobile */}
-                <div className="mt-2.5 grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
                   <button
                     onClick={() => student && handleOpenVietQr(inv, student)}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
+                    className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
                   >
                     <QrCode className="h-3.5 w-3.5" />
-                    <span>Mã VietQR</span>
+                    <span>Mã QR</span>
+                  </button>
+                  <button
+                    onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student))}
+                    className="flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 text-[11px] font-bold text-slate-700 border border-slate-200 active:bg-slate-200"
+                    title="Tải ảnh PNG thẻ học phí"
+                  >
+                    <FileImage className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Ảnh PNG</span>
                   </button>
                   <button
                     onClick={() => {
@@ -492,7 +565,7 @@ function InvoicesContent() {
                         setZaloParentModalOpen(true);
                       }
                     }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
+                    className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
                   >
                     <Send className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Tool Zalo</span>
@@ -602,9 +675,18 @@ function InvoicesContent() {
                         <button
                           onClick={() => student && handleOpenVietQr(inv, student)}
                           className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
-                          title="Tạo mã VietQR Napas 247"
+                          title="Xem & tùy chỉnh mã VietQR Napas 247"
                         >
                           <QrCode className="h-4 w-4" />
+                        </button>
+
+                        {/* Nút Tải Ảnh Thẻ Học Phí PNG */}
+                        <button
+                          onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student))}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                          title="Tải ảnh PNG thẻ học phí sắc nét của học viên này"
+                        >
+                          <FileImage className="h-3.5 w-3.5 text-emerald-600" />
                         </button>
 
                         {/* Nút Gửi Qua Tool Zalo */}
@@ -799,6 +881,21 @@ function InvoicesContent() {
             accountHolder: bank.accountHolder,
           };
         })}
+      />
+
+      {/* Modal Xuất Hàng Loạt Ảnh Thẻ Học Phí PNG / ZIP */}
+      <BatchCardExportModal
+        isOpen={batchExportModalOpen}
+        onClose={() => setBatchExportModalOpen(false)}
+        className={selectedClass?.name || "Lop_Hoc"}
+        month={selectedMonth}
+        year={selectedYear}
+        students={invoices
+          .map((inv) => {
+            const st = dataStore.students.find((s) => s.id === inv.studentId);
+            return st ? buildInvoiceCardData(inv, st) : null;
+          })
+          .filter(Boolean) as InvoiceCardData[]}
       />
     </div>
   );

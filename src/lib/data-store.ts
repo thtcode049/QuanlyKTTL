@@ -60,7 +60,7 @@ export interface StudentData {
   eloRating?: number; // Đã loại bỏ khỏi UI/hệ thống đánh giá
   notes?: string;
   classIds: string[];
-  customFeePerSession?: number; // Đơn giá học phí riêng theo từng học viên (ưu đãi, học bổng hoặc kèm riêng)
+  customFeePerSession?: number | null; // Đơn giá học phí riêng theo từng học viên (ưu đãi, học bổng hoặc kèm riêng)
   avatar?: string; // Ảnh profile học viên (base64 hoặc URL)
   address?: string; // Địa chỉ nhà
   school?: string; // Trường học
@@ -236,7 +236,7 @@ export const initialBranches: BranchData[] = [
 
 export const initialUsers: UserData[] = [
   {
-    id: "user-admin",
+    id: "2054bdb5-6e30-4d7b-b6f5-b041ccc6cb77",
     name: "Ban Chủ Nhiệm CLB",
     email: "admin@kttll.vn",
     phone: "0904.555.666",
@@ -278,413 +278,19 @@ export const initialUsers: UserData[] = [
   },
 ];
 
-export const initialClasses: ClassroomData[] = [
-  {
-    id: "class-1",
-    name: "Cờ vua Nhập Môn - K01",
-    level: "Nhập môn",
-    feePerSession: 150000,
-    schedule: "Thứ 3 & Thứ 6 (18:00 - 19:30)",
-    branchId: "branch-1",
-    coachId: "c5d28630-d676-4746-adf3-481504084b3a",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-  {
-    id: "class-2",
-    name: "Cờ vua Nhập Môn - K02",
-    level: "Nhập môn",
-    feePerSession: 160000,
-    schedule: "Thứ 2 & Thứ 5 (18:00 - 19:30)",
-    branchId: "branch-2",
-    coachId: "c5d28630-d676-4746-adf3-481504084b3a",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-  {
-    id: "class-3",
-    name: "Cờ vua Nâng Cao - N01",
-    level: "Nâng cao",
-    feePerSession: 200000,
-    schedule: "Thứ 7 & CN (08:30 - 10:00)",
-    branchId: "branch-3",
-    coachId: "00477341-c15a-430a-8d1f-a64e39c03a9c",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-  {
-    id: "class-4",
-    name: "Đội tuyển Kỳ Thủ Nhí - DT01",
-    level: "Đội tuyển",
-    feePerSession: 250000,
-    schedule: "Thứ 7 & CN (15:00 - 17:00)",
-    branchId: "branch-4",
-    coachId: "c5d28630-d676-4746-adf3-481504084b3a",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-  {
-    id: "class-5",
-    name: "Cờ vua Cơ Bản - K05",
-    level: "Cơ bản",
-    feePerSession: 160000,
-    schedule: "Thứ 4 & Thứ 7 (18:00 - 19:30)",
-    branchId: "branch-5",
-    coachId: "c5d28630-d676-4746-adf3-481504084b3a",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-  {
-    id: "class-6",
-    name: "Cờ vua Nâng Cao - K06",
-    level: "Nâng cao",
-    feePerSession: 180000,
-    schedule: "Thứ 3 & Thứ 6 (19:30 - 21:00)",
-    branchId: "branch-6",
-    coachId: "00477341-c15a-430a-8d1f-a64e39c03a9c",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-  {
-    id: "class-7",
-    name: "Cờ vua Cơ Bản - K07 (Lớp riêng)",
-    level: "Cơ bản",
-    feePerSession: 150000,
-    schedule: "Thứ 7 & Chủ Nhật (09:00 - 10:30)",
-    branchId: "branch-7",
-    coachId: "c5d28630-d676-4746-adf3-481504084b3a",
-    isActive: true,
-    shareWithAdmin: false, // Lớp riêng của HLV (không chia sẻ quyền quản lý & xem với admin)
-  },
-  {
-    id: "class-8",
-    name: "Cờ vua Thi Đấu - TD08",
-    level: "Nâng cao",
-    feePerSession: 180000,
-    schedule: "Thứ 4 & Thứ 7 (19:00 - 20:30)",
-    branchId: "branch-8",
-    coachId: "00477341-c15a-430a-8d1f-a64e39c03a9c",
-    isActive: true,
-    shareWithAdmin: true,
-  },
-];
+export const initialClasses: ClassroomData[] = [];
 
-export const initialStudents: StudentData[] = [
-  // Lớp 1 (Nhập môn - K01, Bạch Mai) - 7 học viên
-  { id: "std-1", code: "HS001", fullName: "Nguyễn Minh Khang", birthYear: 2018, parentName: "Nguyễn Hoàng Nam", parentPhone: "0912111222", currentLevel: "Nhập môn", notes: "Nắm luật nhanh, rất tập trung", classIds: ["class-1"] },
-  { id: "std-2", code: "HS002", fullName: "Trần Bảo An", birthYear: 2019, parentName: "Lê Thị Thu", parentPhone: "0983222333", currentLevel: "Nhập môn", notes: "Thích ăn quân Xe, vui vẻ", classIds: ["class-1"] },
-  { id: "std-3", code: "HS003", fullName: "Lê Hoàng Phúc", birthYear: 2018, parentName: "Lê Văn Hùng", parentPhone: "0904333444", currentLevel: "Nhập môn", notes: "Biết phong Cấp Tốt tốt", classIds: ["class-1"], customFeePerSession: 120000 },
-  { id: "std-4", code: "HS004", fullName: "Phạm Gia Huy", birthYear: 2017, parentName: "Phạm Quốc Tuấn", parentPhone: "0975444555", currentLevel: "Nhập môn", notes: "Học đều đặn", classIds: ["class-1"] },
-  { id: "std-5", code: "HS005", fullName: "Vũ Tuệ Lâm", birthYear: 2018, parentName: "Nguyễn Hương Giang", parentPhone: "0966555666", currentLevel: "Nhập môn", notes: "Tư duy không gian tốt", classIds: ["class-1"] },
-  { id: "std-6", code: "HS006", fullName: "Đỗ Đăng Khoa", birthYear: 2019, parentName: "Đỗ Xuân Bách", parentPhone: "0918666777", currentLevel: "Nhập môn", notes: "Mới vào học đầu tháng", classIds: ["class-1"] },
-  { id: "std-7", code: "HS007", fullName: "Bùi Ngọc Hân", birthYear: 2018, parentName: "Bùi Đình Trọng", parentPhone: "0949777888", currentLevel: "Nhập môn", notes: "Ngoan ngoãn, hòa đồng", classIds: ["class-1"] },
+export const initialStudents: StudentData[] = [];
 
-  // Lớp 2 (Nhập môn - K02, Thái Hà) - 6 học viên
-  { id: "std-8", code: "HS008", fullName: "Hoàng Đức Anh", birthYear: 2017, parentName: "Hoàng Văn Tuấn", parentPhone: "0982888999", currentLevel: "Nhập môn", notes: "Biết bẫy mở cờ", classIds: ["class-2"] },
-  { id: "std-9", code: "HS009", fullName: "Đặng Quỳnh Chi", birthYear: 2017, parentName: "Trần Mai Phương", parentPhone: "0933999000", currentLevel: "Nhập môn", notes: "Phản xạ nhanh", classIds: ["class-2"] },
-  { id: "std-10", code: "HS010", fullName: "Ngô Nhật Minh", birthYear: 2016, parentName: "Ngô Quang Huy", parentPhone: "0915123456", currentLevel: "Nhập môn", notes: "Nắm chắc các đòn phối hợp", classIds: ["class-2"] },
-  { id: "std-11", code: "HS011", fullName: "Lý Khánh An", birthYear: 2017, parentName: "Lý Văn Toàn", parentPhone: "0978234567", currentLevel: "Nhập môn", notes: "Chăm chỉ làm bài tập", classIds: ["class-2"] },
-  { id: "std-12", code: "HS012", fullName: "Trương Hải Đăng", birthYear: 2016, parentName: "Trương Quốc Đạt", parentPhone: "0909345678", currentLevel: "Nhập môn", notes: "Chiến thuật chĩa đôi rất sắc", classIds: ["class-2"] },
-  { id: "std-13", code: "HS013", fullName: "Phan Thảo My", birthYear: 2018, parentName: "Phan Văn Quân", parentPhone: "0967456789", currentLevel: "Nhập môn", notes: "Rất say mê cờ vua", classIds: ["class-2"] },
+export const initialSessions: AttendanceSessionData[] = [];
 
-  // Lớp 3 (Nâng cao - N01, Hoàng Quốc Việt) - 6 học viên
-  { id: "std-14", code: "HS014", fullName: "Vũ Gia Bảo", birthYear: 2015, parentName: "Vũ Đình Khiêm", parentPhone: "0981567890", currentLevel: "Nâng cao", notes: "Đạt giải nhì cấp trường", classIds: ["class-3"] },
-  { id: "std-15", code: "HS015", fullName: "Lê Minh Triết", birthYear: 2015, parentName: "Lê Hải Bình", parentPhone: "0913678901", currentLevel: "Nâng cao", notes: "Khai cuộc Italia xuất sắc", classIds: ["class-3"] },
-  { id: "std-16", code: "HS016", fullName: "Nguyễn Phương Linh", birthYear: 2016, parentName: "Nguyễn Thanh Tùng", parentPhone: "0934789012", currentLevel: "Nâng cao", notes: "Tàn cuộc chắc chắn", classIds: ["class-3"] },
-  { id: "std-17", code: "HS017", fullName: "Phạm Quang Dũng", birthYear: 2015, parentName: "Phạm Quốc Hùng", parentPhone: "0972890123", currentLevel: "Nâng cao", notes: "Có nhãn quan chiến lược tốt", classIds: ["class-3"] },
-  { id: "std-18", code: "HS018", fullName: "Đinh Thái Sơn", birthYear: 2014, parentName: "Đinh Văn Long", parentPhone: "0903901234", currentLevel: "Nâng cao", notes: "Lực cờ tấn công mạnh", classIds: ["class-3"] },
-  { id: "std-19", code: "HS019", fullName: "Trần Mai Anh", birthYear: 2016, parentName: "Trần Đình Khang", parentPhone: "0968012345", currentLevel: "Nâng cao", notes: "Tính toán biến sâu", classIds: ["class-3"] },
-
-  // Lớp 4 (Đội tuyển - DT01, Trương Định) - 6 học viên
-  { id: "std-20", code: "HS020", fullName: "Bùi Quốc Anh", birthYear: 2014, parentName: "Bùi Thế Huynh", parentPhone: "0919123888", currentLevel: "Đội tuyển", notes: "Chuẩn bị thi đấu giải Hà Nội mở rộng", classIds: ["class-4"] },
-  { id: "std-21", code: "HS021", fullName: "Nguyễn Khánh Nam", birthYear: 2013, parentName: "Nguyễn Minh Đức", parentPhone: "0985234999", currentLevel: "Đội tuyển", notes: "Huy chương vàng cấp quận", classIds: ["class-4"] },
-  { id: "std-22", code: "HS022", fullName: "Lê Tuấn Kiệt", birthYear: 2014, parentName: "Lê Văn Hùng", parentPhone: "0936345000", currentLevel: "Đội tuyển", notes: "Khai cuộc Sicilian lão luyện", classIds: ["class-4"] },
-  { id: "std-23", code: "HS023", fullName: "Hoàng Thảo Nguyên", birthYear: 2015, parentName: "Hoàng Minh Tâm", parentPhone: "0974456111", currentLevel: "Đội tuyển", notes: "Tính nước chiếu hết rất nhạy bén", classIds: ["class-4"] },
-  { id: "std-24", code: "HS024", fullName: "Trần Đức Minh", birthYear: 2013, parentName: "Trần Văn Toàn", parentPhone: "0907567222", currentLevel: "Đội tuyển", notes: "Đạt chuẩn Kiện tướng tương lai", classIds: ["class-4"], customFeePerSession: 200000 },
-  { id: "std-25", code: "HS025", fullName: "Võ Minh Khôi", birthYear: 2014, parentName: "Võ Đình Trọng", parentPhone: "0962678333", currentLevel: "Đội tuyển", notes: "Tập trung cao độ, thi đấu bản lĩnh", classIds: ["class-4"] },
-
-  // Lớp 5 (Cơ sở 5 – Láng Hạ) - 4 học viên
-  { id: "std-26", code: "HS026", fullName: "Nguyễn Gia Khiêm", birthYear: 2017, parentName: "Nguyễn Văn Hưng", parentPhone: "0915667788", currentLevel: "Nhập môn", notes: "Học rất chăm chỉ", classIds: ["class-5"] },
-  { id: "std-27", code: "HS027", fullName: "Trần Hà My", birthYear: 2018, parentName: "Trần Văn Cường", parentPhone: "0982334455", currentLevel: "Nhập môn", notes: "Nắm chắc luật chơi", classIds: ["class-5"] },
-  { id: "std-28", code: "HS028", fullName: "Lê Minh Quân", birthYear: 2017, parentName: "Lê Tuấn Hùng", parentPhone: "0903445566", currentLevel: "Nhập môn", notes: "Thích học đòn phối hợp", classIds: ["class-5"] },
-  { id: "std-29", code: "HS029", fullName: "Vũ Đăng Khôi", birthYear: 2016, parentName: "Vũ Đình Nam", parentPhone: "0976556677", currentLevel: "Nhập môn", notes: "Phản xạ nhanh", classIds: ["class-5"] },
-
-  // Lớp 6 (Cơ sở 6 – Quang Trung, Hà Đông) - 4 học viên
-  { id: "std-30", code: "HS030", fullName: "Bùi Tuấn Kiệt", birthYear: 2015, parentName: "Bùi Văn Thành", parentPhone: "0912889900", currentLevel: "Nâng cao", notes: "Đánh cờ chắc chắn", classIds: ["class-6"] },
-  { id: "std-31", code: "HS031", fullName: "Đỗ Phương Thảo", birthYear: 2016, parentName: "Đỗ Minh Đức", parentPhone: "0983112244", currentLevel: "Nâng cao", notes: "Tập trung cao", classIds: ["class-6"] },
-  { id: "std-32", code: "HS032", fullName: "Hoàng Gia Hưng", birthYear: 2015, parentName: "Hoàng Văn Nam", parentPhone: "0904223355", currentLevel: "Nâng cao", notes: "Lực cờ tốt", classIds: ["class-6"] },
-  { id: "std-33", code: "HS033", fullName: "Phạm Ngọc Diệp", birthYear: 2016, parentName: "Phạm Quốc Toản", parentPhone: "0968334466", currentLevel: "Nâng cao", notes: "Chăm giải cờ thế", classIds: ["class-6"] },
-
-  // Lớp 7 (Cơ sở 7 – Gamuda Gardens) - 4 học viên
-  { id: "std-34", code: "HS034", fullName: "Trịnh Minh Trí", birthYear: 2018, parentName: "Trịnh Văn Tuấn", parentPhone: "0916445577", currentLevel: "Cơ bản", notes: "Rất thích cờ vua", classIds: ["class-7"] },
-  { id: "std-35", code: "HS035", fullName: "Ngô Thảo Vy", birthYear: 2019, parentName: "Ngô Văn Kiên", parentPhone: "0987556688", currentLevel: "Cơ bản", notes: "Học luật đi quân nhanh", classIds: ["class-7"] },
-  { id: "std-36", code: "HS036", fullName: "Đặng Quốc Bảo", birthYear: 2018, parentName: "Đặng Văn Hùng", parentPhone: "0905667799", currentLevel: "Cơ bản", notes: "Tư duy tốt", classIds: ["class-7"] },
-  { id: "std-37", code: "HS037", fullName: "Nguyễn Thùy Trang", birthYear: 2018, parentName: "Nguyễn Văn Thắng", parentPhone: "0978778800", currentLevel: "Cơ bản", notes: "Ngoan ngoãn", classIds: ["class-7"] },
-
-  // Lớp 8 (Cơ sở 8 – Nguyễn Tuân, Thanh Xuân) - 4 học viên
-  { id: "std-38", code: "HS038", fullName: "Mai Đức Anh", birthYear: 2015, parentName: "Mai Văn Long", parentPhone: "0918889911", currentLevel: "Nâng cao", notes: "Chiến thuật tốt", classIds: ["class-8"] },
-  { id: "std-39", code: "HS039", fullName: "Phan Khánh Linh", birthYear: 2016, parentName: "Phan Văn Hậu", parentPhone: "0989990022", currentLevel: "Nâng cao", notes: "Tàn cuộc hay", classIds: ["class-8"] },
-  { id: "std-40", code: "HS040", fullName: "Lê Minh Hoàng", birthYear: 2015, parentName: "Lê Văn Sơn", parentPhone: "0906001133", currentLevel: "Nâng cao", notes: "Khai cuộc tốt", classIds: ["class-8"] },
-  { id: "std-41", code: "HS041", fullName: "Vũ Bảo Trâm", birthYear: 2016, parentName: "Vũ Đình Chiến", parentPhone: "0977112244", currentLevel: "Nâng cao", notes: "Rất cố gắng", classIds: ["class-8"] },
-];
-
-// Khởi tạo các buổi học thực tế trong tháng 10/2026
-export const initialSessions: AttendanceSessionData[] = [
-  // Lớp 1 (Nhập môn - K01): 4 buổi học tháng 10
-  {
-    id: "sess-1-1",
-    classId: "class-1",
-    date: "2026-10-02",
-    topic: "Ôn tập luật đi quân và Quy tắc Nhập thành an toàn",
-    records: [
-      { id: "rec-1-1-1", sessionId: "sess-1-1", studentId: "std-1", status: "PRESENT", coachNote: "Hiểu tốt quy tắc nhập thành", bookTitle: "Sách Cờ vua Nhập môn & Bài tập", bookPrice: 80000 },
-      { id: "rec-1-1-2", sessionId: "sess-1-1", studentId: "std-2", status: "PRESENT", coachNote: "Cần chú ý không đi Vua qua ô bị kiểm soát" },
-      { id: "rec-1-1-3", sessionId: "sess-1-1", studentId: "std-3", status: "PRESENT", coachNote: "Tập trung tốt" },
-      { id: "rec-1-1-4", sessionId: "sess-1-1", studentId: "std-4", status: "ABSENT", coachNote: "Phụ huynh xin nghỉ về quê" },
-      { id: "rec-1-1-5", sessionId: "sess-1-1", studentId: "std-5", status: "PRESENT", coachNote: "Thực hành nhanh", bookTitle: "Sách Cờ vua Nhập môn & Bài tập", bookPrice: 80000 },
-      { id: "rec-1-1-6", sessionId: "sess-1-1", studentId: "std-6", status: "PRESENT", coachNote: "Rất hào hứng" },
-      { id: "rec-1-1-7", sessionId: "sess-1-1", studentId: "std-7", status: "PRESENT", coachNote: "Làm bài tập đúng 100%" },
-    ],
-  },
-  {
-    id: "sess-1-2",
-    classId: "class-1",
-    date: "2026-10-06",
-    topic: "Khai cuộc cơ bản: Kiểm soát 4 ô Trung tâm",
-    records: [
-      { id: "rec-1-2-1", sessionId: "sess-1-2", studentId: "std-1", status: "PRESENT", coachNote: "Chiếm trung tâm bằng Tốt rất chuẩn" },
-      { id: "rec-1-2-2", sessionId: "sess-1-2", studentId: "std-2", status: "PRESENT", coachNote: "Tiến bộ rõ rệt" },
-      { id: "rec-1-2-3", sessionId: "sess-1-2", studentId: "std-3", status: "PRESENT", coachNote: "Nhận diện đòn tấn công tốt" },
-      { id: "rec-1-2-4", sessionId: "sess-1-2", studentId: "std-4", status: "PRESENT", coachNote: "Đã bắt kịp bài học" },
-      { id: "rec-1-2-5", sessionId: "sess-1-2", studentId: "std-5", status: "PRESENT", coachNote: "Chiến thuật tốt" },
-      { id: "rec-1-2-6", sessionId: "sess-1-2", studentId: "std-6", status: "ABSENT", coachNote: "Bị sốt, nghỉ 1 buổi" },
-      { id: "rec-1-2-7", sessionId: "sess-1-2", studentId: "std-7", status: "PRESENT", coachNote: "Tích cực phát biểu" },
-    ],
-  },
-  {
-    id: "sess-1-3",
-    classId: "class-1",
-    date: "2026-10-09",
-    topic: "Chiến thuật Đòn Bắt đôi (Fork) của quân Mã",
-    records: [
-      { id: "rec-1-3-1", sessionId: "sess-1-3", studentId: "std-1", status: "PRESENT", coachNote: "Bắt đôi Vua và Xe chuẩn xác" },
-      { id: "rec-1-3-2", sessionId: "sess-1-3", studentId: "std-2", status: "ABSENT", coachNote: "Nghỉ có phép" },
-      { id: "rec-1-3-3", sessionId: "sess-1-3", studentId: "std-3", status: "PRESENT", coachNote: "Nhìn nước cờ rất sáng" },
-      { id: "rec-1-3-4", sessionId: "sess-1-3", studentId: "std-4", status: "PRESENT", coachNote: "Làm đúng 5/5 bài tập bắt đôi" },
-      { id: "rec-1-3-5", sessionId: "sess-1-3", studentId: "std-5", status: "PRESENT", coachNote: "Rất chăm chỉ" },
-      { id: "rec-1-3-6", sessionId: "sess-1-3", studentId: "std-6", status: "PRESENT", coachNote: "Đi học lại đầy đủ" },
-      { id: "rec-1-3-7", sessionId: "sess-1-3", studentId: "std-7", status: "PRESENT", coachNote: "Thắng 2 ván đấu giao hữu" },
-    ],
-  },
-  {
-    id: "sess-1-4",
-    classId: "class-1",
-    date: "2026-10-13",
-    topic: "Tàn cuộc Tốt: Quy tắc hình vuông và Phong Cấp",
-    records: [
-      { id: "rec-1-4-1", sessionId: "sess-1-4", studentId: "std-1", status: "PRESENT", coachNote: "Thuộc quy tắc hình vuông" },
-      { id: "rec-1-4-2", sessionId: "sess-1-4", studentId: "std-2", status: "PRESENT", coachNote: "Thực hành đạt yêu cầu" },
-      { id: "rec-1-4-3", sessionId: "sess-1-4", studentId: "std-3", status: "PRESENT", coachNote: "Xuất sắc" },
-      { id: "rec-1-4-4", sessionId: "sess-1-4", studentId: "std-4", status: "PRESENT", coachNote: "Tự tin phong Hậu" },
-      { id: "rec-1-4-5", sessionId: "sess-1-4", studentId: "std-5", status: "PRESENT", coachNote: "Đạt điểm tối đa" },
-      { id: "rec-1-4-6", sessionId: "sess-1-4", studentId: "std-6", status: "PRESENT", coachNote: "Cố gắng rất nhiều" },
-      { id: "rec-1-4-7", sessionId: "sess-1-4", studentId: "std-7", status: "PRESENT", coachNote: "Đánh cờ rất cẩn thận" },
-    ],
-  },
-
-  // Lớp 2 (Nhập môn - K02): 4 buổi học tháng 10
-  {
-    id: "sess-2-1",
-    classId: "class-2",
-    date: "2026-10-01",
-    topic: "Đòn Ghim quân (Pin) tuyệt đối và tương đối",
-    records: [
-      { id: "rec-2-1-8", sessionId: "sess-2-1", studentId: "std-8", status: "PRESENT", coachNote: "Hiểu tốt đòn ghim" },
-      { id: "rec-2-1-9", sessionId: "sess-2-1", studentId: "std-9", status: "PRESENT", coachNote: "Tập trung giải thế cờ" },
-      { id: "rec-2-1-10", sessionId: "sess-2-1", studentId: "std-10", status: "PRESENT", coachNote: "Xuất sắc" },
-      { id: "rec-2-1-11", sessionId: "sess-2-1", studentId: "std-11", status: "ABSENT", coachNote: "Trùng lịch học thêm văn hóa" },
-      { id: "rec-2-1-12", sessionId: "sess-2-1", studentId: "std-12", status: "PRESENT", coachNote: "Phối hợp đòn ghim nhanh" },
-      { id: "rec-2-1-13", sessionId: "sess-2-1", studentId: "std-13", status: "PRESENT", coachNote: "Tiến bộ" },
-    ],
-  },
-  {
-    id: "sess-2-2",
-    classId: "class-2",
-    date: "2026-10-05",
-    topic: "Khai cuộc Gambit Vua & Cách phản công chuẩn mực",
-    records: [
-      { id: "rec-2-2-8", sessionId: "sess-2-2", studentId: "std-8", status: "PRESENT", coachNote: "Hiểu rõ tư tưởng Gambit" },
-      { id: "rec-2-2-9", sessionId: "sess-2-2", studentId: "std-9", status: "PRESENT", coachNote: "Phòng thủ kín kẽ" },
-      { id: "rec-2-2-10", sessionId: "sess-2-2", studentId: "std-10", status: "PRESENT", coachNote: "Phản công trung tâm tốt" },
-      { id: "rec-2-2-11", sessionId: "sess-2-2", studentId: "std-11", status: "PRESENT", coachNote: "Học bù kiến thức nhanh" },
-      { id: "rec-2-2-12", sessionId: "sess-2-2", studentId: "std-12", status: "PRESENT", coachNote: "Tấn công sắc nét" },
-      { id: "rec-2-2-13", sessionId: "sess-2-2", studentId: "std-13", status: "ABSENT", coachNote: "Gia đình bận việc riêng" },
-    ],
-  },
-  {
-    id: "sess-2-3",
-    classId: "class-2",
-    date: "2026-10-08",
-    topic: "Chiến thuật Đòn Xiên (Skewer) của Hậu và Tượng",
-    records: [
-      { id: "rec-2-3-8", sessionId: "sess-2-3", studentId: "std-8", status: "PRESENT", coachNote: "Đòn xiên chính xác" },
-      { id: "rec-2-3-9", sessionId: "sess-2-3", studentId: "std-9", status: "PRESENT", coachNote: "Giải nhanh bài tập" },
-      { id: "rec-2-3-10", sessionId: "sess-2-3", studentId: "std-10", status: "PRESENT", coachNote: "Rất nhạy bén" },
-      { id: "rec-2-3-11", sessionId: "sess-2-3", studentId: "std-11", status: "PRESENT", coachNote: "Nắm vững nguyên lý" },
-      { id: "rec-2-3-12", sessionId: "sess-2-3", studentId: "std-12", status: "PRESENT", coachNote: "Chiến thuật chuẩn" },
-      { id: "rec-2-3-13", sessionId: "sess-2-3", studentId: "std-13", status: "PRESENT", coachNote: "Làm bài tốt" },
-    ],
-  },
-  {
-    id: "sess-2-4",
-    classId: "class-2",
-    date: "2026-10-12",
-    topic: "Chiếu hết cơ bản: Xe phối hợp Xe cắt bậc thang",
-    records: [
-      { id: "rec-2-3-8-4", sessionId: "sess-2-4", studentId: "std-8", status: "PRESENT", coachNote: "Cắt bậc thang chuẩn" },
-      { id: "rec-2-3-9-4", sessionId: "sess-2-4", studentId: "std-9", status: "PRESENT", coachNote: "Rất tốt" },
-      { id: "rec-2-3-10-4", sessionId: "sess-2-4", studentId: "std-10", status: "PRESENT", coachNote: "Chiếu hết trong 15 nước" },
-      { id: "rec-2-3-11-4", sessionId: "sess-2-4", studentId: "std-11", status: "PRESENT", coachNote: "Hoàn thành bài test" },
-      { id: "rec-2-3-12-4", sessionId: "sess-2-4", studentId: "std-12", status: "PRESENT", coachNote: "Xuất sắc" },
-      { id: "rec-2-3-13-4", sessionId: "sess-2-4", studentId: "std-13", status: "PRESENT", coachNote: "Nắm chắc lý thuyết" },
-    ],
-  },
-
-  // Lớp 3 (Nâng cao - N01): 4 buổi
-  {
-    id: "sess-3-1",
-    classId: "class-3",
-    date: "2026-10-03",
-    topic: "Cấu trúc Tốt Carlsbad và Kế hoạch tấn công Thiểu số",
-    records: [
-      { id: "rec-3-1-14", sessionId: "sess-3-1", studentId: "std-14", status: "PRESENT", coachNote: "Hiểu sâu cấu trúc Tốt" },
-      { id: "rec-3-1-15", sessionId: "sess-3-1", studentId: "std-15", status: "PRESENT", coachNote: "Tính toán chiến lược sắc sảo" },
-      { id: "rec-3-1-16", sessionId: "sess-3-1", studentId: "std-16", status: "PRESENT", coachNote: "Bình tĩnh phòng thủ" },
-      { id: "rec-3-1-17", sessionId: "sess-3-1", studentId: "std-17", status: "ABSENT", coachNote: "Nghỉ do thi học sinh giỏi" },
-      { id: "rec-3-1-18", sessionId: "sess-3-1", studentId: "std-18", status: "PRESENT", coachNote: "Tấn công dồn dập" },
-      { id: "rec-3-1-19", sessionId: "sess-3-1", studentId: "std-19", status: "PRESENT", coachNote: "Nắm chắc lý thuyết" },
-    ],
-  },
-  {
-    id: "sess-3-2",
-    classId: "class-3",
-    date: "2026-10-04",
-    topic: "Tàn cuộc Xe cơ bản: Thế cờ Lucena & Thế cờ Philidor",
-    records: [
-      { id: "rec-3-2-14", sessionId: "sess-3-2", studentId: "std-14", status: "PRESENT", coachNote: "Xây cầu Lucena thành thạo" },
-      { id: "rec-3-2-15", sessionId: "sess-3-2", studentId: "std-15", status: "PRESENT", coachNote: "Kỹ thuật Philidor hoàn hảo" },
-      { id: "rec-3-2-16", sessionId: "sess-3-2", studentId: "std-16", status: "PRESENT", coachNote: "Phòng thủ hòa cờ chuẩn" },
-      { id: "rec-3-2-17", sessionId: "sess-3-2", studentId: "std-17", status: "PRESENT", coachNote: "Nhanh chóng nắm kỹ thuật" },
-      { id: "rec-3-2-18", sessionId: "sess-3-2", studentId: "std-18", status: "PRESENT", coachNote: "Tư duy tốt" },
-      { id: "rec-3-2-19", sessionId: "sess-3-2", studentId: "std-19", status: "PRESENT", coachNote: "Tính toán chính xác" },
-    ],
-  },
-  {
-    id: "sess-3-3",
-    classId: "class-3",
-    date: "2026-10-10",
-    topic: "Đòn thế Thí quân phá thành và Mở cột h",
-    records: [
-      { id: "rec-3-3-14", sessionId: "sess-3-3", studentId: "std-14", status: "PRESENT", coachNote: "Thí tượng h7 đẹp mắt" },
-      { id: "rec-3-3-15", sessionId: "sess-3-3", studentId: "std-15", status: "PRESENT", coachNote: "Tìm ra nước cờ duy nhất" },
-      { id: "rec-3-3-16", sessionId: "sess-3-3", studentId: "std-16", status: "ABSENT", coachNote: "Bị cảm nhẹ" },
-      { id: "rec-3-3-17", sessionId: "sess-3-3", studentId: "std-17", status: "PRESENT", coachNote: "Khả năng phối hợp cực cao" },
-      { id: "rec-3-3-18", sessionId: "sess-3-3", studentId: "std-18", status: "PRESENT", coachNote: "Chiếu hết ngoạn mục" },
-      { id: "rec-3-3-19", sessionId: "sess-3-3", studentId: "std-19", status: "PRESENT", coachNote: "Lập luận thuyết phục" },
-    ],
-  },
-  {
-    id: "sess-3-4",
-    classId: "class-3",
-    date: "2026-10-11",
-    topic: "Chiến lược chiếm Cột mở và Hàng ngang thứ 7",
-    records: [
-      { id: "rec-3-4-14", sessionId: "sess-3-4", studentId: "std-14", status: "PRESENT", coachNote: "Xâm nhập hàng 7 quyết liệt" },
-      { id: "rec-3-4-15", sessionId: "sess-3-4", studentId: "std-15", status: "PRESENT", coachNote: "Đôi Xe hàng 7 uy lực" },
-      { id: "rec-3-4-16", sessionId: "sess-3-4", studentId: "std-16", status: "PRESENT", coachNote: "Bình tĩnh hóa giải" },
-      { id: "rec-3-4-17", sessionId: "sess-3-4", studentId: "std-17", status: "PRESENT", coachNote: "Kiểm soát thế trận" },
-      { id: "rec-3-4-18", sessionId: "sess-3-4", studentId: "std-18", status: "PRESENT", coachNote: "Rất xuất sắc" },
-      { id: "rec-3-4-19", sessionId: "sess-3-4", studentId: "std-19", status: "PRESENT", coachNote: "Tiến bộ vượt bậc" },
-    ],
-  },
-
-  // Lớp 4 (Đội tuyển - DT01): 4 buổi
-  {
-    id: "sess-4-1",
-    classId: "class-4",
-    date: "2026-10-03",
-    topic: "Chuyên đề Phòng thủ Sicilian: Biến thể Najdorf 6.Bg5",
-    records: [
-      { id: "rec-4-1-20", sessionId: "sess-4-1", studentId: "std-20", status: "PRESENT", coachNote: "Hiểu biến sâu tới nước 18", bookTitle: "Cẩm nang Đại Kiện Tướng - Sicilian", bookPrice: 150000 },
-      { id: "rec-4-1-21", sessionId: "sess-4-1", studentId: "std-21", status: "PRESENT", coachNote: "Nắm vững ý đồ đối phó" },
-      { id: "rec-4-1-22", sessionId: "sess-4-1", studentId: "std-22", status: "PRESENT", coachNote: "Phản công cánh Vua mạnh mẽ" },
-      { id: "rec-4-1-23", sessionId: "sess-4-1", studentId: "std-23", status: "PRESENT", coachNote: "Xử lý trung tàn cuộc nhạy bén" },
-      { id: "rec-4-1-24", sessionId: "sess-4-1", studentId: "std-24", status: "PRESENT", coachNote: "Chuẩn bị khai cuộc chuẩn Đại Kiện Tướng", bookTitle: "Kỹ thuật Tàn cuộc Nâng cao", bookPrice: 120000 },
-      { id: "rec-4-1-25", sessionId: "sess-4-1", studentId: "std-25", status: "PRESENT", coachNote: "Tập trung tối đa" },
-    ],
-  },
-  {
-    id: "sess-4-2",
-    classId: "class-4",
-    date: "2026-10-04",
-    topic: "Kỹ thuật tính biến sâu 5-7 nước trong thế cờ phức tạp",
-    records: [
-      { id: "rec-4-2-20", sessionId: "sess-4-2", studentId: "std-20", status: "PRESENT", coachNote: "Tìm ra Candidate Moves chuẩn" },
-      { id: "rec-4-2-21", sessionId: "sess-4-2", studentId: "std-21", status: "ABSENT", coachNote: "Thi đấu giải cờ nhanh mở rộng" },
-      { id: "rec-4-2-22", sessionId: "sess-4-2", studentId: "std-22", status: "PRESENT", coachNote: "Tính toán không sai sót" },
-      { id: "rec-4-2-23", sessionId: "sess-4-2", studentId: "std-23", status: "PRESENT", coachNote: "Đạt phong độ rất cao" },
-      { id: "rec-4-2-24", sessionId: "sess-4-2", studentId: "std-24", status: "PRESENT", coachNote: "Phát hiện bẫy ngầm của đối phương" },
-      { id: "rec-4-2-25", sessionId: "sess-4-2", studentId: "std-25", status: "PRESENT", coachNote: "Rèn luyện thể lực và tâm lý thi đấu" },
-    ],
-  },
-  {
-    id: "sess-4-3",
-    classId: "class-4",
-    date: "2026-10-10",
-    topic: "Đấu tập đồng loạt có đồng hồ cờ chớp (Blitz 3+2)",
-    records: [
-      { id: "rec-4-3-20", sessionId: "sess-4-3", studentId: "std-20", status: "PRESENT", coachNote: "Thắng 4/5 ván cờ chớp" },
-      { id: "rec-4-3-21", sessionId: "sess-4-3", studentId: "std-21", status: "PRESENT", coachNote: "Bản lĩnh thi đấu vững vàng" },
-      { id: "rec-4-3-22", sessionId: "sess-4-3", studentId: "std-22", status: "PRESENT", coachNote: "Quản lý thời gian tốt" },
-      { id: "rec-4-3-23", sessionId: "sess-4-3", studentId: "std-23", status: "PRESENT", coachNote: "Sáng tạo trong các nước cờ khó" },
-      { id: "rec-4-3-24", sessionId: "sess-4-3", studentId: "std-24", status: "PRESENT", coachNote: "Thắng toàn bộ các ván" },
-      { id: "rec-4-3-25", sessionId: "sess-4-3", studentId: "std-25", status: "PRESENT", coachNote: "Phục hồi phong độ xuất sắc" },
-    ],
-  },
-  {
-    id: "sess-4-4",
-    classId: "class-4",
-    date: "2026-10-11",
-    topic: "Tàn cuộc Mã đối Tượng: Lợi thế cấu hình Tốt đóng/mở",
-    records: [
-      { id: "rec-4-4-20", sessionId: "sess-4-4", studentId: "std-20", status: "PRESENT", coachNote: "Chiếm ô tiền đồn cho Mã" },
-      { id: "rec-4-4-21", sessionId: "sess-4-4", studentId: "std-21", status: "PRESENT", coachNote: "Vận dụng Tốt mở cho Tượng" },
-      { id: "rec-4-4-22", sessionId: "sess-4-4", studentId: "std-22", status: "ABSENT", coachNote: "Bận thi đấu giao lưu" },
-      { id: "rec-4-4-23", sessionId: "sess-4-4", studentId: "std-23", status: "PRESENT", coachNote: "Bình tĩnh chuyển hóa ưu thế" },
-      { id: "rec-4-4-24", sessionId: "sess-4-4", studentId: "std-24", status: "PRESENT", coachNote: "Kỹ năng tàn cuộc đỉnh cao" },
-      { id: "rec-4-4-25", sessionId: "sess-4-4", studentId: "std-25", status: "PRESENT", coachNote: "Chiến thắng thuyết phục" },
-    ],
-  },
-];
-
-// Khởi tạo đánh giá kỳ thủ 4 tiêu chí
-export const initialEvaluations: StudentEvaluationData[] = [
-  { id: "eval-1", studentId: "std-1", month: 10, year: 2026, opening: 4, tactics: 4, calculation: 3, endgame: 4, generalNote: "Nắm luật rất chắc, chịu khó suy nghĩ trước khi đi cờ." },
-  { id: "eval-2", studentId: "std-2", month: 10, year: 2026, opening: 3, tactics: 3, calculation: 3, endgame: 3, generalNote: "Nhanh nhẹn, cần chú ý quan sát nước cờ của đối thủ hơn." },
-  { id: "eval-3", studentId: "std-3", month: 10, year: 2026, opening: 4, tactics: 4, calculation: 4, endgame: 4, generalNote: "Tư duy sáng sủa, có tiềm năng phát triển lên lớp Nhập môn." },
-  { id: "eval-8", studentId: "std-8", month: 10, year: 2026, opening: 4, tactics: 4, calculation: 4, endgame: 3, generalNote: "Rất nhạy đòn phối hợp, cần rèn luyện thêm tính kiên nhẫn ở tàn cuộc." },
-  { id: "eval-10", studentId: "std-10", month: 10, year: 2026, opening: 4, tactics: 5, calculation: 4, endgame: 4, generalNote: "Đòn chiến thuật sắc bén, thường xuyên tìm được nước cờ hay." },
-  { id: "eval-14", studentId: "std-14", month: 10, year: 2026, opening: 4, tactics: 4, calculation: 4, endgame: 4, generalNote: "Khả năng chiến thuật toàn diện, tâm lý thi đấu rất vững." },
-  { id: "eval-15", studentId: "std-15", month: 10, year: 2026, opening: 5, tactics: 4, calculation: 4, endgame: 5, generalNote: "Khai cuộc và tàn cuộc đều ở mức xuất sắc so với lứa tuổi." },
-  { id: "eval-20", studentId: "std-20", month: 10, year: 2026, opening: 5, tactics: 5, calculation: 4, endgame: 5, generalNote: "Chuẩn bị tốt cho giải vô địch trẻ thành phố, phong độ ổn định." },
-  { id: "eval-24", studentId: "std-24", month: 10, year: 2026, opening: 5, tactics: 5, calculation: 5, endgame: 5, generalNote: "Kỳ thủ xuất sắc nhất đội, có tư duy chiến lược đẳng cấp." },
-];
+export const initialEvaluations: StudentEvaluationData[] = [];
 
 export const initialBankConfig: BankConfig = {
   bankId: "MB",
-  bankAccount: "0987654321",
+  bankAccount: "04092004369",
   bankName: "Ngân hàng TMCP Quân Đội (MBBank)",
-  accountHolder: "CLB CO VUA KIEN TUONG TUONG LAI",
+  accountHolder: "TRAN HUYEN TRANG",
   qrTemplate: "compact2",
 };
 
@@ -692,150 +298,11 @@ export const initialZaloConfig: ZaloConfig = {
   titleTemplate: "[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}",
   bodyTemplate: "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả.",
   footerNote: "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666.",
-  appId: "",
-  secretKey: "",
-  oaId: "",
 };
 
-export const initialTasks: TaskData[] = [
-  {
-    id: "task-1",
-    title: "Tổ chức Giải Cờ chớp nội bộ Tháng 10/2026 tại Cơ sở Hoàng Quốc Việt",
-    description: "Lên danh sách 20-30 kỳ thủ nhí, chuẩn bị đồng hồ thi đấu, xếp cặp hệ Thụy Sĩ 5 ván và chuẩn bị phần thưởng cho các em.",
-    category: "SU_KIEN",
-    priority: "HIGH",
-    status: "COMPLETED_PENDING_REVIEW",
-    kpiPoints: 40,
-    dueDate: "2026-10-25",
-    branchId: "branch-3",
-    assigneeId: "00477341-c15a-430a-8d1f-a64e39c03a9c", // HLV Huyền Trang
-    creatorId: "user-admin",
-    creatorName: "Ban Chủ Nhiệm CLB",
-    reportNote: "Đã hoàn thành xuất sắc giải đấu với 24 kỳ thủ nhí tham gia. 3 em đạt giải Nhất, Nhì, Ba nhận cúp và sách cờ vua. Phụ huynh đánh giá rất cao tinh thần thi đấu của các con.",
-    reportAttachments: "https://kientuongtuonglai.com/gallery/giai-co-chop-t10",
-    submittedAt: "2026-10-22T08:30:00Z",
-    createdAt: "2026-10-15T09:00:00Z",
-  },
-  {
-    id: "task-2",
-    title: "Soạn đề cương & Giáo án Chuyên đề Phòng thủ Sicilian cho Đội Tuyển",
-    description: "Tổng hợp các biến thế hiện đại của Biến thể Najdorf 6.Bg5 và Scheveningen để huấn luyện cho đội tuyển thi đấu giải Trẻ Quốc gia.",
-    category: "GIAO_AN",
-    priority: "HIGH",
-    status: "APPROVED",
-    kpiPoints: 50,
-    dueDate: "2026-10-18",
-    branchId: "branch-1",
-    assigneeId: "c5d28630-d676-4746-adf3-481504084b3a", // GM Bùi Vinh
-    creatorId: "user-admin",
-    creatorName: "Ban Chủ Nhiệm CLB",
-    reportNote: "Đã hoàn thành tập tài liệu 45 trang gồm 20 bài tập tính biến sâu và 15 ván đấu mẫu của các Đại Kiện Tướng thế giới.",
-    submittedAt: "2026-10-17T15:20:00Z",
-    reviewedAt: "2026-10-18T10:00:00Z",
-    reviewerId: "user-admin",
-    reviewFeedback: "Giáo trình rất chất lượng và công phu, đã đưa vào giảng dạy ngay từ tuần này.",
-    isCompletedOnTime: true,
-    createdAt: "2026-10-10T08:00:00Z",
-  },
-  {
-    id: "task-3",
-    title: "Kiểm tra cơ sở vật chất, bàn cờ, đồng hồ DGT tại Cơ sở 1 - Bạch Mai",
-    description: "Rà soát lại số lượng quân cờ còn thiếu, thay pin đồng hồ thi đấu DGT 2010 và vệ sinh bàn cờ trước kỳ học mới.",
-    category: "CO_SO",
-    priority: "MEDIUM",
-    status: "APPROVED",
-    kpiPoints: 20,
-    dueDate: "2026-10-12",
-    branchId: "branch-1",
-    assigneeId: "c5d28630-d676-4746-adf3-481504084b3a", // GM Bùi Vinh
-    creatorId: "user-admin",
-    creatorName: "Ban Chủ Nhiệm CLB",
-    reportNote: "Đã kiểm tra đủ 15 bộ bàn cờ tiêu chuẩn, thay pin cho 10 đồng hồ, bổ sung 2 quân hậu trắng bị thiếu.",
-    submittedAt: "2026-10-11T16:00:00Z",
-    reviewedAt: "2026-10-12T09:00:00Z",
-    reviewerId: "user-admin",
-    reviewFeedback: "Tốt, cơ sở vật chất đảm bảo tiêu chuẩn thi đấu.",
-    isCompletedOnTime: true,
-    createdAt: "2026-10-08T09:00:00Z",
-  },
-  {
-    id: "task-4",
-    title: "Tư vấn và hỗ trợ học thử cho 10 học viên mới đăng ký qua Fanpage",
-    description: "Liên hệ phụ huynh hẹn lịch học thử tại Cơ sở 3 (Hoàng Quốc Việt) và Cơ sở 2 (Thái Hà), đánh giá trình độ ban đầu để xếp lớp phù hợp.",
-    category: "TUYEN_SINH",
-    priority: "HIGH",
-    status: "IN_PROGRESS",
-    kpiPoints: 35,
-    dueDate: "2026-10-28",
-    branchId: "branch-3",
-    assigneeId: "00477341-c15a-430a-8d1f-a64e39c03a9c", // HLV Huyền Trang
-    creatorId: "user-admin",
-    creatorName: "Ban Chủ Nhiệm CLB",
-    createdAt: "2026-10-20T10:00:00Z",
-  },
-  {
-    id: "task-5",
-    title: "Soạn tuyển tập 50 bài tập Tàn cuộc Xe cơ bản: Thế cờ Lucena & Philidor",
-    description: "Biên soạn file bài tập kèm lời giải chi tiết để phát cho các học viên lớp Nâng cao rèn luyện kỹ năng tàn cuộc.",
-    category: "CHUYEN_MON",
-    priority: "MEDIUM",
-    status: "PENDING",
-    kpiPoints: 30,
-    dueDate: "2026-10-30",
-    branchId: "branch-1",
-    assigneeId: "c5d28630-d676-4746-adf3-481504084b3a", // GM Bùi Vinh
-    creatorId: "user-admin",
-    creatorName: "Ban Chủ Nhiệm CLB",
-    createdAt: "2026-10-21T14:00:00Z",
-  },
-];
+export const initialTasks: TaskData[] = [];
 
-export const initialNotifications: NotificationData[] = [
-  {
-    id: "notif-1",
-    userId: "00477341-c15a-430a-8d1f-a64e39c03a9c",
-    title: "Nhiệm vụ mới được giao",
-    message: "Ban Chủ Nhiệm vừa giao nhiệm vụ 'Tư vấn và hỗ trợ học thử cho 10 học viên mới'. Hạn chót: 28/10/2026.",
-    type: "TASK_ASSIGNED",
-    link: "/coach/tasks",
-    taskId: "task-4",
-    isRead: false,
-    createdAt: "2026-10-20T10:05:00Z",
-  },
-  {
-    id: "notif-2",
-    userId: "user-admin",
-    title: "Báo cáo hoàn thành nhiệm vụ mới",
-    message: "HLV Trần Huyền Trang đã nộp báo cáo hoàn thành cho nhiệm vụ 'Tổ chức Giải Cờ chớp nội bộ Tháng 10/2026'. Vui lòng kiểm tra và duyệt KPI.",
-    type: "TASK_SUBMITTED",
-    link: "/admin/tasks",
-    taskId: "task-1",
-    isRead: false,
-    createdAt: "2026-10-22T08:35:00Z",
-  },
-  {
-    id: "notif-3",
-    userId: "c5d28630-d676-4746-adf3-481504084b3a",
-    title: "Nhiệm vụ đã được duyệt (+50 KPI)",
-    message: "Nhiệm vụ 'Soạn đề cương & Giáo án Sicilian' của bạn đã được duyệt thành công! Bạn nhận được +50 điểm KPI.",
-    type: "TASK_APPROVED",
-    link: "/coach/tasks",
-    taskId: "task-2",
-    isRead: true,
-    createdAt: "2026-10-18T10:05:00Z",
-  },
-  {
-    id: "notif-4",
-    userId: "c5d28630-d676-4746-adf3-481504084b3a",
-    title: "Nhiệm vụ mới được giao",
-    message: "Ban Chủ Nhiệm vừa giao nhiệm vụ 'Soạn tuyển tập 50 bài tập Tàn cuộc Xe cơ bản'. Hạn chót: 30/10/2026.",
-    type: "TASK_ASSIGNED",
-    link: "/coach/tasks",
-    taskId: "task-5",
-    isRead: false,
-    createdAt: "2026-10-21T14:05:00Z",
-  },
-];
+export const initialNotifications: NotificationData[] = [];
 
 /**
  * Singleton DataStore State Manager
@@ -903,14 +370,14 @@ class InMemoryDataStore {
         });
       }
       if (data.students && Array.isArray(data.students)) {
-        data.students.forEach((s: StudentData) => {
+        data.students.filter((s: StudentData) => !s.id.startsWith("std-")).forEach((s: StudentData) => {
           const idx = this.students.findIndex((x) => x.id === s.id);
           if (idx >= 0) this.students[idx] = { ...this.students[idx], ...s };
           else this.students.push(s);
         });
       }
       if (data.classes && Array.isArray(data.classes)) {
-        data.classes.forEach((c: ClassroomData) => {
+        data.classes.filter((c: ClassroomData) => !c.id.startsWith("class-")).forEach((c: ClassroomData) => {
           const idx = this.classes.findIndex((x) => x.id === c.id);
           if (idx >= 0) this.classes[idx] = { ...this.classes[idx], ...c };
           else this.classes.push(c);
@@ -993,27 +460,6 @@ class InMemoryDataStore {
         s.currentLevel = "Nhập môn";
       }
     }
-
-    // Đồng bộ các lớp học mẫu cho 8 cơ sở
-    initialClasses.forEach((ic) => {
-      const existingCls = this.classes.find((c) => c.id === ic.id);
-      if (existingCls) {
-        existingCls.branchId = ic.branchId;
-        existingCls.name = ic.name;
-        existingCls.level = ic.level;
-        existingCls.schedule = ic.schedule;
-        existingCls.shareWithAdmin = ic.shareWithAdmin;
-      } else {
-        this.classes.push(ic);
-      }
-    });
-
-    // Đồng bộ học viên mẫu cho các lớp mới
-    initialStudents.forEach((is) => {
-      if (!this.students.some((s) => s.id === is.id)) {
-        this.students.push(is);
-      }
-    });
   }
 
   // Cập nhật thông tin toàn diện của Huấn luyện viên
@@ -1343,15 +789,27 @@ class InMemoryDataStore {
     const newInvoices: MonthlyInvoiceData[] = [];
 
     for (const cls of this.classes) {
-      // Tìm tất cả học sinh thuộc lớp này
-      const classStudents = this.students.filter((s) => s.classIds.includes(cls.id));
-
       // Lấy tất cả các buổi học của lớp trong tháng/năm đó
       const classSessions = this.sessions.filter((sess) => {
         if (sess.classId !== cls.id) return false;
         const d = new Date(sess.date);
         return d.getMonth() + 1 === month && d.getFullYear() === year;
       });
+
+      // Lấy học sinh chính thức của lớp
+      const regularStudents = this.students.filter((s) => s.classIds.includes(cls.id));
+
+      // Lấy thêm những học sinh học bù (có mặt trong records của buổi học nhưng không thuộc lớp chính thức)
+      const makeupStudentIds = new Set<string>();
+      classSessions.forEach((sess) => {
+        sess.records.forEach((r) => {
+          if (!regularStudents.some((s) => s.id === r.studentId)) {
+            makeupStudentIds.add(r.studentId);
+          }
+        });
+      });
+      const makeupStudents = this.students.filter((s) => makeupStudentIds.has(s.id));
+      const classStudents = [...regularStudents, ...makeupStudents];
 
       for (const student of classStudents) {
         // Đếm số buổi có mặt
@@ -1836,7 +1294,7 @@ class InMemoryDataStore {
     return this.bankConfig;
   }
 
-  // Cập nhật mẫu tin nhắn Zalo OA
+  // Cập nhật mẫu tin nhắn Zalo gửi phụ huynh
   public updateZaloConfig(data: Partial<ZaloConfig>) {
     Object.assign(this.zaloConfig, data);
     this.saveToLocalStorage();

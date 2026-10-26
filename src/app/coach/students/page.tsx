@@ -45,7 +45,6 @@ export default function StudentsDirectoryPage() {
   // Tải danh sách lớp và học viên của riêng HLV này (đồng bộ từ Supabase)
   useEffect(() => {
     let coachId = "";
-    let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
@@ -53,19 +52,15 @@ export default function StudentsDirectoryPage() {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
     const updateDisplay = () => {
-      const myClasses = isAdmin
-        ? dataStore.classes
-        : getCoachClasses(coachId, coachEmail);
+      // Ở giao diện HLV, chỉ hiển thị lớp và học viên thuộc quyền quản lý của chính HLV
+      const myClasses = getCoachClasses(coachId, coachEmail);
       setCoachClasses(myClasses);
-      const myStudents = isAdmin
-        ? dataStore.students
-        : getCoachStudents(coachId, coachEmail);
+      const myStudents = getCoachStudents(coachId, coachEmail);
       setStudents(myStudents);
     };
 
@@ -91,7 +86,6 @@ export default function StudentsDirectoryPage() {
 
   const handleImportSuccess = (count: number) => {
     let coachId = currentCoachId;
-    let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
@@ -99,12 +93,9 @@ export default function StudentsDirectoryPage() {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
-    const myStudents = isAdmin
-      ? dataStore.students
-      : getCoachStudents(coachId, coachEmail);
+    const myStudents = getCoachStudents(coachId, coachEmail);
     setStudents([...myStudents]);
     showToast(`Đã nhập thành công ${count} học viên vào hệ thống!`);
   };

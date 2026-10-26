@@ -308,6 +308,19 @@ export const VietQrModal: React.FC<VietQrModalProps> = ({
               )}
             </div>
 
+            {/* Banner gợi ý trang cài đặt */}
+            <div className="rounded-xl bg-emerald-50/70 p-2.5 border border-emerald-200 flex items-center justify-between gap-2 text-[11px]">
+              <span className="text-emerald-900 font-medium">
+                💡 Cài đặt STK nhận tiền cố định cho toàn bộ học sinh tại <strong>Trang Cài Đặt QR & Zalo</strong>:
+              </span>
+              <a
+                href="/coach/settings"
+                className="font-bold text-emerald-700 hover:text-emerald-900 hover:underline shrink-0"
+              >
+                Mở Cài Đặt →
+              </a>
+            </div>
+
             {/* QR Mode Switcher */}
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">Loại mã QR sử dụng</label>

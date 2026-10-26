@@ -52,7 +52,6 @@ export default function CoachClassesPage() {
   // Tải thông tin tài khoản HLV hiện tại từ localStorage và đồng bộ Supabase PostgreSQL
   useEffect(() => {
     let coachId = "";
-    let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
@@ -60,16 +59,14 @@ export default function CoachClassesPage() {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
     setCurrentCoachEmail(coachEmail);
 
     const updateDisplay = () => {
-      const myClasses = isAdmin
-        ? dataStore.classes.filter((c) => c.shareWithAdmin !== false)
-        : getCoachClasses(coachId, coachEmail);
+      // Ở giao diện HLV, chỉ hiển thị lớp học do chính HLV phụ trách
+      const myClasses = getCoachClasses(coachId, coachEmail);
       setClasses(myClasses);
       setSelectedClassId((prev) => (myClasses.some((c) => c.id === prev) ? prev : myClasses[0]?.id || ""));
 

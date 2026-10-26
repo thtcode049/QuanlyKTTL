@@ -63,12 +63,18 @@ export async function POST(request: Request) {
       if (firstBranch) validBranchId = firstBranch.id;
     }
 
-    // Kiểm tra coachId có tồn tại trong DB không
+    // Kiểm tra coachId có tồn tại trong DB không (hỗ trợ cả UUID và email)
     let validCoachId = coachId;
-    const coachExists = await prisma.user.findUnique({ where: { id: coachId } });
-    if (!coachExists) {
-      const firstCoach = await prisma.user.findFirst({ where: { role: "COACH" } });
-      if (firstCoach) validCoachId = firstCoach.id;
+    const coachExists = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: coachId },
+          { email: coachId.toLowerCase() },
+        ],
+      },
+    });
+    if (coachExists) {
+      validCoachId = coachExists.id;
     }
 
     const newClass = await prisma.classroom.create({

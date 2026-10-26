@@ -129,53 +129,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = async (role: "ADMIN" | "COACH1") => {
-    let qEmail = "";
-    let qPassword = "";
 
-    if (role === "ADMIN") {
-      qEmail = "admin@kttll.vn";
-      qPassword = "admin123";
-    } else {
-      qEmail = "hlv1@kttll.vn";
-      qPassword = "coach123";
-    }
-
-    setEmail(qEmail);
-    setPassword(qPassword);
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: qEmail, password: qPassword }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success && data.user) {
-        localStorage.setItem("kttll_user", JSON.stringify(data.user));
-        await dataStore.syncWithDatabase();
-
-        if (data.user.role === "ADMIN") {
-          router.push("/admin/dashboard");
-        } else {
-          router.push("/coach/classes");
-        }
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data.error || "Không thể đăng nhập tài khoản.");
-      }
-    } catch (e: any) {
-      console.error("Lỗi quick login:", e);
-      setError("Lỗi kết nối máy chủ xác thực.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
@@ -211,7 +165,7 @@ export default function LoginPage() {
             Hệ thống Quản lý Đào tạo Cờ vua Đa cơ sở
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-300">
-            Học viên đi học buổi nào tính phí buổi đó, nghỉ không tính phí. Tự động hóa điểm danh 1 chạm trên di động, đối soát học phí với VietQR động và gửi thông báo qua Zalo OA.
+            Học viên đi học buổi nào tính phí buổi đó, nghỉ không tính phí. Tự động hóa điểm danh 1 chạm trên di động, đối soát học phí với VietQR động và xuất ảnh thẻ gửi qua Zalo.
           </p>
 
           {/* Core Highlights */}
@@ -231,8 +185,8 @@ export default function LoginPage() {
                 <QrCode className="h-5 w-5" />
               </div>
               <div className="text-xs">
-                <p className="font-bold text-white">Mã VietQR Động & Zalo OA</p>
-                <p className="text-slate-400">Tự động sinh mã chuyển khoản chuẩn Napas và tin nhắn phụ huynh</p>
+                <p className="font-bold text-white">Mã VietQR Động & Gửi Tin Zalo</p>
+                <p className="text-slate-400">Tự động sinh mã chuyển khoản chuẩn Napas và thẻ học phí phụ huynh</p>
               </div>
             </div>
           </div>
@@ -281,42 +235,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Quick Demo Access Buttons */}
-          <div className="mb-6 rounded-2xl bg-white p-4 shadow-soft border border-slate-200/80">
-            <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-              ⚡ Truy cập nhanh tài khoản thử nghiệm:
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("ADMIN")}
-                className="group flex items-center gap-2 rounded-xl border border-slate-800 bg-[#161616] p-2.5 text-left text-white transition-all hover:bg-slate-800"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-brand-secondary flex-shrink-0">
-                  <ShieldCheck className="h-4 w-4" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs font-bold truncate">Ban Quản Trị</p>
-                  <p className="text-[10px] text-slate-300 truncate">admin@kttll.vn</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("COACH1")}
-                className="group flex items-center gap-2 rounded-xl border border-brand-primary bg-emerald-500/10 p-2.5 text-left text-slate-900 transition-all hover:bg-emerald-500/20"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary text-white flex-shrink-0">
-                  <UserCheck className="h-4 w-4" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs font-bold text-brand-primary truncate">GM Bùi Vinh</p>
-                  <p className="text-[10px] text-slate-500 truncate">hlv1@kttll.vn</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
           {/* Regular Login Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
@@ -335,7 +253,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@kttll.vn hoặc hlv1@kttll.vn"
+                  placeholder="Nhập email của bạn"
                   className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                 />
               </div>
@@ -344,7 +262,6 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-slate-700">Mật khẩu</label>
-                <span className="text-[11px] text-slate-500">Mặc định: admin123 / coach123</span>
               </div>
               <div className="relative mt-1">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -376,39 +293,24 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Registration Box for New Members (Admin & Coach) */}
+          {/* Registration Box for New Members */}
           <div className="mt-6 rounded-2xl bg-white p-4.5 shadow-soft border border-slate-200/80">
             <div className="text-center mb-3">
               <p className="text-xs font-bold text-slate-800">
                 Chưa có tài khoản tham gia hệ thống?
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Đăng ký tài khoản mới dành cho Huấn luyện viên hoặc Ban Quản Trị CLB
+                Đăng ký tài khoản dành cho Huấn luyện viên và Ban Quản Trị CLB
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <Link
-                href="/register?role=coach"
-                className="group flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-2.5 text-xs font-bold text-emerald-800 transition-all hover:bg-brand-primary hover:text-white shadow-sm active:scale-95 text-center"
-              >
-                <UserCheck className="h-4 w-4 text-brand-primary group-hover:text-white transition-colors" />
-                <span>Đăng Ký Huấn Luyện Viên</span>
-              </Link>
-
-              <Link
-                href="/register?role=admin"
-                className="group flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 p-2.5 text-xs font-bold text-white transition-all hover:bg-slate-800 shadow-sm active:scale-95 text-center"
-              >
-                <ShieldCheck className="h-4 w-4 text-brand-secondary" />
-                <span>Đăng Ký Ban Quản Trị</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* System note */}
-          <div className="mt-6 rounded-xl bg-slate-100/80 p-3 text-center text-[11px] text-slate-500 border border-slate-200">
-            Hệ thống hỗ trợ cơ chế lưu trữ kép Supabase PostgreSQL & Local Dev Fallback. Sẵn sàng cấu hình biến môi trường và deploy lên Vercel.
+            <Link
+              href="/register"
+              className="group flex items-center justify-center gap-2 rounded-xl border border-brand-primary/30 bg-emerald-50/60 p-3 text-xs font-bold text-brand-primary transition-all hover:bg-brand-primary hover:text-white shadow-sm active:scale-95 text-center"
+            >
+              <UserPlus className="h-4 w-4 text-brand-primary group-hover:text-white transition-colors" />
+              <span>Đăng Ký Tài Khoản Mới</span>
+            </Link>
           </div>
         </div>
       </div>

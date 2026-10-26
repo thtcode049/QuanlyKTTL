@@ -235,24 +235,7 @@ export default function AdminCoachesPage() {
     }
   };
 
-  // Demo Switcher: Chuyển đổi nhanh vai trò đang đăng nhập để kiểm tra phân quyền
-  const handleSimulateRole = (roleType: "CHUNHIEM" | "PHOCHUNHIEM" | "CHUCOSO" | "COACH") => {
-    let targetUser: UserData | undefined;
 
-    if (roleType === "CHUNHIEM") {
-      targetUser = dataStore.users.find((u) => u.id === "user-admin");
-    } else if (roleType === "PHOCHUNHIEM") {
-      targetUser = dataStore.users.find((u) => u.id === "user-coach-1" || u.email === "hlv1@kttll.vn");
-    } else if (roleType === "CHUCOSO") {
-      targetUser = dataStore.users.find((u) => u.id === "00477341-c15a-430a-8d1f-a64e39c03a9c" || u.email === "trantrang66c@gmail.com");
-    }
-
-    if (targetUser) {
-      localStorage.setItem("kttll_user", JSON.stringify(targetUser));
-      setCurrentUser({ ...targetUser });
-      window.location.reload();
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -274,63 +257,6 @@ export default function AdminCoachesPage() {
           <Plus className="h-4 w-4" />
           <span>Thêm HLV Mới</span>
         </button>
-      </div>
-
-      {/* Role Simulator Banner (Để kiểm chứng phân quyền tức thì) */}
-      <div className="rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 via-indigo-50 to-emerald-50 p-4 shadow-soft">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-600 text-white text-xs font-black">
-                ⚡
-              </span>
-              <p className="text-xs font-black text-purple-900 uppercase tracking-wider">
-                Mô Phỏng Phân Quyền Trực Tiếp
-              </p>
-              {currentUser?.systemRole && (
-                <span className="rounded-full bg-purple-200/80 px-2.5 py-0.5 text-[11px] font-bold text-purple-900">
-                  Đang là: {currentUser.systemRole === "CHUNHIEM" ? "Chủ nhiệm CLB (Toàn quyền)" : currentUser.systemRole === "PHOCHUNHIEM" ? "Phó chủ nhiệm CLB" : currentUser.systemRole === "CHUCOSO" ? "Chủ cơ sở" : "HLV"}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-600">
-              Bấm vào vai trò để kiểm tra tính năng: <b>Chủ nhiệm & Phó chủ nhiệm</b> quản lý toàn bộ CLB, <b>Chủ cơ sở</b> chỉ nắm số liệu cơ sở của mình.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => handleSimulateRole("CHUNHIEM")}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                currentUser?.systemRole === "CHUNHIEM"
-                  ? "bg-purple-700 text-white ring-2 ring-purple-300"
-                  : "bg-white text-purple-800 hover:bg-purple-100 border border-purple-200"
-              }`}
-            >
-              👑 Đăng nhập Chủ Nhiệm
-            </button>
-            <button
-              onClick={() => handleSimulateRole("PHOCHUNHIEM")}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                currentUser?.systemRole === "PHOCHUNHIEM"
-                  ? "bg-blue-700 text-white ring-2 ring-blue-300"
-                  : "bg-white text-blue-800 hover:bg-blue-100 border border-blue-200"
-              }`}
-            >
-              🛡️ Đăng nhập Phó Chủ Nhiệm
-            </button>
-            <button
-              onClick={() => handleSimulateRole("CHUCOSO")}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                currentUser?.systemRole === "CHUCOSO"
-                  ? "bg-emerald-700 text-white ring-2 ring-emerald-300"
-                  : "bg-white text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
-              }`}
-            >
-              🏢 Đăng nhập Chủ Cơ Sở 3
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Coaches Cards Grid */}
@@ -372,8 +298,8 @@ export default function AdminCoachesPage() {
                         </span>
                       )}
                       {coach.systemRole === "CHUCOSO" && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-200">
-                          🏢 Chủ cơ sở
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-800 border border-blue-200">
+                          🏢 Chủ nhiệm: {branch ? branch.name.split("–")[0].trim() : "Chưa chọn cơ sở"}
                         </span>
                       )}
                     </div>
@@ -560,22 +486,44 @@ export default function AdminCoachesPage() {
               </div>
 
               {/* Cơ sở */}
-              <div>
-                <label className="font-bold text-slate-700">
-                  {editSystemRole === "CHUCOSO" ? "Cơ sở trực tiếp quản lý *" : "Cơ sở công tác chính"}
-                </label>
-                <select
-                  value={editBranchId}
-                  onChange={(e) => setEditBranchId(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
-                >
-                  {dataStore.branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {editSystemRole === "CHUCOSO" ? (
+                <div className="rounded-xl border border-blue-300 bg-blue-50/70 p-3 space-y-1.5">
+                  <label className="font-bold text-blue-950 flex items-center gap-1.5">
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                    <span>Chọn cơ sở quản lý (Dành cho Chủ nhiệm cơ sở) *</span>
+                  </label>
+                  <select
+                    value={editBranchId}
+                    onChange={(e) => setEditBranchId(e.target.value)}
+                    className="w-full rounded-xl border border-blue-300 bg-white p-2.5 font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+                    required
+                  >
+                    {dataStore.branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-blue-700">
+                    HLV này sẽ được phân quyền quản lý số liệu và học viên tại cơ sở này.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="font-bold text-slate-700">Cơ sở công tác chính</label>
+                  <select
+                    value={editBranchId}
+                    onChange={(e) => setEditBranchId(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
+                  >
+                    {dataStore.branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Section 2: Cấu Hình Mức Lương % Học Phí & Tiền Sách */}
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-3">
@@ -720,7 +668,7 @@ export default function AdminCoachesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700">Vai trò phân quyền</label>
                   <select
@@ -729,17 +677,23 @@ export default function AdminCoachesPage() {
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
                   >
                     <option value="COACH">Huấn luyện viên</option>
-                    <option value="CHUCOSO">Chủ cơ sở</option>
+                    <option value="CHUCOSO">Chủ cơ sở (Quản lý 1 cơ sở)</option>
                     <option value="PHOCHUNHIEM">Phó chủ nhiệm</option>
                     <option value="CHUNHIEM">Chủ nhiệm CLB</option>
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Cơ sở công tác</label>
+                  <label className="font-bold text-slate-700">
+                    {systemRole === "CHUCOSO" ? "Cơ sở quản lý *" : "Cơ sở công tác"}
+                  </label>
                   <select
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className={`mt-1 w-full rounded-xl p-2.5 font-bold focus:outline-none ${
+                      systemRole === "CHUCOSO"
+                        ? "border-2 border-blue-400 bg-blue-50/50 text-blue-950 focus:border-blue-600"
+                        : "border border-slate-200 text-slate-800 focus:border-brand-primary"
+                    }`}
                   >
                     {dataStore.branches.map((b) => (
                       <option key={b.id} value={b.id}>

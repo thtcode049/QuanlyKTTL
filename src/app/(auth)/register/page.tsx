@@ -18,44 +18,29 @@ import {
   Sparkles,
   GraduationCap,
   ChevronLeft,
+  Shield,
+  Crown,
+  ArrowRightLeft,
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
+
+export type RegisterSystemRole = "COACH" | "CHUNHIEM" | "PHOCHUNHIEM" | "CHUCOSO";
 
 export default function RegisterPage() {
   const router = useRouter();
 
-  // Form Fields
-  const [selectedRole, setSelectedRole] = useState<"COACH" | "ADMIN">("COACH");
+  // Role Selection
+  const [systemRole, setSystemRole] = useState<RegisterSystemRole>("COACH");
 
-  // Read role from query param on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const roleParam = params.get("role");
-      if (roleParam === "admin") {
-        setSelectedRole("ADMIN");
-      } else if (roleParam === "coach") {
-        setSelectedRole("COACH");
-      }
-    }
-  }, []);
-
-  const handleRoleChange = (role: "COACH" | "ADMIN") => {
-    setSelectedRole(role);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("role", role.toLowerCase());
-      window.history.replaceState({}, "", url.toString());
-    }
-  };
+  // Basic Account Fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
+
+  // Professional & Branch Fields
   const [title, setTitle] = useState("HLV Quốc gia");
-  const [adminTitle, setAdminTitle] = useState("Ban Chủ Nhiệm CLB");
-  const [adminSecretCode, setAdminSecretCode] = useState("KTTLL2026");
   const [experience, setExperience] = useState("3 năm");
   const [branchId, setBranchId] = useState("branch-1");
   const [bankName, setBankName] = useState("MBBank");
@@ -69,13 +54,22 @@ export default function RegisterPage() {
 
   const branches = dataStore.branches;
 
+  // Auto-set default branch if available
+  useEffect(() => {
+    if (branches.length > 0 && !branchId) {
+      setBranchId(branches[0].id);
+    }
+  }, [branches]);
+
+  const isAdminRole = systemRole === "CHUNHIEM" || systemRole === "PHOCHUNHIEM" || systemRole === "CHUCOSO";
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     // Validate
     if (!name.trim()) {
-      setError("Vui lòng nhập họ và tên của " + (selectedRole === "ADMIN" ? "Quản trị viên" : "Huấn luyện viên"));
+      setError("Vui lòng nhập họ và tên của bạn");
       return;
     }
     if (!email.trim() || !email.includes("@")) {
@@ -94,8 +88,8 @@ export default function RegisterPage() {
       setError("Vui lòng nhập số điện thoại liên hệ");
       return;
     }
-    if (selectedRole === "ADMIN" && !adminSecretCode.trim()) {
-      setError("Vui lòng nhập Mã xác thực Quản trị viên (Mặc định: KTTLL2026)");
+    if (systemRole === "CHUCOSO" && !branchId) {
+      setError("Vui lòng chọn cơ sở mà bạn quản lý");
       return;
     }
 
@@ -106,18 +100,25 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          phone,
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
           password,
-          role: selectedRole,
-          adminSecretCode: selectedRole === "ADMIN" ? adminSecretCode.trim() : undefined,
-          title: selectedRole === "ADMIN" ? adminTitle : title,
-          experience: selectedRole === "COACH" ? experience : "Ban Quản Trị CLB",
+          systemRole,
+          role: systemRole === "CHUNHIEM" || systemRole === "PHOCHUNHIEM" ? "ADMIN" : "COACH",
+          title:
+            systemRole === "CHUNHIEM"
+              ? "Chủ nhiệm CLB"
+              : systemRole === "PHOCHUNHIEM"
+              ? "Phó chủ nhiệm CLB"
+              : systemRole === "CHUCOSO"
+              ? `Chủ nhiệm cơ sở`
+              : title,
+          experience: isAdminRole ? "Ban Quản Trị CLB" : experience,
           branchId,
-          bankName: selectedRole === "COACH" ? bankName : undefined,
-          bankAccount: selectedRole === "COACH" ? bankAccount : undefined,
-          accountHolder: selectedRole === "COACH" ? (accountHolder.toUpperCase() || name.toUpperCase()) : undefined,
+          bankName,
+          bankAccount,
+          accountHolder: accountHolder.toUpperCase() || name.toUpperCase(),
           bio,
         }),
       });
@@ -140,10 +141,11 @@ export default function RegisterPage() {
         phone,
         password,
         role: createdUser.role,
+        systemRole: createdUser.systemRole || systemRole,
         title: createdUser.title,
         branchId: createdUser.branchId,
-        baseRate: createdUser.role === "ADMIN" ? 0 : 200000,
-        hasAdminAccess: createdUser.role === "ADMIN" || !!createdUser.hasAdminAccess,
+        baseRate: systemRole === "CHUNHIEM" ? 0 : 200000,
+        hasAdminAccess: isAdminRole,
       });
       dataStore.saveToLocalStorage();
 
@@ -153,16 +155,17 @@ export default function RegisterPage() {
         name: createdUser.name,
         email: createdUser.email,
         role: createdUser.role,
+        systemRole: createdUser.systemRole || systemRole,
         title: createdUser.title,
         branchId: createdUser.branchId,
-        hasAdminAccess: createdUser.role === "ADMIN" || !!createdUser.hasAdminAccess,
+        hasAdminAccess: isAdminRole,
       };
       localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
 
       setSuccess(true);
       setTimeout(() => {
-        if (createdUser.role === "ADMIN") {
-          router.push("/admin/dashboard");
+        if (isAdminRole) {
+          router.push("/admin/coaches");
         } else {
           router.push("/coach/classes");
         }
@@ -203,75 +206,37 @@ export default function RegisterPage() {
 
         {/* Middle message */}
         <div className="relative z-10 my-auto py-10">
-          {selectedRole === "ADMIN" ? (
-            <>
-              <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-amber-300 border border-amber-500/30">
-                Ban Quản Trị & Điều Hành CLB
-              </span>
-              <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
-                Quản Trị Đào Tạo Cờ Vua Đa Cơ Sở
-              </h2>
-              <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                Hệ thống điều hành thông minh dành cho Ban Chủ Nhiệm: Giám sát toàn diện học viên, quản lý lớp học, đối soát học phí VietQR và tự động hóa tính thù lao Huấn luyện viên.
-              </p>
+          <span className="rounded-full bg-brand-primary/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand-primary border border-brand-primary/30">
+            Hệ Thống Đào Tạo & Điều Hành CLB
+          </span>
+          <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+            Gia Nhập CLB Kiện Tướng Tương Lai
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-300">
+            Cổng đăng ký thành viên chính thức dành cho Huấn luyện viên và Ban Quản Trị CLB: Điểm danh 1 chạm, quản lý học viên, đối soát học phí VietQR và phân quyền linh hoạt theo từng cơ sở.
+          </p>
 
-              <div className="mt-8 space-y-3.5">
-                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
-                    <ShieldCheck className="h-5 w-5" />
-                  </div>
-                  <div className="text-xs">
-                    <p className="font-bold text-white">Kiểm Soát Vận Hành Toàn Diện</p>
-                    <p className="text-slate-400">Theo dõi điểm danh, sĩ số và doanh thu các cơ sở theo thời gian thực</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div className="text-xs">
-                    <p className="font-bold text-white">Đối Soát VietQR & Zalo OA</p>
-                    <p className="text-slate-400">Tự động sinh mã thanh toán Napas và đồng bộ gửi thông báo phụ huynh</p>
-                  </div>
-                </div>
+          <div className="mt-8 space-y-3.5">
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                <ArrowRightLeft className="h-5 w-5" />
               </div>
-            </>
-          ) : (
-            <>
-              <span className="rounded-full bg-brand-primary/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand-primary border border-brand-primary/30">
-                Gia Nhập Ban Huấn Luyện
-              </span>
-              <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white xl:text-4xl">
-                Đào Tạo Thế Hệ Kỳ Thủ Tương Lai
-              </h2>
-              <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                Hệ thống quản lý chuyên biệt cho Huấn luyện viên cờ vua: Điểm danh 1 chạm, theo dõi tiến độ rèn luyện học sinh, nhận thù lao minh bạch 50% học phí thực dạy + 30% hoa hồng tài liệu.
-              </p>
-
-              <div className="mt-8 space-y-3.5">
-                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </div>
-                  <div className="text-xs">
-                    <p className="font-bold text-white">Minh Bạch Thu Nhập</p>
-                    <p className="text-slate-400">Tự động tính thù lao theo ca dạy và số học viên có mặt thực tế</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
-                    <GraduationCap className="h-5 w-5" />
-                  </div>
-                  <div className="text-xs">
-                    <p className="font-bold text-white">Hồ Sơ Kỳ Thủ Trực Quan</p>
-                    <p className="text-slate-400">Đánh giá 4 kỹ năng cờ vua và lưu ảnh hồ sơ từng học viên</p>
-                  </div>
-                </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Chuyển Đổi Vai Trò Linh Hoạt</p>
+                <p className="text-slate-400">Ban Quản trị có thể chuyển qua lại giữa chế độ Admin và HLV để dạy lớp riêng</p>
               </div>
-            </>
-          )}
+            </div>
+
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold text-white">Phân Quyền Minh Bạch</p>
+                <p className="text-slate-400">Chủ nhiệm, Phó chủ nhiệm và Chủ cơ sở quản lý đúng phạm vi trách nhiệm</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Bottom footer link */}
@@ -304,42 +269,12 @@ export default function RegisterPage() {
             </span>
           </div>
 
-          {/* Role Switcher Tabs */}
-          <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
-            <button
-              type="button"
-              onClick={() => handleRoleChange("COACH")}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
-                selectedRole === "COACH"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <UserCheck className="h-4 w-4 text-brand-primary" />
-              <span>Huấn Luyện Viên</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleChange("ADMIN")}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
-                selectedRole === "ADMIN"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <ShieldCheck className="h-4 w-4 text-amber-600" />
-              <span>Ban Quản Trị CLB (Admin)</span>
-            </button>
-          </div>
-
           <div className="mb-6">
             <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-              {selectedRole === "ADMIN" ? "Đăng Ký Ban Quản Trị CLB" : "Đăng Ký Huấn Luyện Viên"}
+              Đăng Ký Tài Khoản Mới
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-slate-600">
-              {selectedRole === "ADMIN"
-                ? "Dành cho Ban Chủ Nhiệm, Ban Giám Đốc và Quản lý cơ sở điều hành CLB Kiện Tướng Tương Lai."
-                : "Điền đầy đủ thông tin chuyên môn của bạn để tham gia giảng dạy tại CLB Kiện Tướng Tương Lai."}
+              Chọn vai trò của bạn trong CLB và điền thông tin để bắt đầu sử dụng hệ thống.
             </p>
           </div>
 
@@ -353,33 +288,175 @@ export default function RegisterPage() {
             <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 animate-bounce" />
               <span>
-                Đăng ký thành công! Đang chuyển hướng bạn vào không gian làm việc{" "}
-                {selectedRole === "ADMIN" ? "Quản trị CLB" : "Huấn luyện viên"}...
+                Đăng ký thành công! Đang chuyển hướng bạn vào hệ thống...
               </span>
             </div>
           )}
 
           <form onSubmit={handleRegister} className="space-y-6">
+            {/* Vai trò tham gia hệ thống: HLV, Chủ nhiệm, Phó chủ nhiệm, Chủ nhiệm cơ sở */}
+            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-brand-primary" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Xác nhận vai trò tài khoản *
+                  </h3>
+                </div>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {isAdminRole ? "Có quyền Quản trị (Admin)" : "Quyền Huấn luyện viên"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* 1. Huấn luyện viên */}
+                <button
+                  type="button"
+                  onClick={() => setSystemRole("COACH")}
+                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                    systemRole === "COACH"
+                      ? "border-brand-primary bg-emerald-50/70 shadow-sm ring-1 ring-brand-primary"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-brand-primary" />
+                    <span className="text-xs font-black text-slate-900">Huấn Luyện Viên (HLV)</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                    Dạy học, điểm danh và quản lý các lớp học của riêng mình.
+                  </p>
+                </button>
+
+                {/* 2. Chủ nhiệm CLB */}
+                <button
+                  type="button"
+                  onClick={() => setSystemRole("CHUNHIEM")}
+                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                    systemRole === "CHUNHIEM"
+                      ? "border-amber-500 bg-amber-50/70 shadow-sm ring-1 ring-amber-500"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-amber-600" />
+                      <span className="text-xs font-black text-slate-900">Chủ nhiệm CLB</span>
+                    </div>
+                    <span className="rounded-full bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5">
+                      Admin
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                    Toàn quyền phân quyền, giao nhiệm vụ và quản lý lương HLV toàn CLB.
+                  </p>
+                </button>
+
+                {/* 3. Phó chủ nhiệm CLB */}
+                <button
+                  type="button"
+                  onClick={() => setSystemRole("PHOCHUNHIEM")}
+                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                    systemRole === "PHOCHUNHIEM"
+                      ? "border-indigo-500 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                      <span className="text-xs font-black text-slate-900">Phó chủ nhiệm CLB</span>
+                    </div>
+                    <span className="rounded-full bg-indigo-100 text-indigo-800 text-[9px] font-black px-1.5 py-0.5">
+                      Admin
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                    Điều hành CLB, giao việc, phân quyền và giám sát báo cáo tổng quan.
+                  </p>
+                </button>
+
+                {/* 4. Chủ nhiệm cơ sở */}
+                <button
+                  type="button"
+                  onClick={() => setSystemRole("CHUCOSO")}
+                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                    systemRole === "CHUCOSO"
+                      ? "border-blue-500 bg-blue-50/70 shadow-sm ring-1 ring-blue-500"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                      <span className="text-xs font-black text-slate-900">Chủ nhiệm cơ sở</span>
+                    </div>
+                    <span className="rounded-full bg-blue-100 text-blue-800 text-[9px] font-black px-1.5 py-0.5">
+                      Admin
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                    Quản lý hoạt động tại cơ sở được gán và dạy các lớp học riêng của mình.
+                  </p>
+                </button>
+              </div>
+
+              {/* Lời nhắc chuyển đổi vai trò cho tài khoản có quyền Admin */}
+              {isAdminRole && (
+                <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
+                  <ArrowRightLeft className="h-4 w-4 text-brand-primary flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Lưu ý:</strong> Tài khoản có vai trò Quản trị (Chủ nhiệm, Phó chủ nhiệm, Chủ nhiệm cơ sở) có thể chuyển qua lại giữa màn hình <strong>Quản trị</strong> và màn hình <strong>Huấn luyện viên</strong> trên thanh menu để trực tiếp quản lý lớp học riêng của mình.
+                  </span>
+                </div>
+              )}
+
+              {/* CHỌN CƠ SỞ KHI LÀ CHỦ NHIỆM CƠ SỞ */}
+              {systemRole === "CHUCOSO" && (
+                <div className="rounded-xl bg-blue-50/80 p-3.5 border border-blue-200 space-y-2 animate-fade-in">
+                  <label className="block text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                    <span>Chọn cơ sở bạn làm Chủ nhiệm *</span>
+                  </label>
+                  <select
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
+                    className="w-full rounded-xl border border-blue-300 bg-white p-2.5 text-xs font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+                    required
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-blue-700">
+                    Bạn sẽ chịu trách nhiệm quản lý cơ sở đào tạo này.
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Section 1: Thông tin cá nhân & tài khoản */}
             <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
                 <User className="h-4 w-4 text-brand-primary" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  1. Thông tin cá nhân & Tài khoản đăng nhập
+                  Thông tin cá nhân & Tài khoản đăng nhập
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700">
-                    Họ và tên {selectedRole === "ADMIN" ? "Quản trị viên" : "HLV"} *
+                    Họ và tên *
                   </label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={selectedRole === "ADMIN" ? "VD: Bùi Vinh" : "VD: Nguyễn Văn Anh"}
+                    placeholder="VD: Hoàng Tấn Đức"
                     className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
@@ -391,8 +468,8 @@ export default function RegisterPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={selectedRole === "ADMIN" ? "admin.buivinh@kttll.vn" : "hlv.nguyenvananh@kttll.vn"}
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                    placeholder="VD: ducth162000@gmail.com"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
 
@@ -420,7 +497,7 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block font-bold text-slate-700">Số điện thoại liên hệ *</label>
                   <input
                     type="tel"
@@ -431,44 +508,15 @@ export default function RegisterPage() {
                     className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
-              </div>
-            </div>
 
-            {/* Section 2: Dành cho Ban Quản Trị hoặc Huấn Luyện Viên */}
-            {selectedRole === "ADMIN" ? (
-              <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-                  <ShieldCheck className="h-4 w-4 text-amber-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    2. Chức danh Quản trị & Mã xác thực CLB
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {systemRole !== "CHUCOSO" && (
                   <div>
-                    <label className="block font-bold text-slate-700">Vị trí / Chức vụ trong CLB</label>
-                    <select
-                      value={adminTitle}
-                      onChange={(e) => setAdminTitle(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
-                    >
-                      <option value="Ban Chủ Nhiệm CLB">Ban Chủ Nhiệm CLB</option>
-                      <option value="Chủ nhiệm CLB">Chủ nhiệm CLB</option>
-                      <option value="Phó Chủ nhiệm CLB">Phó Chủ nhiệm CLB</option>
-                      <option value="Trưởng ban Chuyên môn">Trưởng ban Chuyên môn</option>
-                      <option value="Quản lý Cơ sở Đào tạo">Quản lý Cơ sở Đào tạo</option>
-                      <option value="Kế toán & Tài chính CLB">Kế toán & Tài chính CLB</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700">Cơ sở phụ trách chính</label>
+                    <label className="block font-bold text-slate-700">Cơ sở sinh hoạt chính</label>
                     <select
                       value={branchId}
                       onChange={(e) => setBranchId(e.target.value)}
                       className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
                     >
-                      <option value="branch-all">Toàn bộ 8 cơ sở CLB</option>
                       {branches.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name}
@@ -476,177 +524,74 @@ export default function RegisterPage() {
                       ))}
                     </select>
                   </div>
+                )}
+              </div>
+            </div>
 
-                  <div className="sm:col-span-2">
-                    <label className="block font-bold text-slate-700">
-                      Mã xác thực Quản trị viên (Admin Secret Code) *
-                    </label>
-                    <div className="relative mt-1">
-                      <input
-                        type="text"
-                        required
-                        value={adminSecretCode}
-                        onChange={(e) => setAdminSecretCode(e.target.value)}
-                        placeholder="Nhập mã xác thực nội bộ CLB"
-                        className="w-full rounded-xl border border-amber-300 bg-amber-50/30 p-2.5 font-mono text-xs font-bold text-amber-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-                      />
-                    </div>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      Mã xác thực nội bộ để bảo mật quyền Admin CLB (Mặc định: <strong className="text-amber-700 font-mono">KTTLL2026</strong>).
-                    </p>
-                  </div>
+            {/* Section 2: Chuyên môn & Tài khoản nhận lương */}
+            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                <Wallet className="h-4 w-4 text-emerald-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Thông tin thù lao giảng dạy & STK ngân hàng
+                </h3>
+              </div>
 
-                  <div className="sm:col-span-2">
-                    <label className="block font-bold text-slate-700">Ghi chú & Trách nhiệm quản lý</label>
-                    <textarea
-                      rows={2}
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="Phụ trách điều hành cơ sở, quản lý lịch học, tuyển sinh..."
-                      className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700">Tên ngân hàng</label>
+                  <select
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
+                  >
+                    <option value="MBBank">MBBank (Quân Đội)</option>
+                    <option value="Vietcombank">Vietcombank</option>
+                    <option value="Techcombank">Techcombank</option>
+                    <option value="BIDV">BIDV</option>
+                    <option value="ACB">ACB</option>
+                    <option value="TPBank">TPBank</option>
+                    <option value="VPBank">VPBank</option>
+                    <option value="Agribank">Agribank</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Số tài khoản</label>
+                  <input
+                    type="text"
+                    value={bankAccount}
+                    onChange={(e) => setBankAccount(e.target.value)}
+                    placeholder="STK nhận thù lao"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700">Chủ tài khoản (In hoa)</label>
+                  <input
+                    type="text"
+                    value={accountHolder}
+                    onChange={(e) => setAccountHolder(e.target.value.toUpperCase())}
+                    placeholder="VD: HOANG TAN DUC"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono uppercase"
+                  />
                 </div>
               </div>
-            ) : (
-              <>
-                {/* Section 2: Chuyên môn cờ vua & Cơ sở công tác cho HLV */}
-                <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-                    <Award className="h-4 w-4 text-brand-secondary" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      2. Chuyên môn cờ vua & Cơ sở công tác
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <label className="block font-bold text-slate-700">Danh hiệu / Học vị cờ vua</label>
-                      <select
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
-                      >
-                        <option value="HLV Quốc gia">HLV Quốc gia</option>
-                        <option value="Đại Kiện Tướng Quốc Tế (GM)">Đại Kiện Tướng Quốc Tế (GM)</option>
-                        <option value="Kiện Tướng Quốc Tế (IM)">Kiện Tướng Quốc Tế (IM)</option>
-                        <option value="Kiện Tướng FIDE (FM)">Kiện Tướng FIDE (FM)</option>
-                        <option value="HLV Cờ Vua Cấp 1">HLV Cờ Vua Cấp 1</option>
-                        <option value="Kiện Tướng Quốc Gia">Kiện Tướng Quốc Gia</option>
-                        <option value="VĐV Đội Tuyển Tỉnh/Thành">VĐV Đội Tuyển Tỉnh/Thành</option>
-                      </select>
-                    </div>
-
-
-                    <div>
-                      <label className="block font-bold text-slate-700">Kinh nghiệm giảng dạy</label>
-                      <input
-                        type="text"
-                        value={experience}
-                        onChange={(e) => setExperience(e.target.value)}
-                        placeholder="VD: 3 năm, 5 năm..."
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700">Cơ sở giảng dạy chính</label>
-                      <select
-                        value={branchId}
-                        onChange={(e) => setBranchId(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
-                      >
-                        {branches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block font-bold text-slate-700">Tiểu sử & Triết lý giảng dạy</label>
-                      <textarea
-                        rows={2}
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Giới thiệu ngắn về phương pháp huấn luyện cờ vua, thành tích thi đấu..."
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3: Thông tin nhận thù lao (Chỉ cho HLV) */}
-                <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-                    <Wallet className="h-4 w-4 text-emerald-600" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      3. Tài khoản nhận thù lao (50% học phí + 30% sách)
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <label className="block font-bold text-slate-700">Tên ngân hàng</label>
-                      <select
-                        value={bankName}
-                        onChange={(e) => setBankName(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
-                      >
-                        <option value="MBBank">MBBank (Quân Đội)</option>
-                        <option value="Vietcombank">Vietcombank</option>
-                        <option value="Techcombank">Techcombank</option>
-                        <option value="BIDV">BIDV</option>
-                        <option value="ACB">ACB</option>
-                        <option value="TPBank">TPBank</option>
-                        <option value="VPBank">VPBank</option>
-                        <option value="Agribank">Agribank</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700">Số tài khoản</label>
-                      <input
-                        type="text"
-                        value={bankAccount}
-                        onChange={(e) => setBankAccount(e.target.value)}
-                        placeholder="0987654321"
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700">Chủ tài khoản (In hoa)</label>
-                      <input
-                        type="text"
-                        value={accountHolder}
-                        onChange={(e) => setAccountHolder(e.target.value.toUpperCase())}
-                        placeholder="NGUYEN VAN ANH"
-                        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono uppercase"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+            </div>
 
             {/* Submit Button */}
             <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading || success}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 transition-all hover:bg-brand-primary-hover active:scale-[0.98] disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 transition-all hover:bg-brand-primary-hover active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
                   <>
-                    <span>
-                      {selectedRole === "ADMIN"
-                        ? "Hoàn Tất Đăng Ký Ban Quản Trị CLB"
-                        : "Hoàn Tất Đăng Ký & Bắt Đầu Giảng Dạy"}
-                    </span>
+                    <span>Hoàn Tất Đăng Ký Tài Khoản</span>
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}

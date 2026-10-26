@@ -38,7 +38,6 @@ export default function CoachEvaluationsPage() {
   // Tải danh sách học viên của riêng HLV hiện tại (đồng bộ từ Supabase)
   React.useEffect(() => {
     let coachId = "";
-    let isAdmin = false;
     let coachEmail = "";
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
@@ -46,15 +45,13 @@ export default function CoachEvaluationsPage() {
         const u = JSON.parse(stored);
         if (u.id) coachId = u.id;
         if (u.email) coachEmail = u.email;
-        if (u.role === "ADMIN" || u.hasAdminAccess) isAdmin = true;
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
 
     const updateDisplay = () => {
-      const myStudents = isAdmin
-        ? dataStore.students
-        : getCoachStudents(coachId, coachEmail);
+      // Ở giao diện HLV, chỉ hiển thị học viên do chính HLV phụ trách
+      const myStudents = getCoachStudents(coachId, coachEmail);
       setStudents(myStudents);
       setSelectedStudentId((prev) => (myStudents.some((s) => s.id === prev) ? prev : myStudents[0]?.id || ""));
     };

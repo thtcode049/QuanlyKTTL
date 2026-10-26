@@ -156,7 +156,7 @@ ${currentPreview.footer}`;
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm">Zalo OA Simulator & Message Editor</span>
+                <span className="font-bold text-sm">Zalo Message Simulator & Editor</span>
                 <span className="rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-extrabold text-slate-900">
                   LIVE
                 </span>
@@ -357,7 +357,7 @@ ${currentPreview.footer}`;
             {/* 1. Sửa Tiêu đề tin nhắn */}
             <div>
               <label className="block font-bold text-slate-800 mb-1">
-                Tiêu đề tin nhắn Zalo OA
+                Tiêu đề tin nhắn Zalo
               </label>
               <input
                 type="text"
@@ -549,7 +549,7 @@ ${currentPreview.footer}`;
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  <span>Gửi Tin Zalo OA</span>
+                  <span>Gửi Tin Zalo</span>
                 </>
               )}
             </button>

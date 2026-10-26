@@ -38,12 +38,7 @@ export default function AdminSettingsPage() {
   const [customQrImage, setCustomQrImage] = useState<string>(dataStore.bankConfig.customQrImage || "");
   const [useCustomQr, setUseCustomQr] = useState<boolean>(Boolean(dataStore.bankConfig.useCustomQr));
 
-  // Zalo OA API config state
-  const [zaloAppId, setZaloAppId] = useState(dataStore.zaloConfig.appId || "");
-  const [zaloSecretKey, setZaloSecretKey] = useState(dataStore.zaloConfig.secretKey || "");
-  const [zaloOaId, setZaloOaId] = useState(dataStore.zaloConfig.oaId || "");
-
-  // Zalo OA Template state
+  // Zalo Template state (Hệ thống dùng Tool gửi Zalo hàng loạt, không dùng Zalo OA)
   const [titleTemplate, setTitleTemplate] = useState(dataStore.zaloConfig.titleTemplate);
   const [bodyTemplate, setBodyTemplate] = useState(dataStore.zaloConfig.bodyTemplate);
   const [footerNote, setFooterNote] = useState(dataStore.zaloConfig.footerNote);
@@ -108,9 +103,6 @@ export default function AdminSettingsPage() {
     });
 
     dataStore.updateZaloConfig({
-      appId: zaloAppId,
-      secretKey: zaloSecretKey,
-      oaId: zaloOaId,
       titleTemplate,
       bodyTemplate,
       footerNote,
@@ -165,7 +157,7 @@ export default function AdminSettingsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
-            Cài Đặt VietQR & Mẫu Zalo OA
+            Cài Đặt VietQR & Mẫu Tin Nhắn Zalo
           </h1>
           <p className="text-xs text-slate-500">
             Tùy chỉnh thông tin tài khoản ngân hàng, mã QR thanh toán và mẫu nội dung tin nhắn gửi phụ huynh.
@@ -184,7 +176,7 @@ export default function AdminSettingsPage() {
       {savedSuccess && (
         <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800 border border-emerald-200 animate-fade-in shadow-sm">
           <Check className="h-4 w-4 text-emerald-600" />
-          <span>Đã lưu thành công cấu hình ngân hàng VietQR và mẫu tin nhắn Zalo OA vào hệ thống!</span>
+          <span>Đã lưu thành công cấu hình ngân hàng VietQR và mẫu tin nhắn Zalo vào hệ thống!</span>
         </div>
       )}
 
@@ -344,7 +336,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* Zalo OA Template Configuration */}
+        {/* Zalo Template Configuration */}
         <div className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80 space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
@@ -353,7 +345,7 @@ export default function AdminSettingsPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Mẫu Nội Dung Tin Nhắn Zalo OA Thông Báo Học Phí
+                  Mẫu Nội Dung Tin Nhắn Zalo Thông Báo Học Phí
                 </h3>
                 <p className="text-xs text-slate-500">
                   Tùy chỉnh tiêu đề, lời mở đầu, ghi chú gửi phụ huynh kèm các thẻ dữ liệu động
@@ -415,7 +407,7 @@ export default function AdminSettingsPage() {
             {/* Tiêu đề */}
             <div>
               <label className="font-bold text-slate-700 block mb-1">
-                Mẫu Tiêu Đề Tin Nhắn Zalo OA
+                Mẫu Tiêu Đề Tin Nhắn Zalo
               </label>
               <input
                 type="text"
@@ -452,45 +444,6 @@ export default function AdminSettingsPage() {
                 placeholder="VD: Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp..."
                 className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none leading-relaxed"
               />
-            </div>
-          </div>
-
-          {/* API credentials section */}
-          <div className="border-t border-slate-100 pt-4">
-            <h4 className="font-bold text-slate-800 mb-2">Thông Số Kết Nối Zalo OA (Tùy Chọn)</h4>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
-              <div>
-                <label className="font-semibold text-slate-600 block mb-1">Zalo App ID</label>
-                <input
-                  type="text"
-                  value={zaloAppId}
-                  onChange={(e) => setZaloAppId(e.target.value)}
-                  placeholder="Để trống dùng Mock Simulator"
-                  className="w-full rounded-xl border border-slate-300 p-2 font-mono text-slate-900 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-600 block mb-1">Zalo Secret Key</label>
-                <input
-                  type="password"
-                  value={zaloSecretKey}
-                  onChange={(e) => setZaloSecretKey(e.target.value)}
-                  placeholder="••••••••••••••••"
-                  className="w-full rounded-xl border border-slate-300 p-2 font-mono text-slate-900 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-600 block mb-1">Zalo OA ID</label>
-                <input
-                  type="text"
-                  value={zaloOaId}
-                  onChange={(e) => setZaloOaId(e.target.value)}
-                  placeholder="VD: 123456789012345"
-                  className="w-full rounded-xl border border-slate-300 p-2 font-mono text-slate-900 focus:border-brand-primary focus:outline-none"
-                />
-              </div>
             </div>
           </div>
         </div>

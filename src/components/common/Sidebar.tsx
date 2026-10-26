@@ -63,12 +63,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   };
 
   const adminNav = [
-    { name: "Tổng quan Doanh thu", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Cơ sở & Lớp học", href: "/admin/branches", icon: Building2 },
-    { name: "Hồ sơ Học viên", href: "/coach/students", icon: UserCheck },
-    { name: "Nhiệm vụ & KPI HLV", href: "/admin/tasks", icon: ClipboardList },
     { name: "Đội ngũ HLV & Phân quyền", href: "/admin/coaches", icon: Users },
+    { name: "Nhiệm vụ & KPI HLV", href: "/admin/tasks", icon: ClipboardList },
     { name: "Thu nhập & Lương HLV", href: "/admin/payroll", icon: Wallet },
+    { name: "Danh sách Cơ sở", href: "/admin/branches", icon: Building2 },
+    { name: "Tổng quan Doanh thu", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Cài đặt VietQR & Zalo", href: "/admin/settings", icon: Settings },
   ];
 
@@ -80,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { name: "Tổng kết & Học phí", href: "/coach/invoices", icon: FileSpreadsheet },
     { name: "Đánh giá kỳ thủ", href: "/coach/evaluations", icon: Award },
     { name: "Thu nhập HLV", href: "/coach/payroll", icon: Coins },
+    { name: "Cài đặt QR & Zalo", href: "/coach/settings", icon: Settings },
   ];
 
   const navItems = userRole === "ADMIN" ? adminNav : coachNav;

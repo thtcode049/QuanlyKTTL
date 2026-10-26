@@ -379,7 +379,7 @@ export default function AdminDashboardPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-brand-secondary">
                     <QrCode className="h-4 w-4" />
                   </div>
-                  <span>Cấu hình VietQR & Zalo OA</span>
+                  <span>Cấu hình VietQR & Zalo</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-400" />
               </Link>

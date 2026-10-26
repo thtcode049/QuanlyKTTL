@@ -18,10 +18,19 @@ import {
   HelpCircle,
   FolderOpen,
   FileCode,
+  Copy,
+  FileImage,
+  FolderArchive,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { ClassroomData, BranchData, dataStore } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
+import {
+  downloadInvoiceCardPng,
+  copyInvoiceCardToClipboard,
+  batchExportInvoiceCardsAsZip,
+  InvoiceCardData,
+} from "@/lib/invoice-card-generator";
 
 export interface StudentParentInvoiceItem {
   invoiceId: string;
@@ -433,6 +442,50 @@ export default function ZaloParentSenderModal({
                   <span>.ZIP</span>
                 </a>
               </div>
+
+              {/* NÚT: XUẤT TOÀN BỘ ẢNH THẺ PNG (.ZIP) */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    showToast("⏳ Đang tạo trọn bộ ảnh PNG thẻ học phí...");
+                    const cardList: InvoiceCardData[] = students.map((s) => ({
+                      studentCode: s.studentCode,
+                      studentName: s.studentName,
+                      className: s.className,
+                      branchName: s.branchName,
+                      month: s.month,
+                      year: s.year,
+                      presentCount: s.presentCount,
+                      presentDates: s.presentDates,
+                      feePerSession: s.feePerSession,
+                      totalAmount: s.totalAmount,
+                      bankName: s.bankName,
+                      bankAccount: s.bankAccount,
+                      accountHolder: s.accountHolder,
+                      transferContent: s.transferContent,
+                      vietQrUrl: s.vietQrUrl,
+                    }));
+                    const safeClass = classroom.name.replace(/[^a-zA-Z0-9\-_]/g, "_");
+                    await batchExportInvoiceCardsAsZip(
+                      cardList,
+                      `KTTLL_AnhTheHocPhi_${safeClass}_T${month}_${year}.zip`,
+                      (curr, tot) => {
+                        if (curr === tot) {
+                          showToast(`✅ Đã tải xong ${tot} ảnh thẻ PNG (.zip)!`);
+                        }
+                      }
+                    );
+                  } catch (e) {
+                    showToast("Lỗi khi xuất ảnh thẻ PNG!");
+                  }
+                }}
+                className="rounded-xl border border-teal-400/50 bg-teal-600 hover:bg-teal-500 px-3.5 py-2 text-xs font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                title="Tải toàn bộ ảnh thẻ học phí định dạng PNG của lớp thành 1 file .ZIP"
+              >
+                <FolderArchive className="h-4 w-4" />
+                <span>📥 Tải Bộ Ảnh PNG (.zip)</span>
+              </button>
 
               {/* NÚT 2: TẢI FILE DỮ LIỆU JSON */}
               <button
@@ -911,14 +964,69 @@ export default function ZaloParentSenderModal({
                       Tùy chọn thẻ học phí em {previewStudent.studentName}:
                     </span>
 
-                    <a
-                      href={`/api/coach/send-zalo-parents?action=download&studentCode=${previewStudent.studentCode}&month=${month}&year=${year}`}
-                      download={`${previewStudent.studentCode}_TheHocPhi.png`}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 active:scale-98 transition-all shadow-xs"
-                    >
-                      <Download className="h-3.5 w-3.5 text-emerald-700" />
-                      <span>Tải Ảnh Thẻ Học Phí PNG (Sắc Nét)</span>
-                    </a>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const cardData: InvoiceCardData = {
+                            studentCode: previewStudent.studentCode,
+                            studentName: previewStudent.studentName,
+                            className: previewStudent.className,
+                            branchName: previewStudent.branchName,
+                            month: previewStudent.month,
+                            year: previewStudent.year,
+                            presentCount: previewStudent.presentCount,
+                            presentDates: previewStudent.presentDates,
+                            feePerSession: previewStudent.feePerSession,
+                            totalAmount: previewStudent.totalAmount,
+                            bankName: previewStudent.bankName,
+                            bankAccount: previewStudent.bankAccount,
+                            accountHolder: previewStudent.accountHolder,
+                            transferContent: previewStudent.transferContent,
+                            vietQrUrl: previewStudent.vietQrUrl,
+                          };
+                          const success = await copyInvoiceCardToClipboard(cardData);
+                          if (success) {
+                            showToast(`📋 Đã chép ảnh thẻ em ${previewStudent.studentName} vào Clipboard!`);
+                          } else {
+                            showToast("Trình duyệt không hỗ trợ sao chép trực tiếp. Hãy bấm nút Tải PNG!");
+                          }
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 active:scale-98 transition-all shadow-xs"
+                      >
+                        <Copy className="h-3.5 w-3.5 text-slate-600" />
+                        <span>Sao Chép Ảnh</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cardData: InvoiceCardData = {
+                            studentCode: previewStudent.studentCode,
+                            studentName: previewStudent.studentName,
+                            className: previewStudent.className,
+                            branchName: previewStudent.branchName,
+                            month: previewStudent.month,
+                            year: previewStudent.year,
+                            presentCount: previewStudent.presentCount,
+                            presentDates: previewStudent.presentDates,
+                            feePerSession: previewStudent.feePerSession,
+                            totalAmount: previewStudent.totalAmount,
+                            bankName: previewStudent.bankName,
+                            bankAccount: previewStudent.bankAccount,
+                            accountHolder: previewStudent.accountHolder,
+                            transferContent: previewStudent.transferContent,
+                            vietQrUrl: previewStudent.vietQrUrl,
+                          };
+                          downloadInvoiceCardPng(cardData);
+                          showToast(`📥 Đã tải ảnh PNG thẻ học phí em ${previewStudent.studentName}!`);
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 active:scale-98 transition-all shadow-xs"
+                      >
+                        <Download className="h-3.5 w-3.5 text-white" />
+                        <span>Tải Ảnh PNG</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (

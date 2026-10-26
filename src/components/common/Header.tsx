@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
       router.push("/coach/classes");
     } else {
       // Chuyển sang giao diện Admin (giữ nguyên tài khoản hiện tại)
-      router.push("/admin/branches");
+      router.push("/admin/coaches");
     }
   };
 

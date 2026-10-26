@@ -1,6 +1,6 @@
 /**
- * Zalo OA & ZNS Helper Service
- * Cung cấp giải lập tin nhắn Zalo OA gửi phụ huynh và API kết nối thật khi cấu hình
+ * Zalo Helper Service
+ * Cung cấp giải lập tin nhắn Zalo gửi phụ huynh và cấu hình mẫu gửi
  */
 
 import { ZaloConfig } from "@/lib/data-store";
@@ -150,7 +150,7 @@ export async function sendZaloOaMessage(payload: ZaloStudentInvoicePayload): Pro
       success: false,
       isMock: false,
       messageId: "",
-      error: error.message || "Lỗi gửi Zalo OA",
+      error: error.message || "Lỗi gửi tin Zalo",
     };
   }
 }
