@@ -551,7 +551,7 @@ export default function AdminBranchesAndClassesPage() {
                   required
                   value={branchName}
                   onChange={(e) => setBranchName(e.target.value)}
-                  placeholder="VD: Cơ sở 5 - Hà Đông"
+                  placeholder="VD: Cơ sở Hà Đông, Cơ sở Cầu Giấy..."
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
                 />
               </div>

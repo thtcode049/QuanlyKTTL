@@ -137,7 +137,7 @@ export default function AdminSettingsPage() {
     parentName: "Nguyễn Hoàng Nam",
     parentPhone: "0912.111.222",
     className: "Cờ vua Nhập Môn - K01",
-    branchName: "Cơ sở 1 - Bạch Mai",
+    branchName: "Cơ sở Bạch Mai",
     month: 10,
     year: 2026,
     presentCount: 4,

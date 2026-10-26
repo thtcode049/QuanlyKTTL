@@ -425,12 +425,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700">Số điện thoại phụ huynh *</label>
+                  <label className="block font-bold text-slate-700">Số điện thoại phụ huynh (Không bắt buộc)</label>
                   <input
                     type="tel"
-                    required
                     value={parentPhone}
                     onChange={(e) => setParentPhone(e.target.value)}
+                    placeholder="VD: 0912.345.678 (không bắt buộc)"
                     className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>

@@ -240,7 +240,7 @@ export default function CoachClassesPage() {
   // Thêm học viên mới vào lớp
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudentName || !newParentPhone) return;
+    if (!newStudentName) return;
 
     const newCode = `HS${(dataStore.students.length + 1).toString().padStart(3, "0")}`;
     const newStudent: StudentData = {
@@ -1204,13 +1204,12 @@ export default function CoachClassesPage() {
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700">Số điện thoại phụ huynh *</label>
+                    <label className="font-bold text-slate-700">Số điện thoại phụ huynh (Không bắt buộc)</label>
                   <input
                     type="tel"
-                    required
                     value={newParentPhone}
                     onChange={(e) => setNewParentPhone(e.target.value)}
-                    placeholder="VD: 0912.345.678"
+                    placeholder="VD: 0912.345.678 (không bắt buộc)"
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
                   />
                   {newParentPhone.trim().length >= 8 &&

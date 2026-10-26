@@ -19,7 +19,7 @@ async function main() {
   // 2. Tạo 8 Cơ sở Hà Nội chuẩn kientuongtuonglai.com
   const b1 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 1 – Phố Bạch Mai, Phường Bạch Mai",
+      name: "Cơ sở Bạch Mai",
       address: "Số 257 Bạch Mai, Phường Bạch Mai, TP Hà Nội (Ngã tư Bạch Mai – Lê Thanh Nghị – Thanh Nhàn)",
       phone: "0968.543.141",
     },
@@ -27,7 +27,7 @@ async function main() {
 
   const b2 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 2 – Phố Thái Hà, Phường Đống Đa",
+      name: "Cơ sở Thái Hà",
       address: "Số 111 ngõ 98 Thái Hà, Phường Trung Liệt, Quận Đống Đa, TP Hà Nội",
       phone: "0968.543.141",
     },
@@ -35,7 +35,7 @@ async function main() {
 
   const b3 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 3 – Phố Hoàng Quốc Việt, Phường Cầu Giấy",
+      name: "Cơ sở Cầu Giấy",
       address: "Số 1 ngách 42, ngõ 106 Hoàng Quốc Việt, Quận Cầu Giấy, TP Hà Nội",
       phone: "0983.585.499",
     },
@@ -43,7 +43,7 @@ async function main() {
 
   const b4 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 4 – Phố Trương Định – Hoàng Mai",
+      name: "Cơ sở Trương Định",
       address: "Tầng 2, Tòa CT2B (lối lên sảnh văn phòng dịch vụ), KĐT Nam Đô, 609 Trương Định, Hoàng Mai, Hà Nội",
       phone: "0916.611.258",
     },
@@ -51,7 +51,7 @@ async function main() {
 
   const b5 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 5 – Phố Láng Hạ, Phường Đống Đa",
+      name: "Cơ sở Láng Hạ",
       address: "Nhà 101B ngõ 111 Láng Hạ, Phường Láng Hạ, Quận Đống Đa, TP Hà Nội",
       phone: "0342.666.688",
     },
@@ -59,7 +59,7 @@ async function main() {
 
   const b6 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 6 – Phố Quang Trung, Phường Hà Đông",
+      name: "Cơ sở Hà Đông",
       address: "Liền kề 07 Lô 4, KĐT Nam La Khê, 368B Quang Trung, Quận Hà Đông, TP Hà Nội",
       phone: "0968.543.141",
     },
@@ -67,7 +67,7 @@ async function main() {
 
   const b7 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 7 – KĐT GAMUDA, Phường Hoàng Mai",
+      name: "Cơ sở Gamuda Gardens",
       address: "Tầng 4, Số 10 đường 2.2, Gamuda Gardens, Phường Trần Phú, Quận Hoàng Mai, TP Hà Nội",
       phone: "0869.310.200",
     },
@@ -75,7 +75,7 @@ async function main() {
 
   const b8 = await prisma.branch.create({
     data: {
-      name: "Cơ sở 8 – Phố Nguyễn Tuân, Phường Thanh Xuân",
+      name: "Cơ sở Nguyễn Tuân",
       address: "Liền kề 03-32 KĐT số 90 Nguyễn Tuân, Phường Thanh Xuân Trung, Quận Thanh Xuân, TP Hà Nội",
       phone: "0968.543.141",
     },

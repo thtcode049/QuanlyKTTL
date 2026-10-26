@@ -484,11 +484,9 @@ export function parseMatrixToStudents(
       errors.push("Họ và tên quá ngắn");
     }
 
-    // Kiểm tra bắt buộc: Số điện thoại phụ huynh
-    if (!parentPhone) {
-      errors.push("Thiếu Số điện thoại phụ huynh");
-    } else if (parentPhone.length < 9 || parentPhone.length > 12) {
-      errors.push("Số điện thoại không hợp lệ (cần từ 9 đến 11 chữ số)");
+    // Kiểm tra Số điện thoại phụ huynh (Không bắt buộc, nếu có thì kiểm tra định dạng)
+    if (parentPhone && (parentPhone.length < 9 || parentPhone.length > 12)) {
+      warnings.push("Số điện thoại có thể không chuẩn (thường từ 9 đến 11 chữ số)");
     }
 
     // Kiểm tra năm sinh

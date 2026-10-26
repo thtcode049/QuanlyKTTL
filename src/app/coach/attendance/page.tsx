@@ -615,8 +615,8 @@ function AttendanceContent() {
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClass) return;
-    if (!newStudentForm.fullName.trim() || !newStudentForm.parentPhone.trim()) {
-      alert("Vui lòng điền Họ tên học sinh và Số điện thoại phụ huynh!");
+    if (!newStudentForm.fullName.trim()) {
+      alert("Vui lòng điền Họ tên học sinh!");
       return;
     }
 
@@ -721,8 +721,8 @@ function AttendanceContent() {
   const handleUpdateStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStudent) return;
-    if (!editForm.fullName.trim() || !editForm.parentPhone.trim()) {
-      alert("Họ tên học viên và SĐT phụ huynh không được để trống!");
+    if (!editForm.fullName.trim()) {
+      alert("Họ tên học viên không được để trống!");
       return;
     }
 
@@ -1582,13 +1582,12 @@ function AttendanceContent() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700">SĐT phụ huynh *</label>
+                      <label className="text-xs font-bold text-slate-700">SĐT phụ huynh</label>
                       <input
                         type="tel"
-                        required
                         value={newStudentForm.parentPhone}
                         onChange={(e) => setNewStudentForm({ ...newStudentForm, parentPhone: e.target.value })}
-                        placeholder="0912..."
+                        placeholder="0912... (không bắt buộc)"
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                       />
                     </div>
@@ -1707,12 +1706,12 @@ function AttendanceContent() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">SĐT phụ huynh *</label>
+                  <label className="text-xs font-bold text-slate-700">SĐT phụ huynh</label>
                   <input
                     type="tel"
-                    required
                     value={editForm.parentPhone}
                     onChange={(e) => setEditForm({ ...editForm, parentPhone: e.target.value })}
+                    placeholder="0912... (không bắt buộc)"
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
                 </div>

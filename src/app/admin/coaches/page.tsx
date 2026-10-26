@@ -225,13 +225,14 @@ export default function AdminCoachesPage() {
     setEditingCoach(null);
   };
 
-  const handleDeleteCoach = (coachId: string, coachName: string) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa Huấn luyện viên "${coachName}" không?`)) {
-      dataStore.deleteCoach(coachId);
+  const handleDeleteCoach = async (coachId: string, coachName: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn Huấn luyện viên "${coachName}" không?`)) {
+      await dataStore.deleteCoach(coachId);
       reloadCoaches();
       if (editingCoach?.id === coachId) {
         setEditingCoach(null);
       }
+      alert(`Đã xóa thành công Huấn luyện viên "${coachName}" khỏi hệ thống!`);
     }
   };
 

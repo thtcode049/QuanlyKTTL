@@ -186,53 +186,73 @@ export interface NotificationData {
 export const initialBranches: BranchData[] = [
   {
     id: "branch-1",
-    name: "Cơ sở 1 – Phố Bạch Mai, Phường Bạch Mai",
+    name: "Cơ sở Bạch Mai",
     address: "Số 257 Bạch Mai, Phường Bạch Mai, TP Hà Nội (Ngã tư Bạch Mai – Lê Thanh Nghị – Thanh Nhàn)",
     phone: "0968.543.141",
   },
   {
     id: "branch-2",
-    name: "Cơ sở 2 – Phố Thái Hà, Phường Đống Đa",
+    name: "Cơ sở Thái Hà",
     address: "Số 111 ngõ 98 Thái Hà, Phường Trung Liệt, Quận Đống Đa, TP Hà Nội",
     phone: "0968.543.141",
   },
   {
     id: "branch-3",
-    name: "Cơ sở 3 – Phố Hoàng Quốc Việt, Phường Cầu Giấy",
+    name: "Cơ sở Cầu Giấy",
     address: "Số 1 ngách 42, ngõ 106 Hoàng Quốc Việt, Quận Cầu Giấy, TP Hà Nội",
     phone: "0983.585.499",
   },
   {
     id: "branch-4",
-    name: "Cơ sở 4 – Phố Trương Định – Hoàng Mai",
+    name: "Cơ sở Trương Định",
     address: "Tầng 2, Tòa CT2B (lối lên sảnh văn phòng dịch vụ), KĐT Nam Đô, 609 Trương Định, Hoàng Mai, Hà Nội",
     phone: "0916.611.258",
   },
   {
     id: "branch-5",
-    name: "Cơ sở 5 – Phố Láng Hạ, Phường Đống Đa",
+    name: "Cơ sở Láng Hạ",
     address: "Nhà 101B ngõ 111 Láng Hạ, Phường Láng Hạ, Quận Đống Đa, TP Hà Nội",
     phone: "0342.666.688",
   },
   {
     id: "branch-6",
-    name: "Cơ sở 6 – Phố Quang Trung, Phường Hà Đông",
+    name: "Cơ sở Hà Đông",
     address: "Liền kề 07 Lô 4, KĐT Nam La Khê, 368B Quang Trung, Quận Hà Đông, TP Hà Nội",
     phone: "0968.543.141",
   },
   {
     id: "branch-7",
-    name: "Cơ sở 7 – KĐT GAMUDA, Phường Hoàng Mai",
+    name: "Cơ sở Gamuda Gardens",
     address: "Tầng 4, Số 10 đường 2.2, Gamuda Gardens, Phường Trần Phú, Quận Hoàng Mai, TP Hà Nội",
     phone: "0869.310.200",
   },
   {
     id: "branch-8",
-    name: "Cơ sở 8 – Phố Nguyễn Tuân, Phường Thanh Xuân",
+    name: "Cơ sở Nguyễn Tuân",
     address: "Liền kề 03-32 KĐT số 90 Nguyễn Tuân, Phường Thanh Xuân Trung, Quận Thanh Xuân, TP Hà Nội",
     phone: "0968.543.141",
   },
 ];
+
+// Hàm làm sạch tên cơ sở để đảm bảo không chứa tiền tố "Cơ sở 1-8"
+export function cleanBranchName(name?: string): string {
+  if (!name) return "";
+  let cleaned = name.trim();
+  cleaned = cleaned
+    .replace(/^Cơ sở\s*[1-8]\s*[–-]\s*(Phố\s*|KĐT\s*)?/i, "Cơ sở ")
+    .replace(/^Cơ sở\s*[1-8]\s*:\s*/i, "Cơ sở ");
+
+  if (cleaned.includes("Bạch Mai")) return "Cơ sở Bạch Mai";
+  if (cleaned.includes("Thái Hà")) return "Cơ sở Thái Hà";
+  if (cleaned.includes("Hoàng Quốc Việt") || cleaned.includes("Cầu Giấy")) return "Cơ sở Cầu Giấy";
+  if (cleaned.includes("Trương Định")) return "Cơ sở Trương Định";
+  if (cleaned.includes("Láng Hạ")) return "Cơ sở Láng Hạ";
+  if (cleaned.includes("Quang Trung") || cleaned.includes("Hà Đông")) return "Cơ sở Hà Đông";
+  if (cleaned.toLowerCase().includes("gamuda")) return "Cơ sở Gamuda Gardens";
+  if (cleaned.includes("Nguyễn Tuân") || cleaned.includes("Thanh Xuân")) return "Cơ sở Nguyễn Tuân";
+
+  return cleaned;
+}
 
 export const initialUsers: UserData[] = [
   {
@@ -310,6 +330,7 @@ export const initialNotifications: NotificationData[] = [];
 class InMemoryDataStore {
   public branches: BranchData[] = [...initialBranches];
   public users: UserData[] = [...initialUsers];
+  public deletedCoachIds: string[] = [];
   public classes: ClassroomData[] = [...initialClasses];
   public students: StudentData[] = [...initialStudents];
   public sessions: AttendanceSessionData[] = [...initialSessions];
@@ -340,6 +361,7 @@ class InMemoryDataStore {
 
       const payload = {
         users: this.users,
+        deletedCoachIds: this.deletedCoachIds,
         classes: this.classes,
         students: this.students,
         branches: this.branches,
@@ -350,6 +372,7 @@ class InMemoryDataStore {
         zaloSentMap,
       };
       localStorage.setItem("kttll_datastore", JSON.stringify(payload));
+      localStorage.setItem("kttll_deleted_coaches", JSON.stringify(this.deletedCoachIds));
     } catch (e) {
       console.warn("Không thể lưu kttll_datastore vào localStorage", e);
     }
@@ -362,12 +385,33 @@ class InMemoryDataStore {
       const raw = localStorage.getItem("kttll_datastore");
       if (!raw) return;
       const data = JSON.parse(raw);
+      // Tải danh sách HLV đã bị xóa để đảm bảo không bị khôi phục lại khi load/sync
+      const rawDeleted = localStorage.getItem("kttll_deleted_coaches");
+      if (rawDeleted) {
+        try {
+          this.deletedCoachIds = JSON.parse(rawDeleted);
+        } catch (e) {}
+      }
+      if (data.deletedCoachIds && Array.isArray(data.deletedCoachIds)) {
+        this.deletedCoachIds = Array.from(new Set([...this.deletedCoachIds, ...data.deletedCoachIds]));
+      }
+
       if (data.users && Array.isArray(data.users)) {
         data.users.forEach((u: UserData) => {
+          if (this.deletedCoachIds.includes(u.id) || (u.email && this.deletedCoachIds.includes(u.email))) {
+            return;
+          }
           const idx = this.users.findIndex((x) => x.id === u.id || x.email === u.email);
           if (idx >= 0) this.users[idx] = { ...this.users[idx], ...u };
           else this.users.push(u);
         });
+      }
+
+      // Lọc bỏ triệt để các user trong deletedCoachIds
+      if (this.deletedCoachIds.length > 0) {
+        this.users = this.users.filter(
+          (u) => !this.deletedCoachIds.includes(u.id) && !this.deletedCoachIds.includes(u.email)
+        );
       }
       if (data.students && Array.isArray(data.students)) {
         data.students.filter((s: StudentData) => !s.id.startsWith("std-")).forEach((s: StudentData) => {
@@ -431,7 +475,7 @@ class InMemoryDataStore {
       }
     }
 
-    // Đồng bộ đầy đủ 8 cơ sở theo chuẩn kientuongtuonglai.com
+    // Chuẩn hóa tên toàn bộ 8 cơ sở, tuyệt đối không để tiền tố "Cơ sở 1-8"
     initialBranches.forEach((ib) => {
       const existing = this.branches.find((b) => b.id === ib.id);
       if (existing) {
@@ -442,6 +486,10 @@ class InMemoryDataStore {
         this.branches.push(ib);
       }
     });
+
+    for (const b of this.branches) {
+      b.name = cleanBranchName(b.name);
+    }
 
     // Chuẩn hóa loại bỏ trình độ Vỡ Lòng, chuyển sang Nhập môn hoặc Cơ bản và gán shareWithAdmin
     for (const c of this.classes) {
@@ -550,8 +598,18 @@ class InMemoryDataStore {
       const json = await res.json();
       if (json.success && json.data) {
         const { branches, users, classes, students, sessions } = json.data;
-        if (Array.isArray(branches) && branches.length > 0) this.branches = branches;
-        if (Array.isArray(users) && users.length > 0) this.users = users;
+        if (Array.isArray(branches) && branches.length > 0) {
+          this.branches = branches.map((b) => ({
+            ...b,
+            name: cleanBranchName(b.name),
+          }));
+        }
+        if (Array.isArray(users) && users.length > 0) {
+          // Lọc bỏ bất kỳ user nào nằm trong danh sách HLV đã xóa
+          this.users = users.filter(
+            (u) => !this.deletedCoachIds.includes(u.id) && !this.deletedCoachIds.includes(u.email)
+          );
+        }
         if (Array.isArray(classes)) this.classes = classes;
         if (Array.isArray(students)) this.students = students;
         if (Array.isArray(sessions)) this.sessions = sessions;
@@ -655,10 +713,36 @@ class InMemoryDataStore {
     return true;
   }
 
-  // Xóa huấn luyện viên
-  public deleteCoach(coachId: string) {
-    this.users = this.users.filter((u) => u.id !== coachId);
+  // Xóa huấn luyện viên vĩnh viễn (Đồng bộ Supabase DB và lưu vết localStorage)
+  public async deleteCoach(coachId: string): Promise<boolean> {
+    const target = this.users.find((u) => u.id === coachId || u.email === coachId);
+    if (!this.deletedCoachIds.includes(coachId)) {
+      this.deletedCoachIds.push(coachId);
+    }
+    if (target?.email && !this.deletedCoachIds.includes(target.email)) {
+      this.deletedCoachIds.push(target.email);
+    }
+    const canonical = resolveCanonicalCoachId(coachId);
+    if (canonical && !this.deletedCoachIds.includes(canonical)) {
+      this.deletedCoachIds.push(canonical);
+    }
+
+    this.users = this.users.filter(
+      (u) => u.id !== coachId && u.email !== coachId && u.id !== canonical
+    );
     this.saveToLocalStorage();
+
+    // Đồng bộ xóa trên Supabase DB qua API
+    if (typeof window !== "undefined") {
+      try {
+        await fetch(`/api/auth/users?id=${encodeURIComponent(coachId)}`, {
+          method: "DELETE",
+        });
+      } catch (e) {
+        console.warn("Lỗi gọi API xóa coach:", e);
+      }
+    }
+
     return true;
   }
 

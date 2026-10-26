@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   Download,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Trash2,
   Users,
@@ -15,6 +16,9 @@ import {
   Upload,
   RotateCcw,
   Check,
+  ArrowLeft,
+  UserCheck,
+  UserPlus,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { ClassroomData, StudentData, dataStore } from "@/lib/data-store";
@@ -39,6 +43,14 @@ interface BatchImportStudentsModalProps {
   onImportSuccess?: (count: number) => void;
 }
 
+interface DuplicateResolution {
+  rowIndex: number;
+  row: EditableStudentRow;
+  matchedStudent: StudentData;
+  matchType: "NAME" | "PHONE" | "BOTH";
+  action: "USE_EXISTING" | "CREATE_NEW";
+}
+
 export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> = ({
   isOpen,
   onClose,
@@ -56,9 +68,11 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
   };
 
   // State
-  const [step, setStep] = useState<"TABLE" | "RESULT">("TABLE");
+  const [step, setStep] = useState<"TABLE" | "DUPLICATES" | "RESULT">("TABLE");
   const [targetClassId, setTargetClassId] = useState<string>(initialClassId || "AUTO");
   const [rows, setRows] = useState<EditableStudentRow[]>(() => initDefaultRows(initialClassId));
+  const [duplicateResolutions, setDuplicateResolutions] = useState<DuplicateResolution[]>([]);
+  const [pendingValidRows, setPendingValidRows] = useState<EditableStudentRow[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
   const [toastMessage, setToastMessage] = useState<string>("");
@@ -75,6 +89,8 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
       setRows(initDefaultRows(initialClassId));
       setTargetClassId(initialClassId || "AUTO");
       setToastMessage("");
+      setDuplicateResolutions([]);
+      setPendingValidRows([]);
     }
   }, [isOpen, initialClassId]);
 
@@ -422,20 +438,19 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
     notify("Đã gán lớp học cho các dòng chưa chọn lớp!");
   };
 
-  // Tính toán trạng thái các dòng
+  // Tính toán trạng thái các dòng (Số điện thoại phụ huynh KHÔNG bắt buộc)
   const rowStatuses = rows.map((r) => {
     const name = r.fullName.trim();
     const phone = normalizePhoneNumber(r.parentPhone);
-    const isBlank = !name && !phone && !r.school.trim() && !r.notes.trim();
+    const isBlank = !name && !r.parentPhone.trim() && !r.school.trim() && !r.notes.trim();
     const hasName = name.length >= 2;
-    const hasPhone = phone.length >= 9 && phone.length <= 11;
-    const isValid = hasName && hasPhone;
+    const isPhoneValid = !r.parentPhone.trim() || (phone.length >= 9 && phone.length <= 11);
+    const isValid = hasName && isPhoneValid;
 
     let issue = "";
     if (!isBlank) {
-      if (!hasName && !hasPhone) issue = "Thiếu Họ tên & SĐT";
-      else if (!hasName) issue = "Thiếu Họ và tên";
-      else if (!hasPhone) issue = "Thiếu SĐT PH hợp lệ";
+      if (!hasName) issue = "Thiếu Họ và tên";
+      else if (!isPhoneValid) issue = "SĐT PH chưa đúng 9-11 số";
     }
 
     return { isValid, isBlank, issue };
@@ -445,69 +460,154 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
   const blankRowsCount = rowStatuses.filter((s) => s.isBlank).length;
   const issueRowsCount = rowStatuses.filter((s) => !s.isValid && !s.isBlank).length;
 
-  // Xác nhận lưu vào hệ thống
+  // Xác nhận lưu vào hệ thống: kiểm tra trùng lặp trước khi lưu
   const handleSaveStudents = async () => {
     const validRows = rows.filter((r) => {
       const name = r.fullName.trim();
       const phone = normalizePhoneNumber(r.parentPhone);
-      return name.length >= 2 && phone.length >= 9 && phone.length <= 11;
+      const isPhoneValid = !r.parentPhone.trim() || (phone.length >= 9 && phone.length <= 11);
+      return name.length >= 2 && isPhoneValid;
     });
 
     if (validRows.length === 0) {
       alert(
-        "Chưa có học viên nào hợp lệ để lưu!\nVui lòng nhập ít nhất Họ và tên (*) cùng Số điện thoại phụ huynh (*)."
+        "Chưa có học viên nào hợp lệ để lưu!\nVui lòng nhập ít nhất Họ và tên học sinh (từ 2 ký tự trở lên)."
       );
       return;
     }
 
+    // Kiểm tra xem có học viên nào trùng tên hoặc trùng liên hệ (SĐT) với học viên trong hệ thống không
+    const duplicates: DuplicateResolution[] = [];
+    validRows.forEach((r, idx) => {
+      const cleanName = r.fullName.trim().toLowerCase();
+      const cleanPhone = normalizePhoneNumber(r.parentPhone);
+
+      const match = dataStore.students.find((s) => {
+        const sName = s.fullName.trim().toLowerCase();
+        const sPhone = normalizePhoneNumber(s.parentPhone);
+        const nameMatch = sName === cleanName;
+        const phoneMatch = cleanPhone.length >= 8 && sPhone.length >= 8 && sPhone === cleanPhone;
+        return nameMatch || phoneMatch;
+      });
+
+      if (match) {
+        const sName = match.fullName.trim().toLowerCase();
+        const sPhone = normalizePhoneNumber(match.parentPhone);
+        const nameMatch = sName === cleanName;
+        const phoneMatch = cleanPhone.length >= 8 && sPhone.length >= 8 && sPhone === cleanPhone;
+        const matchType: "BOTH" | "NAME" | "PHONE" =
+          nameMatch && phoneMatch ? "BOTH" : nameMatch ? "NAME" : "PHONE";
+
+        duplicates.push({
+          rowIndex: idx,
+          row: r,
+          matchedStudent: match,
+          matchType,
+          action: "USE_EXISTING", // Mặc định: Lấy từ danh sách cũ (gán vào lớp này)
+        });
+      }
+    });
+
+    if (duplicates.length > 0) {
+      setDuplicateResolutions(duplicates);
+      setPendingValidRows(validRows);
+      setStep("DUPLICATES");
+      return;
+    }
+
+    // Nếu không trùng, tiến hành lưu trực tiếp
+    await executeSave(validRows, []);
+  };
+
+  // Thực hiện lưu cuối cùng sau khi đã xử lý xác nhận trùng lặp
+  const executeSave = async (
+    validRows: EditableStudentRow[],
+    resolutions: DuplicateResolution[]
+  ) => {
     setIsSubmitting(true);
     try {
       let nextCodeNum = dataStore.students.length + 1;
-
-      const studentsToSave: StudentData[] = validRows.map((r, i) => {
-        const classIds: string[] = [];
-        if (r.classId && r.classId !== "NONE" && r.classId !== "AUTO") {
-          classIds.push(r.classId);
-        } else if (targetClassId && targetClassId !== "AUTO" && targetClassId !== "NONE") {
-          classIds.push(targetClassId);
-        }
-
-        // Trình độ học viên kế thừa theo lớp học
-        let classLevel = "";
-        if (classIds.length > 0) {
-          const foundCls = availableClasses.find((c) => c.id === classIds[0]);
-          if (foundCls) classLevel = foundCls.level;
-        }
-
-        const birthYear = extractBirthYear(r.birthYear);
-        const fee = normalizeFee(r.customFee);
-        const phone = normalizePhoneNumber(r.parentPhone);
-        const name = r.fullName.trim();
-
-        return {
-          id: `std-bulk-${Date.now()}-${i + 1}-${Math.random().toString(36).substring(2, 6)}`,
-          code: `HS${(nextCodeNum++).toString().padStart(3, "0")}`,
-          fullName: name,
-          birthYear, // undefined nếu để trống
-          gender: (r.gender as "Nam" | "Nữ") || undefined, // undefined nếu để trống
-          parentName: "", // Xóa bỏ hoàn toàn trường Tên phụ huynh
-          parentPhone: phone,
-          currentLevel: classLevel || undefined, // Trình độ chỉ theo lớp
-          classIds,
-          customFeePerSession: fee,
-          school: r.school.trim() || undefined,
-          address: r.address?.trim() || undefined,
-          notes: r.notes.trim() || undefined,
-          status: "ACTIVE",
-        };
+      const resolutionMap = new Map<number, DuplicateResolution>();
+      resolutions.forEach((res) => {
+        resolutionMap.set(res.rowIndex, res);
       });
 
-      await dataStore.addStudentsBatch(
-        studentsToSave,
-        targetClassId === "AUTO" || targetClassId === "NONE" ? undefined : targetClassId
-      );
+      let updatedExistingCount = 0;
+      const newStudentsToSave: StudentData[] = [];
 
-      setImportedCount(studentsToSave.length);
+      for (let i = 0; i < validRows.length; i++) {
+        const r = validRows[i];
+        const res = resolutionMap.get(i);
+
+        const targetClass =
+          r.classId && r.classId !== "NONE" && r.classId !== "AUTO"
+            ? r.classId
+            : targetClassId && targetClassId !== "AUTO" && targetClassId !== "NONE"
+            ? targetClassId
+            : undefined;
+
+        if (res && res.action === "USE_EXISTING") {
+          // Lấy từ danh sách cũ: cập nhật học sinh sẵn có và gán thêm lớp học này
+          const existing = res.matchedStudent;
+          if (targetClass && !existing.classIds.includes(targetClass)) {
+            existing.classIds = [...existing.classIds, targetClass];
+          }
+          if (r.customFee) {
+            existing.customFeePerSession = normalizeFee(r.customFee);
+          }
+          if (!existing.parentPhone && r.parentPhone.trim()) {
+            existing.parentPhone = normalizePhoneNumber(r.parentPhone);
+          }
+          if (!existing.birthYear && r.birthYear) {
+            existing.birthYear = extractBirthYear(r.birthYear);
+          }
+          if (r.school?.trim() && !existing.school) {
+            existing.school = r.school.trim();
+          }
+          dataStore.updateStudent(existing.id, existing);
+          updatedExistingCount++;
+        } else {
+          // Thêm học viên mới
+          const classIds: string[] = targetClass ? [targetClass] : [];
+          let classLevel = "";
+          if (classIds.length > 0) {
+            const foundCls = availableClasses.find((c) => c.id === classIds[0]);
+            if (foundCls) classLevel = foundCls.level;
+          }
+
+          const birthYear = extractBirthYear(r.birthYear);
+          const fee = normalizeFee(r.customFee);
+          const phone = normalizePhoneNumber(r.parentPhone);
+          const name = r.fullName.trim();
+
+          newStudentsToSave.push({
+            id: `std-bulk-${Date.now()}-${i + 1}-${Math.random().toString(36).substring(2, 6)}`,
+            code: `HS${(nextCodeNum++).toString().padStart(3, "0")}`,
+            fullName: name,
+            birthYear,
+            gender: (r.gender as "Nam" | "Nữ") || undefined,
+            parentName: "",
+            parentPhone: phone,
+            currentLevel: classLevel || undefined,
+            classIds,
+            customFeePerSession: fee,
+            school: r.school.trim() || undefined,
+            address: r.address?.trim() || undefined,
+            notes: r.notes.trim() || undefined,
+            status: "ACTIVE",
+          });
+        }
+      }
+
+      if (newStudentsToSave.length > 0) {
+        await dataStore.addStudentsBatch(
+          newStudentsToSave,
+          targetClassId === "AUTO" || targetClassId === "NONE" ? undefined : targetClassId
+        );
+      }
+
+      dataStore.saveToLocalStorage();
+      setImportedCount(newStudentsToSave.length + updatedExistingCount);
       setStep("RESULT");
 
       try {
@@ -519,7 +619,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
       } catch (e) {}
 
       if (onImportSuccess) {
-        onImportSuccess(studentsToSave.length);
+        onImportSuccess(newStudentsToSave.length + updatedExistingCount);
       }
     } catch (err: any) {
       console.error("Lỗi khi lưu học viên hàng loạt:", err);
@@ -753,17 +853,17 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                           </button>
                         </div>
                       </th>
-                      {/* Cột 2: SĐT Phụ huynh (*) với nút Dán cột */}
+                      {/* Cột 2: SĐT Phụ huynh (tùy chọn) với nút Dán cột */}
                       <th className="px-3 py-2 w-56 bg-slate-100">
                         <div className="flex items-center justify-between gap-1.5">
-                          <span className="text-emerald-700 font-extrabold">
-                            SĐT Phụ huynh (*)
+                          <span className="text-slate-700 font-extrabold">
+                            SĐT Phụ huynh (tùy chọn)
                           </span>
                           <button
                             type="button"
                             onClick={() => handlePasteColumn("parentPhone")}
                             title="Dán danh sách Số điện thoại từ Clipboard vào cột này"
-                            className="inline-flex items-center gap-1 rounded bg-emerald-600 hover:bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white transition-all shadow-xs cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded bg-slate-600 hover:bg-slate-700 px-1.5 py-0.5 text-[9px] font-bold text-white transition-all shadow-xs cursor-pointer"
                           >
                             <ClipboardPaste className="h-3 w-3" />
                             <span>Dán cột</span>
@@ -842,22 +942,30 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                             />
                           </td>
 
-                          {/* SĐT phụ huynh (*) */}
+                          {/* SĐT phụ huynh (Không bắt buộc) */}
                           <td className="px-2 py-1.5">
-                            <input
-                              type="text"
-                              value={row.parentPhone}
-                              onChange={(e) =>
-                                handleCellChange(row.id, "parentPhone", e.target.value)
-                              }
-                              onPaste={(e) => handleCellPaste(e, idx, "parentPhone")}
-                              placeholder="0912345678"
-                              className={`w-full rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold focus:outline-none transition-all ${
-                                !normalizePhoneNumber(row.parentPhone) && !isRowBlank
-                                  ? "border border-rose-400 bg-rose-50 text-rose-900 focus:border-rose-500"
-                                  : "border border-slate-200 bg-white text-slate-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
-                              }`}
-                            />
+                            {(() => {
+                              const cleanPhone = normalizePhoneNumber(row.parentPhone);
+                              const hasPhoneError =
+                                row.parentPhone.trim().length > 0 &&
+                                (cleanPhone.length < 9 || cleanPhone.length > 11);
+                              return (
+                                <input
+                                  type="text"
+                                  value={row.parentPhone}
+                                  onChange={(e) =>
+                                    handleCellChange(row.id, "parentPhone", e.target.value)
+                                  }
+                                  onPaste={(e) => handleCellPaste(e, idx, "parentPhone")}
+                                  placeholder="0912... (tùy chọn)"
+                                  className={`w-full rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold focus:outline-none transition-all ${
+                                    hasPhoneError
+                                      ? "border border-rose-400 bg-rose-50 text-rose-900 focus:border-rose-500"
+                                      : "border border-slate-200 bg-white text-slate-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
+                                  }`}
+                                />
+                              );
+                            })()}
                           </td>
 
                           {/* Năm sinh (để trống được) */}
@@ -1015,6 +1123,280 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 </div>
               </div>
             </>
+          )}
+
+          {/* STEP: DUPLICATES CONFIRMATION */}
+          {step === "DUPLICATES" && (
+            <div className="flex-1 overflow-hidden flex flex-col space-y-4 animate-fade-in">
+              {/* Banner cảnh báo trùng */}
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-extrabold text-amber-900">
+                      Phát hiện {duplicateResolutions.length} học viên có thông tin trùng khớp với hệ thống
+                    </h4>
+                    <p className="mt-0.5 text-xs text-amber-800 leading-relaxed">
+                      Các học viên dưới đây trùng <strong>Họ tên</strong> hoặc <strong>Số điện thoại</strong> với học viên đã có trong danh sách CLB.
+                      Vui lòng chọn <strong>Lấy từ danh sách cũ</strong> (gán học viên cũ vào lớp học này) hoặc <strong>Thêm học viên mới</strong> (tạo hồ sơ mới riêng biệt):
+                    </p>
+
+                    {/* Quick batch toggle buttons */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/60">
+                      <span className="text-[11px] font-bold text-amber-900">Chọn nhanh cho tất cả:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDuplicateResolutions((prev) =>
+                            prev.map((item) => ({ ...item, action: "USE_EXISTING" }))
+                          );
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                      >
+                        <UserCheck className="h-3.5 w-3.5" />
+                        <span>Tất cả: Lấy từ danh sách cũ</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDuplicateResolutions((prev) =>
+                            prev.map((item) => ({ ...item, action: "CREATE_NEW" }))
+                          );
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        <span>Tất cả: Thêm học viên mới</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable List of Duplicate Cards */}
+              <div className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-3 space-y-3 max-h-[50vh]">
+                {duplicateResolutions.map((item, idx) => {
+                  const targetClsId =
+                    item.row.classId && item.row.classId !== "NONE" && item.row.classId !== "AUTO"
+                      ? item.row.classId
+                      : targetClassId && targetClassId !== "AUTO" && targetClassId !== "NONE"
+                      ? targetClassId
+                      : "";
+                  const targetClassName =
+                    availableClasses.find((c) => c.id === targetClsId)?.name || "(Chưa chọn lớp)";
+                  const existingClassNames = item.matchedStudent.classIds
+                    .map((cid) => availableClasses.find((c) => c.id === cid)?.name || cid)
+                    .filter(Boolean);
+
+                  return (
+                    <div
+                      key={item.rowIndex}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 transition-all space-y-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-700">
+                            {idx + 1}
+                          </span>
+                          <span className="font-extrabold text-slate-900 text-sm">
+                            {item.row.fullName}
+                          </span>
+                        </div>
+
+                        {/* Match Reason Badge */}
+                        <div>
+                          {item.matchType === "BOTH" ? (
+                            <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-800">
+                              ⚠️ Trùng cả Họ tên & Số điện thoại
+                            </span>
+                          ) : item.matchType === "NAME" ? (
+                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800">
+                              👤 Trùng Họ và tên
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-black text-purple-800">
+                              📞 Trùng Số điện thoại phụ huynh
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Side by side comparison */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        {/* Cột 1: Thông tin nhập từ sheet */}
+                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 space-y-1.5">
+                          <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                            <FileSpreadsheet className="h-3 w-3" />
+                            <span>Thông tin nhập từ Sheet:</span>
+                          </div>
+                          <div className="font-bold text-slate-800 text-sm">{item.row.fullName}</div>
+                          <div className="text-slate-600">
+                            SĐT phụ huynh:{" "}
+                            <span className="font-mono font-semibold text-slate-800">
+                              {item.row.parentPhone || "(Chưa nhập)"}
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            Năm sinh:{" "}
+                            <span className="font-semibold text-slate-800">
+                              {item.row.birthYear || "—"}
+                            </span>{" "}
+                            • Giới tính:{" "}
+                            <span className="font-semibold text-slate-800">
+                              {item.row.gender || "—"}
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            Lớp muốn thêm vào:{" "}
+                            <span className="font-bold text-emerald-700">{targetClassName}</span>
+                          </div>
+                        </div>
+
+                        {/* Cột 2: Học viên trùng khớp có sẵn trong hệ thống */}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5">
+                          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span>Học viên trùng trong hệ thống:</span>
+                          </div>
+                          <div className="font-bold text-slate-900 text-sm">
+                            {item.matchedStudent.fullName}{" "}
+                            <span className="font-mono text-xs font-normal text-slate-500">
+                              ({item.matchedStudent.code})
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            SĐT hiện tại:{" "}
+                            <span className="font-mono font-semibold text-slate-800">
+                              {item.matchedStudent.parentPhone || "(Chưa có SĐT)"}
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            Năm sinh:{" "}
+                            <span className="font-semibold text-slate-800">
+                              {item.matchedStudent.birthYear || "—"}
+                            </span>{" "}
+                            • Trình độ:{" "}
+                            <span className="font-semibold text-slate-800">
+                              {item.matchedStudent.currentLevel || "—"}
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            Các lớp đang học:{" "}
+                            <span className="font-semibold text-slate-800">
+                              {existingClassNames.join(", ") || "(Chưa xếp lớp)"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action selector */}
+                      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDuplicateResolutions((prev) =>
+                              prev.map((p, i) =>
+                                i === idx ? { ...p, action: "USE_EXISTING" } : p
+                              )
+                            );
+                          }}
+                          className={`flex-1 rounded-xl p-2.5 text-left transition-all border cursor-pointer ${
+                            item.action === "USE_EXISTING"
+                              ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 shadow-xs"
+                              : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                                item.action === "USE_EXISTING"
+                                  ? "border-emerald-600 bg-emerald-600 text-white"
+                                  : "border-slate-300"
+                              }`}
+                            >
+                              {item.action === "USE_EXISTING" && <Check className="h-3 w-3" />}
+                            </div>
+                            <span className="font-bold text-xs">
+                              Lấy từ danh sách cũ (Gán vào lớp này)
+                            </span>
+                          </div>
+                          <p className="mt-1 ml-6 text-[11px] text-slate-500 leading-tight">
+                            Giữ nguyên mã {item.matchedStudent.code}, bổ sung học viên vào lớp mới và kế thừa toàn bộ lịch sử điểm danh.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDuplicateResolutions((prev) =>
+                              prev.map((p, i) =>
+                                i === idx ? { ...p, action: "CREATE_NEW" } : p
+                              )
+                            );
+                          }}
+                          className={`flex-1 rounded-xl p-2.5 text-left transition-all border cursor-pointer ${
+                            item.action === "CREATE_NEW"
+                              ? "border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-600/20 shadow-xs"
+                              : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                                item.action === "CREATE_NEW"
+                                  ? "border-blue-600 bg-blue-600 text-white"
+                                  : "border-slate-300"
+                              }`}
+                            >
+                              {item.action === "CREATE_NEW" && <Check className="h-3 w-3" />}
+                            </div>
+                            <span className="font-bold text-xs">
+                              Thêm học viên mới (Tạo hồ sơ mới)
+                            </span>
+                          </div>
+                          <p className="mt-1 ml-6 text-[11px] text-slate-500 leading-tight">
+                            Tạo một hồ sơ học viên độc lập hoàn toàn với mã học sinh mới.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setStep("TABLE")}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Quay lại chỉnh sửa bảng</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => executeSave(pendingValidRows, duplicateResolutions)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-600/25 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Đang lưu học viên...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Xác Nhận & Hoàn Tất Lưu ({pendingValidRows.length} Học Viên)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* STEP: RESULT SUCCESS */}
