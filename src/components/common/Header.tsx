@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft, Menu } from "lucide-react";
+import { LogOut, ExternalLink, ShieldCheck, UserCheck, Calendar, ArrowRightLeft, Menu, Edit3, User } from "lucide-react";
 import { dataStore, resolveCanonicalCoachId } from "@/lib/data-store";
 import NotificationBell from "@/components/common/NotificationBell";
+import { UserProfileModal } from "@/components/user-profile-modal";
 
 interface HeaderProps {
   userRole: "ADMIN" | "COACH";
@@ -16,8 +17,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle }) => {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  useEffect(() => {
+  const loadUserData = () => {
     const stored = localStorage.getItem("kttll_user");
     if (stored) {
       try {
@@ -33,6 +35,13 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
         setCurrentUser(merged);
       } catch (e) {}
     }
+  };
+
+  useEffect(() => {
+    loadUserData();
+    const handleUpdate = () => loadUserData();
+    window.addEventListener("kttll_user_updated", handleUpdate);
+    return () => window.removeEventListener("kttll_user_updated", handleUpdate);
   }, [userRole]);
 
   const handleLogout = () => {
@@ -84,8 +93,13 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
       return "Phó chủ nhiệm CLB • Toàn CLB";
     }
     if (currentUser?.systemRole === "CHUCOSO") {
-      const b = dataStore.branches.find((x) => x.id === currentUser?.branchId);
-      return b ? `Chủ ${b.name.split("–")[0].trim()}` : "Chủ cơ sở";
+      const mIds = currentUser?.managedBranchIds?.length
+        ? currentUser.managedBranchIds
+        : (currentUser?.branchId ? [currentUser.branchId] : []);
+      const branchNames = mIds
+        .map((bid: string) => dataStore.branches.find((x) => x.id === bid)?.name.split("–")[0].trim())
+        .filter(Boolean);
+      return branchNames.length > 0 ? `Chủ ${branchNames.join(", ")}` : "Chủ cơ sở";
     }
     if (currentUser?.role === "ADMIN") {
       return "Quản trị toàn bộ cơ sở";
@@ -142,9 +156,14 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
         {/* Chuông Thông Báo */}
         <NotificationBell currentUserId={currentUser?.id} userRole={userRole} />
 
-        {/* User Badge */}
-        <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-2.5 sm:pr-3 border border-slate-200/70">
-          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg font-bold text-white shadow-sm ${
+        {/* User Badge - Click to view/edit self profile and claim admin rights */}
+        <button
+          type="button"
+          onClick={() => setIsProfileModalOpen(true)}
+          className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-2.5 sm:pr-3 border border-slate-200/70 hover:bg-slate-100 hover:border-brand-primary/40 transition-all text-left cursor-pointer group shadow-sm active:scale-95"
+          title="Bấm để xem và sửa hồ sơ cá nhân / Nhận quyền Admin"
+        >
+          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg font-bold text-white shadow-sm transition-transform group-hover:scale-105 ${
             userRole === "ADMIN" ? "bg-slate-900" : "bg-brand-primary"
           }`}>
             {userRole === "ADMIN" ? (
@@ -154,14 +173,17 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
             )}
           </div>
           <div className="text-left leading-tight max-w-[90px] sm:max-w-[160px]">
-            <p className="text-xs font-bold text-slate-800 truncate">
-              {getDisplayName()}
-            </p>
+            <div className="flex items-center gap-1">
+              <p className="text-xs font-bold text-slate-800 truncate group-hover:text-brand-primary transition-colors">
+                {getDisplayName()}
+              </p>
+              <Edit3 className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hidden sm:block" />
+            </div>
             <p className="text-[10px] text-slate-500 truncate hidden sm:block">
               {getDisplayTitle()}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Nút chuyển đổi vai trò: CHỈ hiển thị nếu có quyền Admin */}
         {canAccessAdmin && (
@@ -199,6 +221,16 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           <LogOut className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Modal Hồ Sơ Cá Nhân & Nhận Quyền Admin */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={currentUser}
+        onProfileUpdated={(updated) => {
+          setCurrentUser(updated);
+        }}
+      />
     </header>
   );
 };

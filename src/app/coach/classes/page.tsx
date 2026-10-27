@@ -119,6 +119,7 @@ export default function CoachClassesPage() {
   const [newParentPhone, setNewParentPhone] = useState("");
   const [newStudentNotes, setNewStudentNotes] = useState("");
   const [newCustomFee, setNewCustomFee] = useState("");
+  const [sessionAddedCount, setSessionAddedCount] = useState(0);
 
   // Modal State: Tạo lớp mới
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
@@ -270,7 +271,7 @@ export default function CoachClassesPage() {
     setNewCustomFee("");
   };
 
-  // Ghi danh học viên đã có trong CLB vào lớp học này
+  // Ghi danh học viên đã có trong CLB vào lớp học này (Không tự đóng bảng, cho phép thêm nhiều học viên tùy ý)
   const handleEnrollExisting = (studentId: string) => {
     if (!selectedClass) return;
     const std = dataStore.students.find((s) => s.id === studentId);
@@ -282,8 +283,9 @@ export default function CoachClassesPage() {
       const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       const myClassIds = myClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
-      showToast(`Đã thêm học viên "${std.fullName}" vào lớp ${selectedClass.name}!`);
-      setIsAddStudentOpen(false);
+      setSessionAddedCount((prev) => prev + 1);
+      showToast(`Đã thêm "${std.fullName}" vào lớp! Tiếp tục chọn thêm học viên tùy ý.`);
+      // Không tắt bảng thêm học sinh ngay, cho phép HLV tự bấm đóng khi hoàn tất
     }
   };
 
@@ -1046,7 +1048,10 @@ export default function CoachClassesPage() {
                 </p>
               </div>
               <button
-                onClick={() => setIsAddStudentOpen(false)}
+                onClick={() => {
+                  setIsAddStudentOpen(false);
+                  setSessionAddedCount(0);
+                }}
                 className="text-slate-400 hover:text-slate-600 p-1"
               >
                 <X className="h-5 w-5" />
@@ -1175,6 +1180,32 @@ export default function CoachClassesPage() {
                         Tất cả học viên trong CLB đã được ghi danh vào lớp này.
                       </div>
                     )}
+                  </div>
+
+                  {/* Thanh thông báo & Nút Đóng bảng tự thao tác */}
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                    <div className="text-xs">
+                      {sessionAddedCount > 0 ? (
+                        <span className="font-bold text-emerald-700 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          Đã thêm {sessionAddedCount} học viên vào lớp
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-medium">
+                          Bấm "+ Thêm Vào Lớp" bao nhiêu học viên tùy ý
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddStudentOpen(false);
+                        setSessionAddedCount(0);
+                      }}
+                      className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+                    >
+                      Hoàn Tất & Đóng Bảng
+                    </button>
                   </div>
                 </div>
               ) : (

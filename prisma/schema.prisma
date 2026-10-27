@@ -52,6 +52,8 @@ model User {
   hasAdminAccess     Boolean        @default(false)
   branchId           String?
   branch             Branch?        @relation(fields: [branchId], references: [id])
+  branchIds          String[]       @default([]) // Danh sách các cơ sở HLV dạy (1 HLV có thể dạy tại nhiều cơ sở)
+  managedBranchIds   String[]       @default([]) // Danh sách các cơ sở HLV làm Chủ nhiệm (1 HLV có thể chủ nhiệm nhiều cơ sở)
   classes            Classroom[]
   baseRate           Float          @default(200000) // Đơn giá thù lao/ca dạy của HLV
   tuitionRatePercent Float?         @default(50) // % học phí nhận được

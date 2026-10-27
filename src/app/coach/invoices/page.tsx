@@ -72,10 +72,10 @@ function InvoicesContent() {
       const myClasses = getCoachClasses(coachId, coachEmail);
       setClasses(myClasses);
       const paramClassId = searchParams.get("classId");
-      if (paramClassId && myClasses.some((c) => c.id === paramClassId)) {
+      if (paramClassId && (paramClassId === "all" || myClasses.some((c) => c.id === paramClassId))) {
         setSelectedClassId(paramClassId);
       } else {
-        setSelectedClassId((prev) => (myClasses.some((c) => c.id === prev) ? prev : myClasses[0]?.id || ""));
+        setSelectedClassId((prev) => (prev === "all" || myClasses.some((c) => c.id === prev) ? prev : "all"));
       }
     };
 
@@ -109,6 +109,8 @@ function InvoicesContent() {
   const buildInvoiceCardData = (inv: MonthlyInvoiceData, student: StudentData): InvoiceCardData => {
     const bank = dataStore.bankConfig;
     const transferContent = `HP ${student.code} T${selectedMonth}`;
+    const targetClass = classes.find((c) => c.id === inv.classId) || selectedClass;
+    const targetBranch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
     const vietQrUrl =
       bank.useCustomQr && bank.customQrImage
         ? bank.customQrImage
@@ -124,12 +126,12 @@ function InvoicesContent() {
     return {
       studentCode: student.code,
       studentName: student.fullName,
-      className: selectedClass?.name || "",
-      branchName: branchInfo?.name || "",
+      className: targetClass?.name || "",
+      branchName: targetBranch?.name || "",
       month: selectedMonth,
       year: selectedYear,
       presentCount: inv.presentCount,
-      presentDates: getPresentDatesForStudent(student.id),
+      presentDates: getPresentDatesForStudent(student.id, inv.classId),
       feePerSession: inv.feePerSession,
       totalAmount: inv.totalAmount,
       bankName: bank.bankName,
@@ -168,20 +170,31 @@ function InvoicesContent() {
     setEditingStudentFee(null);
   };
 
-  const selectedClass = classes.find((c) => c.id === selectedClassId) || classes[0];
-  const branchInfo = dataStore.branches.find((b) => b.id === selectedClass?.branchId);
+  const isAllClasses = selectedClassId === "all";
+  const selectedClass = isAllClasses ? null : (classes.find((c) => c.id === selectedClassId) || classes[0]);
+  const branchInfo = selectedClass ? dataStore.branches.find((b) => b.id === selectedClass?.branchId) : null;
 
   // Load và tính toán hóa đơn
   const reloadInvoices = () => {
     dataStore.recalculateAllInvoices(selectedMonth, selectedYear);
-    if (!selectedClass) {
+    const coachClassIds = classes.map((c) => c.id);
+    if (coachClassIds.length === 0) {
       setInvoices([]);
       return;
     }
-    const filtered = dataStore.invoices.filter(
-      (inv) => inv.classId === selectedClass?.id && inv.month === selectedMonth && inv.year === selectedYear
-    );
-    setInvoices(filtered);
+
+    if (selectedClassId === "all") {
+      const filtered = dataStore.invoices.filter(
+        (inv) => coachClassIds.includes(inv.classId) && inv.month === selectedMonth && inv.year === selectedYear
+      );
+      setInvoices(filtered);
+    } else {
+      const targetId = selectedClassId || classes[0]?.id;
+      const filtered = dataStore.invoices.filter(
+        (inv) => inv.classId === targetId && inv.month === selectedMonth && inv.year === selectedYear
+      );
+      setInvoices(filtered);
+    }
   };
 
   useEffect(() => {
@@ -190,14 +203,22 @@ function InvoicesContent() {
 
   // Tìm các buổi học của lớp trong tháng để lấy danh sách ngày có mặt
   const classSessions = dataStore.sessions.filter((sess) => {
-    if (sess.classId !== selectedClass?.id) return false;
+    if (!isAllClasses && sess.classId !== selectedClass?.id) return false;
+    if (isAllClasses && !classes.some((c) => c.id === sess.classId)) return false;
     const d = new Date(sess.date);
     return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
   });
 
-  const getPresentDatesForStudent = (studentId: string): string[] => {
+  const getPresentDatesForStudent = (studentId: string, specificClassId?: string): string[] => {
     const dates: string[] = [];
-    classSessions.forEach((sess) => {
+    const targetClassId = specificClassId || selectedClass?.id;
+    const sessions = dataStore.sessions.filter((sess) => {
+      if (targetClassId && sess.classId !== targetClassId) return false;
+      const d = new Date(sess.date);
+      return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
+    });
+
+    sessions.forEach((sess) => {
       const rec = sess.records.find((r) => r.studentId === studentId);
       if (rec && rec.status === "PRESENT") {
         const d = new Date(sess.date);
@@ -250,10 +271,11 @@ function InvoicesContent() {
   const handleExportExcel = () => {
     const rows: InvoiceExportRow[] = invoices.map((inv, idx) => {
       const student = dataStore.students.find((s) => s.id === inv.studentId);
+      const cls = classes.find((c) => c.id === inv.classId);
       return {
         stt: idx + 1,
         studentCode: student?.code || "",
-        fullName: student?.fullName || "",
+        fullName: isAllClasses ? `${student?.fullName || ""} (${cls?.name || ""})` : (student?.fullName || ""),
         birthYear: student?.birthYear || 0,
         parentPhone: student?.parentPhone || "",
         presentCount: inv.presentCount,
@@ -263,7 +285,12 @@ function InvoicesContent() {
       };
     });
 
-    exportInvoicesToExcel(rows, selectedClass?.name || "Lop_Co_Vua", selectedMonth, selectedYear);
+    exportInvoicesToExcel(
+      rows,
+      isAllClasses ? `Tat_Ca_${classes.length}_Lop` : (selectedClass?.name || "Lop_Co_Vua"),
+      selectedMonth,
+      selectedYear
+    );
   };
 
   // Tính tổng
@@ -390,12 +417,15 @@ function InvoicesContent() {
                 onChange={(e) => setSelectedClassId(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
               >
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name} ({cls.level}) — {cls.schedule}
-              </option>
-            ))}
-          </select>
+                <option value="all">
+                  🌟 Tất cả các lớp ({classes.length} lớp học)
+                </option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name} ({cls.level}) — {cls.schedule}
+                  </option>
+                ))}
+              </select>
         </div>
 
         {/* Tháng */}
@@ -436,7 +466,9 @@ function InvoicesContent() {
             {formatCurrencyVND(totalDue)}
           </p>
           <p className="mt-1 text-[11px] text-slate-400">
-            Tính trên {invoices.length} học viên • Đơn giá {formatCurrencyVND(selectedClass?.feePerSession || 0)}/b
+            {isAllClasses
+              ? `Toàn bộ ${classes.length} lớp học • ${invoices.length} lượt học viên`
+              : `Tính trên ${invoices.length} học viên • Đơn giá ${formatCurrencyVND(selectedClass?.feePerSession || 0)}/b`}
           </p>
         </div>
 
@@ -475,7 +507,9 @@ function InvoicesContent() {
               Bảng Kê Chi Tiết Học Phí Tháng {selectedMonth}/{selectedYear}
             </h3>
             <p className="text-xs text-slate-500">
-              {selectedClass?.name} ({branchInfo?.name})
+              {isAllClasses
+                ? `Toàn bộ ${classes.length} lớp học của Huấn luyện viên`
+                : `${selectedClass?.name} (${branchInfo?.name || "Cơ sở"})`}
             </p>
           </div>
 
@@ -501,11 +535,16 @@ function InvoicesContent() {
               <div key={inv.id} className="p-3.5 bg-white hover:bg-slate-50 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-mono text-[10px] font-bold text-slate-400">
                         {student?.code}
                       </span>
                       <h4 className="text-xs font-bold text-slate-900">{student?.fullName}</h4>
+                      {isAllClasses && (
+                        <span className="rounded bg-emerald-100 text-brand-primary px-1.5 py-0.5 text-[10px] font-bold border border-emerald-200">
+                          {classes.find((c) => c.id === inv.classId)?.name}
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] font-mono text-slate-500 mt-0.5">
                       SĐT: {student?.parentPhone}
@@ -589,6 +628,7 @@ function InvoicesContent() {
               <tr>
                 <th className="px-4 py-3">Mã HV</th>
                 <th className="px-4 py-3">Họ và Tên</th>
+                {isAllClasses && <th className="px-4 py-3">Lớp Học</th>}
                 <th className="px-4 py-3">Số Điện Thoại</th>
                 <th className="px-4 py-3 text-center">Buổi Có Mặt</th>
                 <th className="px-4 py-3">Ngày Đi Học</th>
@@ -601,7 +641,8 @@ function InvoicesContent() {
             <tbody className="divide-y divide-slate-100">
               {filteredInvoices.map((inv) => {
                 const student = dataStore.students.find((s) => s.id === inv.studentId);
-                const presentDates = student ? getPresentDatesForStudent(student.id) : [];
+                const presentDates = student ? getPresentDatesForStudent(student.id, inv.classId) : [];
+                const invClass = classes.find((c) => c.id === inv.classId);
 
                 return (
                   <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
@@ -611,6 +652,13 @@ function InvoicesContent() {
                     <td className="px-4 py-3 font-bold text-slate-900">
                       {student?.fullName}
                     </td>
+                    {isAllClasses && (
+                      <td className="px-4 py-3">
+                        <span className="inline-block rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-brand-primary border border-emerald-200">
+                          {invClass?.name || "Lớp"}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-slate-800">{student?.parentPhone}</span>
                     </td>

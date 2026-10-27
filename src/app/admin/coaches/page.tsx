@@ -85,6 +85,8 @@ export default function AdminCoachesPage() {
   const [phone, setPhone] = useState("");
   const [title, setTitle] = useState("HLV Quốc gia");
   const [branchId, setBranchId] = useState("branch-1");
+  const [managedBranchIds, setManagedBranchIds] = useState<string[]>(["branch-1"]);
+  const [branchIds, setBranchIds] = useState<string[]>(["branch-1"]);
   const [systemRole, setSystemRole] = useState<"CHUNHIEM" | "PHOCHUNHIEM" | "CHUCOSO" | "COACH">("COACH");
   const [tuitionRate, setTuitionRate] = useState<number>(50);
   const [bookRate, setBookRate] = useState<number>(30);
@@ -97,6 +99,8 @@ export default function AdminCoachesPage() {
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editBranchId, setEditBranchId] = useState("branch-1");
+  const [editManagedBranchIds, setEditManagedBranchIds] = useState<string[]>([]);
+  const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
   const [editSystemRole, setEditSystemRole] = useState<"CHUNHIEM" | "PHOCHUNHIEM" | "CHUCOSO" | "COACH">("COACH");
   const [editTuitionRate, setEditTuitionRate] = useState<number>(50);
   const [editBookRate, setEditBookRate] = useState<number>(30);
@@ -109,31 +113,60 @@ export default function AdminCoachesPage() {
     setEditEmail(coach.email);
     setEditPhone(coach.phone);
     setEditBranchId(coach.branchId || "branch-1");
+    setEditManagedBranchIds(coach.managedBranchIds || (coach.branchId ? [coach.branchId] : []));
+    setEditBranchIds(coach.branchIds || (coach.branchId ? [coach.branchId] : []));
     setEditSystemRole(coach.systemRole || (coach.role === "ADMIN" ? "CHUNHIEM" : "COACH"));
     setEditTuitionRate(coach.tuitionRatePercent ?? 50);
     setEditBookRate(coach.bookRatePercent ?? 30);
     setEditHasAdminAccess(!!coach.hasAdminAccess);
   };
 
-  const handleToggleAdminAccess = (coach: UserData) => {
+  const handleToggleAdminAccess = async (coach: UserData) => {
     const newAccess = !coach.hasAdminAccess;
     dataStore.setCoachAdminAccess(coach.id, newAccess);
+
+    // Cập nhật state trực tiếp ngay để UI đổi ngay lập tức
+    setCoaches((prev) =>
+      prev.map((c) => (c.id === coach.id ? { ...c, hasAdminAccess: newAccess } : c))
+    );
+
     try {
       const stored = localStorage.getItem("kttll_user");
       if (stored) {
         const u = JSON.parse(stored);
-        if (u.id === coach.id) {
+        if (u.id === coach.id || u.email?.toLowerCase() === coach.email?.toLowerCase()) {
           u.hasAdminAccess = newAccess;
           localStorage.setItem("kttll_user", JSON.stringify(u));
+          window.dispatchEvent(new CustomEvent("kttll_user_updated"));
         }
       }
     } catch (e) {}
+
+    // Gọi API lưu vĩnh viễn vào DB Supabase PostgreSQL
+    try {
+      const res = await fetch("/api/coaches/admin-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coachId: coach.id, hasAdminAccess: newAccess }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        try {
+          confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.warn("Lỗi lưu DB quyền Admin:", err);
+    }
+
     reloadCoaches();
   };
 
   const handleCreateCoach = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) return;
+
+    const primaryBranchId = (managedBranchIds.length > 0 ? managedBranchIds[0] : (branchIds[0] || branchId));
 
     const newCoach: UserData = {
       id: `user-coach-${Date.now()}`,
@@ -142,12 +175,14 @@ export default function AdminCoachesPage() {
       phone: phone || "0912.000.111",
       role: systemRole === "CHUNHIEM" || systemRole === "PHOCHUNHIEM" ? "ADMIN" : "COACH",
       systemRole,
-      branchId,
+      branchId: primaryBranchId,
+      branchIds,
+      managedBranchIds,
       baseRate: 200000,
       tuitionRatePercent: Number(tuitionRate) || 50,
       bookRatePercent: Number(bookRate) || 30,
       title: title || "HLV Quốc gia",
-      hasAdminAccess: hasAdminAccess || systemRole === "CHUNHIEM" || systemRole === "PHOCHUNHIEM" || systemRole === "CHUCOSO",
+      hasAdminAccess: hasAdminAccess || systemRole === "CHUNHIEM" || systemRole === "PHOCHUNHIEM",
     };
 
     dataStore.users.push(newCoach);
@@ -163,56 +198,69 @@ export default function AdminCoachesPage() {
     setTuitionRate(50);
     setBookRate(30);
     setHasAdminAccess(false);
+    setManagedBranchIds(["branch-1"]);
+    setBranchIds(["branch-1"]);
   };
 
-  const handleUpdateCoach = (e: React.FormEvent) => {
+  const handleUpdateCoach = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCoach) return;
 
-    dataStore.updateCoach(editingCoach.id, {
+    const primaryBranchId = (editManagedBranchIds.length > 0 ? editManagedBranchIds[0] : (editBranchIds[0] || editBranchId));
+
+    const updatedData: Partial<UserData> = {
       name: editName,
       title: editTitle,
       email: editEmail,
       phone: editPhone,
-      branchId: editBranchId,
+      branchId: primaryBranchId,
+      branchIds: editBranchIds,
+      managedBranchIds: editManagedBranchIds,
       systemRole: editSystemRole,
       tuitionRatePercent: Number(editTuitionRate),
       bookRatePercent: Number(editBookRate),
       hasAdminAccess:
         editHasAdminAccess ||
         editSystemRole === "CHUNHIEM" ||
-        editSystemRole === "PHOCHUNHIEM" ||
-        editSystemRole === "CHUCOSO",
+        editSystemRole === "PHOCHUNHIEM",
       role: editSystemRole === "CHUNHIEM" || editSystemRole === "PHOCHUNHIEM" ? "ADMIN" : "COACH",
-    });
+    };
 
-    // Gọi API lưu
-    fetch("/api/coaches/rates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        coachId: editingCoach.id,
-        tuitionRatePercent: editTuitionRate,
-        bookRatePercent: editBookRate,
-        systemRole: editSystemRole,
-        branchId: editBranchId,
-      }),
-    }).catch((err) => console.warn("Lỗi lưu rates API:", err));
+    dataStore.updateCoach(editingCoach.id, updatedData);
+
+    // Gọi API lưu vĩnh viễn
+    try {
+      await fetch("/api/coaches/rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          coachId: editingCoach.id,
+          name: editName,
+          title: editTitle,
+          email: editEmail,
+          phone: editPhone,
+          tuitionRatePercent: editTuitionRate,
+          bookRatePercent: editBookRate,
+          systemRole: editSystemRole,
+          branchId: primaryBranchId,
+          branchIds: editBranchIds,
+          managedBranchIds: editManagedBranchIds,
+          hasAdminAccess: updatedData.hasAdminAccess,
+        }),
+      });
+    } catch (err) {
+      console.warn("Lỗi lưu rates API:", err);
+    }
 
     // Đồng bộ nếu đang đăng nhập đúng tài khoản này
     try {
       const stored = localStorage.getItem("kttll_user");
       if (stored) {
         const u = JSON.parse(stored);
-        if (u.id === editingCoach.id) {
-          u.name = editName;
-          u.title = editTitle;
-          u.systemRole = editSystemRole;
-          u.tuitionRatePercent = editTuitionRate;
-          u.bookRatePercent = editBookRate;
-          u.branchId = editBranchId;
-          u.hasAdminAccess = true;
+        if (u.id === editingCoach.id || u.email?.toLowerCase() === editingCoach.email?.toLowerCase()) {
+          Object.assign(u, updatedData);
           localStorage.setItem("kttll_user", JSON.stringify(u));
+          window.dispatchEvent(new CustomEvent("kttll_user_updated"));
         }
       }
     } catch (e) {}
@@ -300,7 +348,12 @@ export default function AdminCoachesPage() {
                       )}
                       {coach.systemRole === "CHUCOSO" && (
                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-800 border border-blue-200">
-                          🏢 Chủ nhiệm: {branch ? branch.name.split("–")[0].trim() : "Chưa chọn cơ sở"}
+                          🏢 Chủ nhiệm: {
+                            (coach.managedBranchIds && coach.managedBranchIds.length > 0
+                              ? dataStore.branches.filter((b) => coach.managedBranchIds?.includes(b.id))
+                              : branch ? [branch] : []
+                            ).map((b) => b.name.split("–")[0].trim()).join(", ") || "Chưa chọn cơ sở"
+                          }
                         </span>
                       )}
                     </div>
@@ -371,7 +424,14 @@ export default function AdminCoachesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                  <span>Cơ sở công tác: <strong>{branch?.name || "Toàn bộ CLB"}</strong></span>
+                  <span>
+                    Cơ sở công tác: <strong>{
+                      (coach.branchIds && coach.branchIds.length > 0
+                        ? dataStore.branches.filter((b) => coach.branchIds?.includes(b.id))
+                        : branch ? [branch] : []
+                      ).map((b) => b.name.split("–")[0].trim()).join(", ") || "Toàn bộ CLB"
+                    }</strong>
+                  </span>
                 </div>
               </div>
 
@@ -488,43 +548,92 @@ export default function AdminCoachesPage() {
 
               {/* Cơ sở */}
               {editSystemRole === "CHUCOSO" ? (
-                <div className="rounded-xl border border-blue-300 bg-blue-50/70 p-3 space-y-1.5">
-                  <label className="font-bold text-blue-950 flex items-center gap-1.5">
-                    <Building2 className="h-4 w-4 text-blue-600" />
-                    <span>Chọn cơ sở quản lý (Dành cho Chủ nhiệm cơ sở) *</span>
+                <div className="rounded-xl border border-blue-300 bg-blue-50/70 p-3 space-y-2">
+                  <label className="font-bold text-blue-950 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                      <span>Cơ sở làm Chủ nhiệm (Có thể chọn nhiều cơ sở) *</span>
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                      Đã chọn {editManagedBranchIds.length} cơ sở
+                    </span>
                   </label>
-                  <select
-                    value={editBranchId}
-                    onChange={(e) => setEditBranchId(e.target.value)}
-                    className="w-full rounded-xl border border-blue-300 bg-white p-2.5 font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
-                    required
-                  >
-                    {dataStore.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                    {dataStore.branches.map((b) => {
+                      const isChecked = editManagedBranchIds.includes(b.id);
+                      return (
+                        <label
+                          key={b.id}
+                          className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                            isChecked
+                              ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditManagedBranchIds((prev) => [...prev, b.id]);
+                              } else {
+                                setEditManagedBranchIds((prev) => prev.filter((id) => id !== b.id));
+                              }
+                            }}
+                            className="rounded text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="truncate">{b.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                   <p className="text-[10px] text-blue-700">
-                    HLV này sẽ được phân quyền quản lý số liệu và học viên tại cơ sở này.
+                    💡 HLV này sẽ làm Chủ nhiệm và quản lý lương, học viên của các lớp học tại những cơ sở đã chọn.
                   </p>
                 </div>
-              ) : (
-                <div>
-                  <label className="font-bold text-slate-700">Cơ sở công tác chính</label>
-                  <select
-                    value={editBranchId}
-                    onChange={(e) => setEditBranchId(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
-                  >
-                    {dataStore.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+              ) : null}
+
+              {/* Danh sách cơ sở giảng dạy */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <label className="font-bold text-slate-800 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="h-4 w-4 text-brand-primary" />
+                    <span>Các cơ sở tham gia giảng dạy (Có thể chọn nhiều cơ sở)</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
+                    Đã chọn {editBranchIds.length} cơ sở
+                  </span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {dataStore.branches.map((b) => {
+                    const isChecked = editBranchIds.includes(b.id);
+                    return (
+                      <label
+                        key={b.id}
+                        className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                          isChecked
+                            ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditBranchIds((prev) => [...prev, b.id]);
+                            } else {
+                              setEditBranchIds((prev) => prev.filter((id) => id !== b.id));
+                            }
+                          }}
+                          className="rounded text-brand-primary focus:ring-brand-primary"
+                        />
+                        <span className="truncate">{b.name}</span>
+                      </label>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
               {/* Section 2: Cấu Hình Mức Lương % Học Phí & Tiền Sách */}
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-3">
@@ -669,39 +778,103 @@ export default function AdminCoachesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700">Vai trò phân quyền</label>
-                  <select
-                    value={systemRole}
-                    onChange={(e) => setSystemRole(e.target.value as any)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
-                  >
-                    <option value="COACH">Huấn luyện viên</option>
-                    <option value="CHUCOSO">Chủ cơ sở (Quản lý 1 cơ sở)</option>
-                    <option value="PHOCHUNHIEM">Phó chủ nhiệm</option>
-                    <option value="CHUNHIEM">Chủ nhiệm CLB</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700">
-                    {systemRole === "CHUCOSO" ? "Cơ sở quản lý *" : "Cơ sở công tác"}
+              <div>
+                <label className="font-bold text-slate-700">Vai trò phân quyền</label>
+                <select
+                  value={systemRole}
+                  onChange={(e) => setSystemRole(e.target.value as any)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
+                >
+                  <option value="COACH">Huấn luyện viên tiêu chuẩn</option>
+                  <option value="CHUCOSO">Chủ cơ sở (Quản lý 1 hoặc nhiều cơ sở)</option>
+                  <option value="PHOCHUNHIEM">Phó chủ nhiệm CLB</option>
+                  <option value="CHUNHIEM">Chủ nhiệm CLB</option>
+                </select>
+              </div>
+
+              {/* Nếu là Chủ cơ sở: chọn nhiều cơ sở quản lý */}
+              {systemRole === "CHUCOSO" ? (
+                <div className="rounded-xl border border-blue-300 bg-blue-50/70 p-3 space-y-2">
+                  <label className="font-bold text-blue-950 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                      <span>Cơ sở làm Chủ nhiệm (Có thể chọn nhiều cơ sở) *</span>
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                      {managedBranchIds.length} cơ sở
+                    </span>
                   </label>
-                  <select
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
-                    className={`mt-1 w-full rounded-xl p-2.5 font-bold focus:outline-none ${
-                      systemRole === "CHUCOSO"
-                        ? "border-2 border-blue-400 bg-blue-50/50 text-blue-950 focus:border-blue-600"
-                        : "border border-slate-200 text-slate-800 focus:border-brand-primary"
-                    }`}
-                  >
-                    {dataStore.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                    {dataStore.branches.map((b) => {
+                      const isChecked = managedBranchIds.includes(b.id);
+                      return (
+                        <label
+                          key={b.id}
+                          className={`flex items-center gap-2 p-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                            isChecked
+                              ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setManagedBranchIds((prev) => [...prev, b.id]);
+                              } else {
+                                setManagedBranchIds((prev) => prev.filter((id) => id !== b.id));
+                              }
+                            }}
+                            className="rounded text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="truncate">{b.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Các cơ sở tham gia giảng dạy */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <label className="font-bold text-slate-800 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="h-4 w-4 text-brand-primary" />
+                    <span>Các cơ sở tham gia giảng dạy (Có thể chọn nhiều cơ sở)</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
+                    {branchIds.length} cơ sở
+                  </span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                  {dataStore.branches.map((b) => {
+                    const isChecked = branchIds.includes(b.id);
+                    return (
+                      <label
+                        key={b.id}
+                        className={`flex items-center gap-2 p-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                          isChecked
+                            ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBranchIds((prev) => [...prev, b.id]);
+                            } else {
+                              setBranchIds((prev) => prev.filter((id) => id !== b.id));
+                            }
+                          }}
+                          className="rounded text-brand-primary focus:ring-brand-primary"
+                        />
+                        <span className="truncate">{b.name}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 

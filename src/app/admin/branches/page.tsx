@@ -52,8 +52,11 @@ export default function AdminBranchesAndClassesPage() {
         );
         const merged = dbUser ? { ...u, ...dbUser } : u;
         setCurrentUser(merged);
-        if (merged.systemRole === "CHUCOSO" && merged.branchId) {
-          setSelectedBranchId(merged.branchId);
+        if (merged.systemRole === "CHUCOSO") {
+          const mIds = merged.managedBranchIds?.length ? merged.managedBranchIds : (merged.branchId ? [merged.branchId] : []);
+          if (mIds.length > 0) {
+            setSelectedBranchId(mIds[0]);
+          }
         }
       } catch (e) {}
     }
@@ -67,6 +70,9 @@ export default function AdminBranchesAndClassesPage() {
   }, []);
 
   const isBranchManager = currentUser?.systemRole === "CHUCOSO";
+  const userManagedBranchIds: string[] = isBranchManager
+    ? (currentUser?.managedBranchIds?.length ? currentUser.managedBranchIds : (currentUser?.branchId ? [currentUser.branchId] : []))
+    : [];
 
   // Modal Cơ sở
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -82,8 +88,9 @@ export default function AdminBranchesAndClassesPage() {
   // Danh sách HLV phục vụ chọn HLV
   const coachList = dataStore.users.filter((u) => u.role === "COACH");
 
-  // Lọc lớp theo cơ sở được chọn và từ khóa tìm kiếm
+  // Lọc lớp theo cơ sở được chọn và từ khóa tìm kiếm (Chủ cơ sở chỉ quản lý các lớp tại cơ sở của mình)
   const filteredClasses = classes.filter((cls) => {
+    if (isBranchManager && !userManagedBranchIds.includes(cls.branchId)) return false;
     const matchBranch = selectedBranchId === "all" || cls.branchId === selectedBranchId;
     const matchSearch =
       cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -231,7 +238,7 @@ export default function AdminBranchesAndClassesPage() {
 
           {/* Cards: Từng Cơ Sở Cụ Thể */}
           {branches.map((b) => {
-            if (isBranchManager && b.id !== currentUser?.branchId) return null;
+            if (isBranchManager && !userManagedBranchIds.includes(b.id)) return null;
             const isSelected = selectedBranchId === b.id;
             const branchClasses = classes.filter((c) => c.branchId === b.id);
             const branchClassIds = branchClasses.map((c) => c.id);

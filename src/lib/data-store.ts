@@ -20,6 +20,8 @@ export interface UserData {
   role: 'ADMIN' | 'COACH';
   systemRole?: 'CHUNHIEM' | 'PHOCHUNHIEM' | 'CHUCOSO' | 'COACH'; // Phân quyền: Chủ nhiệm, Phó chủ nhiệm, Chủ từng cơ sở, HLV
   branchId?: string;
+  branchIds?: string[]; // Danh sách các cơ sở HLV dạy (1 HLV có thể dạy tại nhiều cơ sở)
+  managedBranchIds?: string[]; // Danh sách các cơ sở HLV làm Chủ nhiệm (1 HLV có thể chủ nhiệm nhiều cơ sở)
   baseRate: number; // 200.000đ/ca
   tuitionRatePercent?: number; // % học phí nhận được (mặc định 50%)
   bookRatePercent?: number; // % tiền sách nhận được (mặc định 30%)
@@ -968,14 +970,23 @@ class InMemoryDataStore {
     }
   }
 
-  // Tính thù lao HLV: Số ca dạy thực tế * Đơn giá ca dạy
-  public getCoachPayroll(month: number, year: number, onlySharedWithAdmin: boolean = false) {
+  // Tính thù lao HLV: Số ca dạy thực tế * Đơn giá ca dạy (Hỗ trợ lọc theo danh sách cơ sở targetBranchIds)
+  public getCoachPayroll(
+    month: number,
+    year: number,
+    onlySharedWithAdmin: boolean = false,
+    targetBranchIds?: string[]
+  ) {
     return this.users
       .filter((u) => u.role === "COACH")
       .map((coach) => {
         // Các lớp mà HLV này phụ trách (nếu Admin xem thì loại trừ các lớp riêng HLV không share)
+        // Nếu có lọc theo cơ sở (Chủ nhiệm cơ sở chỉ quản lý các lớp dạy tại cơ sở của mình)
         const coachClasses = this.classes.filter((c) => {
           if (onlySharedWithAdmin && c.shareWithAdmin === false) return false;
+          if (targetBranchIds && targetBranchIds.length > 0 && !targetBranchIds.includes(c.branchId)) {
+            return false;
+          }
           return (
             c.coachId === coach.id ||
             resolveCanonicalCoachId(c.coachId) === resolveCanonicalCoachId(coach.id) ||
@@ -1040,7 +1051,8 @@ class InMemoryDataStore {
           classesCount: coachClasses.length,
           sessionsList: sessionsInMonth,
         };
-      });
+      })
+      .filter((p) => !targetBranchIds || targetBranchIds.length === 0 || p.classesCount > 0);
   }
 
   // Cập nhật mức % học phí và % tiền sách cho Huấn luyện viên

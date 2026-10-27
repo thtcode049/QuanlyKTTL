@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Wallet,
   Download,
@@ -17,13 +17,15 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
-import { dataStore } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import { exportPayrollToExcel, PayrollExportRow } from "@/lib/excel";
 import ZaloCoachModal from "@/components/zalo-coach-modal";
 import confetti from "canvas-confetti";
 
 export default function AdminPayrollPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
   const [zaloModalOpen, setZaloModalOpen] = useState(false);
@@ -34,8 +36,39 @@ export default function AdminPayrollPage() {
   const [bookRateInput, setBookRateInput] = useState<number>(30);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  useEffect(() => {
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        const canonicalId = resolveCanonicalCoachId(u.id || u.email);
+        const dbUser = dataStore.users.find(
+          (x) => x.id === u.id || x.id === canonicalId || (u.email && x.email.toLowerCase() === u.email.toLowerCase())
+        );
+        const merged = dbUser ? { ...u, ...dbUser } : u;
+        setCurrentUser(merged);
+      } catch (e) {}
+    }
+  }, []);
+
+  const isBranchManager = currentUser?.systemRole === "CHUCOSO";
+  const userManagedBranchIds: string[] = isBranchManager
+    ? (currentUser?.managedBranchIds && currentUser.managedBranchIds.length > 0
+        ? currentUser.managedBranchIds
+        : (currentUser?.branchId ? [currentUser.branchId] : []))
+    : [];
+
+  const availableBranches = isBranchManager
+    ? dataStore.branches.filter((b) => userManagedBranchIds.includes(b.id))
+    : dataStore.branches;
+
+  const activeBranchIds: string[] | undefined = isBranchManager
+    ? (selectedBranchId === "all" ? userManagedBranchIds : [selectedBranchId])
+    : (selectedBranchId === "all" ? undefined : [selectedBranchId]);
+
   // Admin chỉ quản lý và tính thù lao cho các lớp được chia sẻ quyền
-  const payrollList = dataStore.getCoachPayroll(month, year, true);
+  // Chủ cơ sở chỉ quản lý các lớp HLV khác dạy tại cơ sở của mình
+  const payrollList = dataStore.getCoachPayroll(month, year, true, activeBranchIds);
 
   const totalSessions = payrollList.reduce((sum, p) => sum + p.totalSessions, 0);
   const totalTuition = payrollList.reduce((sum, p) => sum + p.totalTuition, 0);
@@ -122,28 +155,80 @@ export default function AdminPayrollPage() {
         </div>
       </div>
 
-      {/* Month / Year Filter Bar */}
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-slate-200/80">
-        <span className="text-xs font-bold text-slate-700">Chọn Kỳ Quyết Toán:</span>
-        <select
-          value={month}
-          onChange={(e) => setMonth(Number(e.target.value))}
-          className="rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-        >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-            <option key={m} value={m}>
-              Tháng {m}
-            </option>
-          ))}
-        </select>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-        >
-          <option value={2026}>Năm 2026</option>
-          <option value={2025}>Năm 2025</option>
-        </select>
+      {/* Chủ cơ sở notification banner */}
+      {isBranchManager && (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-md shadow-blue-500/20">
+              🏢
+            </div>
+            <div>
+              <p className="text-xs font-black text-blue-950">
+                Chế độ Chủ nhiệm Cơ sở: Quản lý lớp & lương các HLV dạy tại cơ sở của bạn
+              </p>
+              <p className="text-[11px] text-blue-800 mt-0.5">
+                Cơ sở phụ trách: <strong>{availableBranches.map((b) => b.name.split("–")[0].trim()).join(", ") || "Chưa gán"}</strong>.
+                Bảng lương chỉ hiển thị và tính toán các buổi dạy, học phí của các lớp được mở tại cơ sở do bạn quản lý.
+              </p>
+            </div>
+          </div>
+          <span className="rounded-full bg-blue-200/80 px-3 py-1 text-[11px] font-bold text-blue-900 border border-blue-300 self-start sm:self-auto flex-shrink-0">
+            {payrollList.length} HLV giảng dạy
+          </span>
+        </div>
+      )}
+
+      {/* Month / Year & Branch Filter Bar */}
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-slate-200/80">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-brand-primary" />
+          <span className="text-xs font-bold text-slate-700">Kỳ Quyết Toán:</span>
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            className="rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+              <option key={m} value={m}>
+                Tháng {m}
+              </option>
+            ))}
+          </select>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+          >
+            <option value={2026}>Năm 2026</option>
+            <option value={2025}>Năm 2025</option>
+          </select>
+        </div>
+
+        <div className="hidden h-5 w-px bg-slate-200 sm:block" />
+
+        {/* Lọc Cơ Sở */}
+        <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[200px]">
+          <Building2 className="h-4 w-4 text-slate-500" />
+          <span className="text-xs font-bold text-slate-700">Cơ Sở:</span>
+          <select
+            value={selectedBranchId}
+            onChange={(e) => setSelectedBranchId(e.target.value)}
+            className="w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+          >
+            {isBranchManager ? (
+              <option value="all">
+                🌟 Tất cả cơ sở tôi quản lý ({availableBranches.length} cơ sở)
+              </option>
+            ) : (
+              <option value="all">🌟 Toàn bộ hệ thống CLB ({dataStore.branches.length} cơ sở)</option>
+            )}
+            {availableBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* KPI Cards */}
