@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ClipboardList,
+  User,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -69,6 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { name: "Danh sách Cơ sở", href: "/admin/branches", icon: Building2 },
     { name: "Tổng quan Doanh thu", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Cài đặt VietQR & Zalo", href: "/admin/settings", icon: Settings },
+    { name: "Hồ sơ của tôi", href: "/admin/profile", icon: User },
   ];
 
   const coachNav = [
@@ -80,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { name: "Đánh giá kỳ thủ", href: "/coach/evaluations", icon: Award },
     { name: "Thu nhập HLV", href: "/coach/payroll", icon: Coins },
     { name: "Cài đặt QR & Zalo", href: "/coach/settings", icon: Settings },
+    { name: "Hồ sơ của tôi", href: "/coach/profile", icon: User },
   ];
 
   const navItems = userRole === "ADMIN" ? adminNav : coachNav;
