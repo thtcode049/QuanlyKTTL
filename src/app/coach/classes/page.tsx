@@ -196,12 +196,12 @@ export default function CoachClassesPage() {
   };
 
   // Lưu chỉnh sửa nhanh
-  const handleSaveInlineEdit = (studentId: string) => {
+  const handleSaveInlineEdit = async (studentId: string) => {
     if (!inlineForm.fullName.trim()) {
       alert("Họ tên học viên không được để trống!");
       return;
     }
-    const updated = dataStore.updateStudent(studentId, {
+    const updated = await dataStore.updateStudent(studentId, {
       fullName: inlineForm.fullName.trim(),
       birthYear: inlineForm.birthYear !== "" ? Number(inlineForm.birthYear) : undefined,
       parentName: "",
@@ -223,7 +223,7 @@ export default function CoachClassesPage() {
   };
 
   // Cài đặt đơn giá học phí riêng
-  const handleSetCustomFee = (student: StudentData) => {
+  const handleSetCustomFee = async (student: StudentData) => {
     const current = student.customFeePerSession ?? selectedClass?.feePerSession;
     const input = window.prompt(
       `Cài đặt học phí riêng (ưu đãi/học bổng) cho học viên "${student.fullName}":\n(Nhập số tiền VNĐ/buổi, hoặc để trống để dùng giá lớp chuẩn)`,
@@ -232,32 +232,32 @@ export default function CoachClassesPage() {
 
     if (input !== null) {
       const parsed = parseFloat(input.trim());
-      dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
+      await dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
       setStudents([...dataStore.students]);
       showToast(`Đã cập nhật học phí cho học viên ${student.fullName}!`);
     }
   };
 
   // Thêm học viên mới vào lớp
-  const handleCreateStudent = (e: React.FormEvent) => {
+  const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudentName) return;
+    if (!newStudentName.trim()) return;
 
     const newCode = `HS${(dataStore.students.length + 1).toString().padStart(3, "0")}`;
     const newStudent: StudentData = {
       id: `std-${Date.now()}`,
       code: newCode,
-      fullName: newStudentName,
+      fullName: newStudentName.trim(),
       birthYear: newStudentBirthYear.trim() ? parseInt(newStudentBirthYear) : undefined,
       parentName: "",
-      parentPhone: newParentPhone,
+      parentPhone: newParentPhone.trim(),
       currentLevel: selectedClass?.level || undefined,
-      notes: newStudentNotes,
-      classIds: [selectedClass.id],
+      notes: newStudentNotes.trim(),
+      classIds: selectedClass ? [selectedClass.id] : [],
       customFeePerSession: newCustomFee ? Number(newCustomFee) : undefined,
     };
 
-    dataStore.addStudent(newStudent);
+    await dataStore.addStudent(newStudent);
     const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
     const myClassIds = myClasses.map((c) => c.id);
     setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
@@ -267,19 +267,20 @@ export default function CoachClassesPage() {
     // Reset form
     setNewStudentName("");
     setNewParentPhone("");
+    setNewStudentBirthYear("");
     setNewStudentNotes("");
     setNewCustomFee("");
   };
 
   // Ghi danh học viên đã có trong CLB vào lớp học này (Không tự đóng bảng, cho phép thêm nhiều học viên tùy ý)
-  const handleEnrollExisting = (studentId: string) => {
+  const handleEnrollExisting = async (studentId: string) => {
     if (!selectedClass) return;
     const std = dataStore.students.find((s) => s.id === studentId);
     if (!std) return;
 
     if (!std.classIds.includes(selectedClass.id)) {
       const updatedClassIds = [...std.classIds, selectedClass.id];
-      dataStore.updateStudent(std.id, { classIds: updatedClassIds });
+      await dataStore.updateStudent(std.id, { classIds: updatedClassIds });
       const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       const myClassIds = myClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
@@ -290,24 +291,24 @@ export default function CoachClassesPage() {
   };
 
   // Tạo lớp mới
-  const handleCreateClass = (e: React.FormEvent) => {
+  const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClassName) return;
+    if (!newClassName.trim()) return;
 
     const finalLevel = newClassLevel === "Tùy chỉnh" ? (newClassCustomLevel.trim() || "Tùy chỉnh") : newClassLevel;
     const newCls: ClassroomData = {
       id: `class-${Date.now()}`,
-      name: newClassName,
+      name: newClassName.trim(),
       level: finalLevel,
       feePerSession: parseFloat(newClassFee) || 160000,
-      schedule: newClassSchedule,
+      schedule: newClassSchedule.trim(),
       branchId: newClassBranch,
       coachId: currentCoachId,
       isActive: true,
       shareWithAdmin: newClassShareWithAdmin,
     };
 
-    dataStore.addClass(newCls);
+    await dataStore.addClass(newCls);
     const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
     setClasses(myClasses);
     setSelectedClassId(newCls.id);
@@ -336,16 +337,16 @@ export default function CoachClassesPage() {
     setIsEditClassOpen(true);
   };
 
-  const handleUpdateClass = (e: React.FormEvent) => {
+  const handleUpdateClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClass || !editClassName) return;
+    if (!selectedClass || !editClassName.trim()) return;
 
     const finalLevel = editClassLevel === "Tùy chỉnh" ? (editClassCustomLevel.trim() || "Tùy chỉnh") : editClassLevel;
-    dataStore.updateClass(selectedClass.id, {
-      name: editClassName,
+    await dataStore.updateClass(selectedClass.id, {
+      name: editClassName.trim(),
       level: finalLevel,
       branchId: editClassBranch,
-      schedule: editClassSchedule,
+      schedule: editClassSchedule.trim(),
       feePerSession: parseFloat(editClassFee) || selectedClass.feePerSession,
       shareWithAdmin: editClassShareWithAdmin,
     });
@@ -356,10 +357,10 @@ export default function CoachClassesPage() {
     showToast(`Đã cập nhật thông tin lớp học!`);
   };
 
-  const handleDeleteClass = () => {
+  const handleDeleteClass = async () => {
     if (!selectedClass) return;
     if (window.confirm(`Bạn có chắc chắn muốn xóa lớp học "${selectedClass.name}" không?`)) {
-      dataStore.deleteClass(selectedClass.id);
+      await dataStore.deleteClass(selectedClass.id);
       const remainingClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       setClasses(remainingClasses);
       setSelectedClassId(remainingClasses[0]?.id || "");
@@ -370,9 +371,9 @@ export default function CoachClassesPage() {
     }
   };
 
-  const handleRemoveStudentFromClass = (student: StudentData) => {
+  const handleRemoveStudentFromClass = async (student: StudentData) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi lớp này không?`)) {
-      dataStore.deleteStudent(student.id, selectedClass.id);
+      await dataStore.deleteStudent(student.id, selectedClass.id);
       const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       const myClassIds = myClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));

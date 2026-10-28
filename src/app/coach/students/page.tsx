@@ -151,16 +151,16 @@ export default function StudentsDirectoryPage() {
     setIsContextMenuOpen(true);
   };
 
-  const handleRemoveStudent = (student: StudentData) => {
+  const handleRemoveStudent = async (student: StudentData) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi hệ thống không?`)) {
-      dataStore.deleteStudent(student.id);
+      await dataStore.deleteStudent(student.id);
       const myClassIds = coachClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã xóa học viên ${student.fullName}!`);
     }
   };
 
-  const handleSetCustomFee = (student: StudentData) => {
+  const handleSetCustomFee = async (student: StudentData) => {
     const current = student.customFeePerSession ?? 150000;
     const input = window.prompt(
       `Cài đặt học phí riêng (VNĐ/buổi) cho học viên "${student.fullName}":`,
@@ -168,7 +168,7 @@ export default function StudentsDirectoryPage() {
     );
     if (input !== null) {
       const parsed = parseFloat(input.trim());
-      dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
+      await dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
       const myClassIds = coachClasses.map((c) => c.id);
       setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
       showToast(`Đã cập nhật học phí học viên ${student.fullName}!`);

@@ -571,7 +571,7 @@ function AttendanceContent() {
   // -------------------------------------------------------------
   // XỬ LÝ THÊM HỌC VIÊN TRỰC TIẾP (HỌC BÙ HOẶC CHÍNH THỨC)
   // -------------------------------------------------------------
-  const handleAddExistingStudent = (student: StudentData) => {
+  const handleAddExistingStudent = async (student: StudentData) => {
     if (!selectedClass) return;
 
     if (addTab === "MAKEUP") {
@@ -595,7 +595,7 @@ function AttendanceContent() {
       // Thêm chính thức vào lớp
       const updatedClassIds = Array.from(new Set([...student.classIds, selectedClass.id]));
       student.classIds = updatedClassIds;
-      dataStore.updateStudent(student.id, { classIds: updatedClassIds });
+      await dataStore.updateStudent(student.id, { classIds: updatedClassIds });
       setRecords((prev) => ({
         ...prev,
         [student.id]: {
@@ -612,7 +612,7 @@ function AttendanceContent() {
     }
   };
 
-  const handleCreateStudent = (e: React.FormEvent) => {
+  const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClass) return;
     if (!newStudentForm.fullName.trim()) {
@@ -638,7 +638,7 @@ function AttendanceContent() {
         customFeePerSession: customFee,
       };
 
-      dataStore.addStudent(newStudent);
+      await dataStore.addStudent(newStudent);
       setMakeupStudentIds((prev) => [...prev, newStudent.id]);
       setRecords((prev) => ({
         ...prev,
@@ -676,7 +676,7 @@ function AttendanceContent() {
         customFeePerSession: customFee,
       };
 
-      dataStore.addStudent(newStudent);
+      await dataStore.addStudent(newStudent);
       setRecords((prev) => ({
         ...prev,
         [newStudent.id]: {
@@ -718,7 +718,7 @@ function AttendanceContent() {
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateStudent = (e: React.FormEvent) => {
+  const handleUpdateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStudent) return;
     if (!editForm.fullName.trim()) {
@@ -729,7 +729,7 @@ function AttendanceContent() {
     const birthYear = Number(editForm.birthYear) || 2018;
     const customFee = editForm.customFee.trim() ? parseFloat(editForm.customFee) : undefined;
 
-    dataStore.updateStudent(editingStudent.id, {
+    await dataStore.updateStudent(editingStudent.id, {
       fullName: editForm.fullName.trim(),
       birthYear,
       parentName: editForm.parentName.trim(),
@@ -747,7 +747,7 @@ function AttendanceContent() {
   // -------------------------------------------------------------
   // XỬ LÝ XÓA HỌC VIÊN TRỰC TIẾP
   // -------------------------------------------------------------
-  const handleDeleteStudent = (student: StudentData) => {
+  const handleDeleteStudent = async (student: StudentData) => {
     const isMakeup = makeupStudentIds.includes(student.id);
 
     if (isMakeup) {
@@ -769,7 +769,7 @@ function AttendanceContent() {
         )
       ) {
         if (selectedClass) {
-          dataStore.deleteStudent(student.id, selectedClass.id);
+          await dataStore.deleteStudent(student.id, selectedClass.id);
         }
         setRecords((prev) => {
           const next = { ...prev };

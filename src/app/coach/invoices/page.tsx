@@ -158,13 +158,13 @@ function InvoicesContent() {
     );
   };
 
-  const handleSaveCustomFee = (resetToDefault = false) => {
+  const handleSaveCustomFee = async (resetToDefault = false) => {
     if (!editingStudentFee) return;
     if (resetToDefault) {
-      dataStore.updateStudentFee(editingStudentFee.student.id, null);
+      await dataStore.updateStudentFee(editingStudentFee.student.id, null);
     } else {
       const fee = Number(customFeeInput);
-      dataStore.updateStudentFee(editingStudentFee.student.id, fee);
+      await dataStore.updateStudentFee(editingStudentFee.student.id, fee);
     }
     reloadInvoices();
     setEditingStudentFee(null);

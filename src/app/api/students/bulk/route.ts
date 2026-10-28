@@ -26,11 +26,11 @@ export async function POST(request: Request) {
         const fullName = String(s.fullName || "").trim();
         const parentPhone = String(s.parentPhone || "").trim();
 
-        if (!fullName || !parentPhone) {
+        if (!fullName) {
           errors.push({
             index: i + 1,
-            name: fullName || "Không tên",
-            error: "Thiếu Họ tên hoặc Số điện thoại phụ huynh",
+            name: "Không tên",
+            error: "Thiếu Họ và tên học viên",
           });
           continue;
         }

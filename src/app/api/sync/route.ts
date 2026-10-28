@@ -65,13 +65,13 @@ export async function GET(request: Request) {
 
     const formattedStudents = students.map((s) => ({
       id: s.id,
-      code: s.code || `HS${String(s.birthYear).slice(-2)}`,
+      code: s.code || (s.birthYear ? `HS${String(s.birthYear).slice(-2)}` : "HS00"),
       fullName: s.fullName,
       birthYear: s.birthYear,
       gender: (s.gender as any) || "Nam",
-      parentName: s.parentName,
-      parentPhone: s.parentPhone,
-      currentLevel: s.currentLevel,
+      parentName: s.parentName || "",
+      parentPhone: s.parentPhone || "",
+      currentLevel: s.currentLevel || "Nhập môn",
       notes: s.notes || "",
       classIds: s.classes.map((cs) => cs.classId),
       customFeePerSession: s.customFeePerSession || undefined,

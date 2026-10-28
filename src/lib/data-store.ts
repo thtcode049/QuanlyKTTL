@@ -416,14 +416,14 @@ class InMemoryDataStore {
         );
       }
       if (data.students && Array.isArray(data.students)) {
-        data.students.filter((s: StudentData) => !s.id.startsWith("std-")).forEach((s: StudentData) => {
+        data.students.forEach((s: StudentData) => {
           const idx = this.students.findIndex((x) => x.id === s.id);
           if (idx >= 0) this.students[idx] = { ...this.students[idx], ...s };
           else this.students.push(s);
         });
       }
       if (data.classes && Array.isArray(data.classes)) {
-        data.classes.filter((c: ClassroomData) => !c.id.startsWith("class-")).forEach((c: ClassroomData) => {
+        data.classes.forEach((c: ClassroomData) => {
           const idx = this.classes.findIndex((x) => x.id === c.id);
           if (idx >= 0) this.classes[idx] = { ...this.classes[idx], ...c };
           else this.classes.push(c);
@@ -612,8 +612,20 @@ class InMemoryDataStore {
             (u) => !this.deletedCoachIds.includes(u.id) && !this.deletedCoachIds.includes(u.email)
           );
         }
-        if (Array.isArray(classes)) this.classes = classes;
-        if (Array.isArray(students)) this.students = students;
+        if (Array.isArray(classes)) {
+          const dbClassIds = new Set(classes.map((c: any) => c.id));
+          const pendingClasses = this.classes.filter(
+            (c) => c.id.startsWith("class-") && !dbClassIds.has(c.id)
+          );
+          this.classes = [...classes, ...pendingClasses];
+        }
+        if (Array.isArray(students)) {
+          const dbStudentIds = new Set(students.map((s: any) => s.id));
+          const pendingStudents = this.students.filter(
+            (s) => s.id.startsWith("std-") && !dbStudentIds.has(s.id)
+          );
+          this.students = [...students, ...pendingStudents];
+        }
         if (Array.isArray(sessions)) this.sessions = sessions;
         this.recalculateAllInvoices(10, 2026);
         this.saveToLocalStorage();
@@ -626,7 +638,7 @@ class InMemoryDataStore {
   }
 
   // Thêm lớp học mới (đồng bộ Supabase DB)
-  public async addClass(cls: ClassroomData) {
+  public async addClass(cls: ClassroomData): Promise<ClassroomData> {
     const existingIdx = this.classes.findIndex((c) => c.id === cls.id);
     if (existingIdx >= 0) {
       this.classes[existingIdx] = cls;
@@ -638,19 +650,47 @@ class InMemoryDataStore {
     // Đồng bộ lên Supabase Database
     try {
       if (typeof window !== "undefined") {
-        fetch("/api/classes", {
+        const res = await fetch("/api/classes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(cls),
-        }).catch((e) => console.warn("Lỗi lưu lớp học lên DB:", e));
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const created = json.data;
+          const oldId = cls.id;
+          const newId = created.id;
+
+          const idx = this.classes.findIndex((c) => c.id === oldId || c.id === newId);
+          if (idx >= 0) {
+            this.classes[idx] = {
+              ...this.classes[idx],
+              ...created,
+              id: newId,
+            };
+          }
+          cls.id = newId;
+
+          // Cập nhật lại classId ở các học viên trỏ tới oldId
+          this.students.forEach((s) => {
+            const cIdx = s.classIds.indexOf(oldId);
+            if (cIdx >= 0) {
+              s.classIds[cIdx] = newId;
+            }
+          });
+
+          this.saveToLocalStorage();
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Lỗi lưu lớp học lên DB:", e);
+    }
 
     return cls;
   }
 
   // Cập nhật thông tin toàn diện của Lớp học (đồng bộ Supabase DB)
-  public updateClass(classId: string, data: Partial<ClassroomData>) {
+  public async updateClass(classId: string, data: Partial<ClassroomData>): Promise<ClassroomData | null> {
     const cls = this.classes.find((c) => c.id === classId);
     if (cls) {
       Object.assign(cls, data);
@@ -662,13 +702,15 @@ class InMemoryDataStore {
       // Đồng bộ lên Supabase Database
       try {
         if (typeof window !== "undefined") {
-          fetch("/api/classes", {
+          await fetch("/api/classes", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: classId, ...data }),
-          }).catch((e) => console.warn("Lỗi cập nhật lớp học lên DB:", e));
+          });
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Lỗi cập nhật lớp học lên DB:", e);
+      }
 
       return cls;
     }
@@ -694,7 +736,7 @@ class InMemoryDataStore {
   }
 
   // Xóa lớp học (đồng bộ Supabase DB)
-  public deleteClass(classId: string) {
+  public async deleteClass(classId: string): Promise<boolean> {
     this.classes = this.classes.filter((c) => c.id !== classId);
     // Gỡ lớp khỏi danh sách học viên
     this.students.forEach((s) => {
@@ -706,11 +748,13 @@ class InMemoryDataStore {
     // Đồng bộ xóa trên Supabase Database
     try {
       if (typeof window !== "undefined") {
-        fetch(`/api/classes?id=${classId}`, {
+        await fetch(`/api/classes?id=${encodeURIComponent(classId)}`, {
           method: "DELETE",
-        }).catch((e) => console.warn("Lỗi xóa lớp học trên DB:", e));
+        });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Lỗi xóa lớp học trên DB:", e);
+    }
 
     return true;
   }
@@ -749,7 +793,7 @@ class InMemoryDataStore {
   }
 
   // Thêm học viên mới (đồng bộ Supabase DB)
-  public addStudent(student: StudentData) {
+  public async addStudent(student: StudentData): Promise<StudentData> {
     const existingIdx = this.students.findIndex((s) => s.id === student.id);
     if (existingIdx >= 0) {
       this.students[existingIdx] = student;
@@ -762,13 +806,47 @@ class InMemoryDataStore {
     // Đồng bộ lên Supabase Database
     try {
       if (typeof window !== "undefined") {
-        fetch("/api/students", {
+        const res = await fetch("/api/students", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(student),
-        }).catch((e) => console.warn("Lỗi lưu học sinh lên DB:", e));
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const created = json.data;
+          const oldId = student.id;
+          const newId = created.id;
+
+          // Cập nhật ID học viên chuẩn từ database
+          const idx = this.students.findIndex((s) => s.id === oldId || s.id === newId);
+          if (idx >= 0) {
+            this.students[idx] = {
+              ...this.students[idx],
+              ...created,
+              id: newId,
+              classIds: created.classIds || student.classIds,
+            };
+          }
+          student.id = newId;
+
+          // Cập nhật mã học sinh trong các bảng điểm danh session nếu có
+          this.sessions.forEach((sess) => {
+            sess.records.forEach((r) => {
+              if (r.studentId === oldId) {
+                r.studentId = newId;
+              }
+            });
+          });
+
+          this.recalculateAllInvoices(10, 2026);
+          this.saveToLocalStorage();
+        } else {
+          console.error("Lỗi API lưu học sinh:", json.error);
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Lỗi lưu học sinh lên DB:", e);
+    }
 
     return student;
   }
@@ -819,7 +897,7 @@ class InMemoryDataStore {
   }
 
   // Cập nhật thông tin học viên (đồng bộ Supabase DB)
-  public updateStudent(studentId: string, data: Partial<StudentData>) {
+  public async updateStudent(studentId: string, data: Partial<StudentData>): Promise<StudentData | null> {
     const student = this.students.find((s) => s.id === studentId);
     if (student) {
       Object.assign(student, data);
@@ -831,13 +909,22 @@ class InMemoryDataStore {
       // Đồng bộ lên Supabase Database
       try {
         if (typeof window !== "undefined") {
-          fetch("/api/students", {
+          const res = await fetch("/api/students", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: studentId, ...data }),
-          }).catch((e) => console.warn("Lỗi cập nhật học sinh lên DB:", e));
+          });
+          const json = await res.json();
+          if (!json.success) {
+            console.error("Lỗi cập nhật học sinh lên DB:", json.error);
+          } else if (json.data && json.data.id && json.data.id !== studentId) {
+            student.id = json.data.id;
+            this.saveToLocalStorage();
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Lỗi cập nhật học sinh lên DB:", e);
+      }
 
       return student;
     }
@@ -845,7 +932,7 @@ class InMemoryDataStore {
   }
 
   // Xóa học viên (đồng bộ Supabase DB)
-  public deleteStudent(studentId: string, classId?: string) {
+  public async deleteStudent(studentId: string, classId?: string): Promise<boolean> {
     if (classId) {
       const s = this.students.find((st) => st.id === studentId);
       if (s) {
@@ -860,12 +947,16 @@ class InMemoryDataStore {
     // Đồng bộ xóa trên Supabase Database
     try {
       if (typeof window !== "undefined") {
-        const url = classId ? `/api/students?id=${studentId}&classId=${classId}` : `/api/students?id=${studentId}`;
-        fetch(url, {
+        const url = classId
+          ? `/api/students?id=${encodeURIComponent(studentId)}&classId=${encodeURIComponent(classId)}`
+          : `/api/students?id=${encodeURIComponent(studentId)}`;
+        await fetch(url, {
           method: "DELETE",
-        }).catch((e) => console.warn("Lỗi xóa học sinh trên DB:", e));
+        });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Lỗi xóa học sinh trên DB:", e);
+    }
 
     return true;
   }
@@ -1352,7 +1443,7 @@ class InMemoryDataStore {
   }
 
   // Cập nhật đơn giá học phí riêng theo từng học viên (học bổng, ưu đãi hoặc thỏa thuận riêng)
-  public updateStudentFee(studentId: string, customFeePerSession: number | null) {
+  public async updateStudentFee(studentId: string, customFeePerSession: number | null) {
     const student = this.students.find((s) => s.id === studentId);
     if (student) {
       if (customFeePerSession === null || isNaN(customFeePerSession) || customFeePerSession < 0) {
@@ -1362,6 +1453,22 @@ class InMemoryDataStore {
       }
       this.recalculateAllInvoices(10, 2026);
       this.saveToLocalStorage();
+
+      // Đồng bộ lên Supabase Database
+      try {
+        if (typeof window !== "undefined") {
+          await fetch("/api/students", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: studentId,
+              customFeePerSession: customFeePerSession !== null && !isNaN(customFeePerSession) && customFeePerSession > 0 ? customFeePerSession : null,
+            }),
+          });
+        }
+      } catch (e) {
+        console.warn("Lỗi cập nhật học phí riêng lên DB:", e);
+      }
     }
   }
 

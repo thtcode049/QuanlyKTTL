@@ -140,7 +140,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       const compressedBase64 = await compressImage(file, 600, 0.82);
       setAvatar(compressedBase64);
       // Cập nhật ngay lập tức vào student
-      const updated = dataStore.updateStudent(student.id, { avatar: compressedBase64 });
+      const updated = await dataStore.updateStudent(student.id, { avatar: compressedBase64 });
       if (updated) onUpdate(updated);
       setShowAvatarPicker(false);
     } catch (err) {
@@ -151,30 +151,30 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     }
   };
 
-  const handleSelectPresetAvatar = (dataUri: string) => {
+  const handleSelectPresetAvatar = async (dataUri: string) => {
     setAvatar(dataUri);
     setShowAvatarPicker(false);
-    const updated = dataStore.updateStudent(student.id, { avatar: dataUri });
+    const updated = await dataStore.updateStudent(student.id, { avatar: dataUri });
     if (updated) onUpdate(updated);
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const updatedData: Partial<StudentData> = {
-      fullName,
+      fullName: fullName.trim(),
       birthYear: birthYear !== "" ? Number(birthYear) : undefined,
       gender: (gender as "Nam" | "Nữ" | "") || undefined,
       parentName: "",
-      parentPhone,
+      parentPhone: parentPhone.trim(),
       currentLevel: currentClassInfo?.level || undefined,
-      school,
-      address,
-      notes,
+      school: school.trim(),
+      address: address.trim(),
+      notes: notes.trim(),
       avatar,
       customFeePerSession: customFee.trim() ? Number(customFee) : undefined,
     };
 
-    const updated = dataStore.updateStudent(student.id, updatedData);
+    const updated = await dataStore.updateStudent(student.id, updatedData);
     if (updated) {
       onUpdate(updated);
       setIsEditing(false);
