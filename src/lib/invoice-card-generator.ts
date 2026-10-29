@@ -1,6 +1,15 @@
 import JSZip from "jszip";
 import { formatCurrencyVND } from "./vietqr";
 
+export interface InvoiceClassItem {
+  className: string;
+  branchName?: string;
+  presentCount: number;
+  presentDates: string[];
+  feePerSession: number;
+  totalAmount: number;
+}
+
 export interface InvoiceCardData {
   studentCode: string;
   studentName: string;
@@ -17,6 +26,7 @@ export interface InvoiceCardData {
   accountHolder: string;
   transferContent: string;
   vietQrUrl: string;
+  classList?: InvoiceClassItem[];
 }
 
 /**
@@ -84,7 +94,11 @@ export async function generateInvoiceCardCanvas(
 ): Promise<HTMLCanvasElement> {
   const scale = 2;
   const width = 560;
-  const height = 980;
+  const hasMultipleClasses = Boolean(data.classList && data.classList.length > 1);
+  const extraHeight = hasMultipleClasses
+    ? (data.classList!.length * 56)
+    : 0;
+  const height = 980 + extraHeight;
 
   const canvas = document.createElement("canvas");
   canvas.width = width * scale;
@@ -213,15 +227,68 @@ export async function generateInvoiceCardCanvas(
   };
 
   renderRow("Học viên:", `${data.studentName} (${data.studentCode})`, true);
-  renderRow("Lớp học:", `${data.className} – ${data.branchName}`);
-  renderRow("Số buổi thực học:", `${data.presentCount} buổi`, true, "#047857");
 
-  const datesStr =
-    data.presentDates && data.presentDates.length > 0
-      ? data.presentDates.join(", ")
-      : "Chưa có buổi học";
-  renderRow("Các ngày có mặt:", datesStr);
-  renderRow("Đơn giá:", `${formatCurrencyVND(data.feePerSession)}/buổi`);
+  if (hasMultipleClasses) {
+    ctx.font = "700 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.fillStyle = "#334155";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`Chi tiết các lớp học (${data.classList!.length} lớp):`, padLeft, curY + 12);
+    curY += 24;
+
+    data.classList!.forEach((clsItem, idx) => {
+      const hasDates = clsItem.presentDates && clsItem.presentDates.length > 0;
+      const boxH = hasDates ? 48 : 38;
+      ctx.fillStyle = "#F8FAFC";
+      roundRect(ctx, padLeft, curY, cardW - 48, boxH, 8);
+      ctx.fill();
+      ctx.strokeStyle = "#E2E8F0";
+      ctx.lineWidth = 1;
+      roundRect(ctx, padLeft, curY, cardW - 48, boxH, 8);
+      ctx.stroke();
+
+      // Dòng 1: Tên lớp & Thành tiền của lớp đó
+      ctx.font = "700 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillStyle = "#0F172A";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      const titleText = `${idx + 1}. ${clsItem.className}${clsItem.branchName ? ` (${clsItem.branchName})` : ""}`;
+      ctx.fillText(truncateText(ctx, titleText, cardW - 170), padLeft + 8, curY + 6);
+
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillStyle = "#059669";
+      ctx.textAlign = "right";
+      ctx.fillText(formatCurrencyVND(clsItem.totalAmount), colValX - 8, curY + 6);
+
+      // Dòng 2: Số buổi & Đơn giá
+      ctx.font = "500 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillStyle = "#64748B";
+      ctx.textAlign = "left";
+      const subDesc = `${clsItem.presentCount} buổi × ${formatCurrencyVND(clsItem.feePerSession)}/b`;
+      ctx.fillText(subDesc, padLeft + 8, curY + 24);
+
+      if (hasDates) {
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#94A3B8";
+        const datesText = truncateText(ctx, `Ngày: ${clsItem.presentDates.join(", ")}`, cardW - 200);
+        ctx.fillText(datesText, colValX - 8, curY + 24);
+      }
+
+      curY += boxH + 6;
+    });
+
+    renderRow("Tổng số buổi thực học:", `${data.presentCount} buổi`, true, "#047857");
+  } else {
+    renderRow("Lớp học:", `${data.className} – ${data.branchName}`);
+    renderRow("Số buổi thực học:", `${data.presentCount} buổi`, true, "#047857");
+
+    const datesStr =
+      data.presentDates && data.presentDates.length > 0
+        ? data.presentDates.join(", ")
+        : "Chưa có buổi học";
+    renderRow("Các ngày có mặt:", datesStr);
+    renderRow("Đơn giá:", `${formatCurrencyVND(data.feePerSession)}/buổi`);
+  }
 
   // Hộp nổi bật TỔNG HỌC PHÍ
   curY += 4;

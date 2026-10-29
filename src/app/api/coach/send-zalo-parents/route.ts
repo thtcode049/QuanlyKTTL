@@ -51,70 +51,165 @@ export async function GET(req: NextRequest) {
       const workDir = path.dirname(foundExe);
       const args: string[] = [];
 
-      // Nếu có classId, tự động kết xuất dữ liệu hóa đơn của lớp này và truyền đường dẫn vào tool
+      // Nếu có classId, tự động kết xuất dữ liệu hóa đơn và truyền đường dẫn vào tool
       if (classId) {
         try {
-          const targetClass = dataStore.classes.find((c) => c.id === classId);
-          const branch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+          const isAll = classId === "all";
+          const targetClass = isAll
+            ? ({ id: "all", name: "Toàn bộ các lớp" } as any)
+            : dataStore.classes.find((c) => c.id === classId);
+          const branch = isAll
+            ? ({ id: "all", name: "Tất cả cơ sở" } as any)
+            : dataStore.branches.find((b) => b.id === targetClass?.branchId);
           const invoices = dataStore.invoices.filter(
-            (inv) => inv.classId === classId && inv.month === month && inv.year === year
+            (inv) => (isAll || inv.classId === classId) && inv.month === month && inv.year === year
           );
-          const sessions = dataStore.sessions.filter((s) => {
-            if (s.classId !== classId) return false;
-            const d = new Date(s.date);
-            return d.getMonth() + 1 === month && d.getFullYear() === year;
-          });
 
-          const studentsList = invoices.map((inv) => {
-            const student = dataStore.students.find((s) => s.id === inv.studentId);
-            const presentDates: string[] = [];
-            sessions.forEach((sess) => {
-              const rec = sess.records.find((r) => r.studentId === student?.id);
-              if (rec && rec.status === "PRESENT") {
-                const d = new Date(sess.date);
-                presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+          let studentsList: any[] = [];
+          if (isAll) {
+            // Gom nhóm theo học sinh khi xuất toàn bộ các lớp
+            const studentMap = new Map<string, any>();
+            invoices.forEach((inv) => {
+              const student = dataStore.students.find((s) => s.id === inv.studentId);
+              if (!student) return;
+              const cls = dataStore.classes.find((c) => c.id === inv.classId);
+              const br = dataStore.branches.find((b) => b.id === cls?.branchId);
+
+              const classSessions = dataStore.sessions.filter(
+                (s) => s.classId === inv.classId && new Date(s.date).getMonth() + 1 === month && new Date(s.date).getFullYear() === year
+              );
+              const presentDates: string[] = [];
+              classSessions.forEach((sess) => {
+                const rec = sess.records.find((r) => r.studentId === student.id);
+                if (rec && rec.status === "PRESENT") {
+                  const d = new Date(sess.date);
+                  presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+                }
+              });
+
+              const classItem = {
+                classId: inv.classId,
+                className: cls?.name || "Lớp học",
+                branchName: br?.name || "",
+                presentCount: inv.presentCount,
+                presentDates,
+                feePerSession: inv.feePerSession,
+                totalAmount: inv.totalAmount,
+                status: inv.status,
+              };
+
+              if (!studentMap.has(student.id)) {
+                studentMap.set(student.id, {
+                  invoiceId: inv.id,
+                  studentId: student.id,
+                  studentCode: student.code || "HS",
+                  studentName: student.fullName,
+                  parentName: student.parentName,
+                  parentPhone: student.parentPhone,
+                  cleanParentPhone: (student.parentPhone || "").replace(/[^0-9]/g, ""),
+                  className: cls?.name || "",
+                  branchName: br?.name || "",
+                  month,
+                  year,
+                  presentCount: inv.presentCount,
+                  presentDates,
+                  feePerSession: inv.feePerSession,
+                  totalAmount: inv.totalAmount,
+                  status: inv.status,
+                  classList: [classItem],
+                });
+              } else {
+                const existing = studentMap.get(student.id)!;
+                existing.classList.push(classItem);
+                existing.presentCount += inv.presentCount;
+                existing.totalAmount += inv.totalAmount;
+                existing.presentDates = [...existing.presentDates, ...presentDates];
+                if (inv.status === "PENDING") existing.status = "PENDING";
+                existing.className = `Tổng hợp ${existing.classList.length} lớp (${existing.classList.map((c: any) => c.className).join(", ")})`;
               }
             });
 
-            const transferContent = `HP ${student?.code || "HS"} T${month}`;
-            const vietQrUrl =
-              dataStore.bankConfig.useCustomQr && dataStore.bankConfig.customQrImage
-                ? dataStore.bankConfig.customQrImage
-                : generateVietQrUrl({
-                    bankId: dataStore.bankConfig.bankId,
-                    accountNo: dataStore.bankConfig.bankAccount,
-                    accountName: dataStore.bankConfig.accountHolder,
-                    template: "compact2",
-                    amount: inv.totalAmount,
-                    description: transferContent,
-                  });
+            studentsList = Array.from(studentMap.values()).map((st) => {
+              const transferContent = `HP ${st.studentCode} T${month}`;
+              const vietQrUrl =
+                dataStore.bankConfig.useCustomQr && dataStore.bankConfig.customQrImage
+                  ? dataStore.bankConfig.customQrImage
+                  : generateVietQrUrl({
+                      bankId: dataStore.bankConfig.bankId,
+                      accountNo: dataStore.bankConfig.bankAccount,
+                      accountName: dataStore.bankConfig.accountHolder,
+                      template: "compact2",
+                      amount: st.totalAmount,
+                      description: transferContent,
+                    });
+              return {
+                ...st,
+                transferContent,
+                vietQrUrl,
+                bankName: dataStore.bankConfig.bankName,
+                bankAccount: dataStore.bankConfig.bankAccount,
+                accountHolder: dataStore.bankConfig.accountHolder,
+                zaloChatUrl: `https://zalo.me/${st.cleanParentPhone}`,
+              };
+            });
+          } else {
+            const sessions = dataStore.sessions.filter((s) => {
+              if (s.classId !== classId) return false;
+              const d = new Date(s.date);
+              return d.getMonth() + 1 === month && d.getFullYear() === year;
+            });
 
-            const cleanPhone = (student?.parentPhone || "").replace(/[^0-9]/g, "");
+            studentsList = invoices.map((inv) => {
+              const student = dataStore.students.find((s) => s.id === inv.studentId);
+              const presentDates: string[] = [];
+              sessions.forEach((sess) => {
+                const rec = sess.records.find((r) => r.studentId === student?.id);
+                if (rec && rec.status === "PRESENT") {
+                  const d = new Date(sess.date);
+                  presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+                }
+              });
 
-            return {
-              invoiceId: inv.id,
-              studentId: student?.id,
-              studentCode: student?.code,
-              studentName: student?.fullName,
-              parentName: student?.parentName,
-              parentPhone: student?.parentPhone,
-              cleanParentPhone: cleanPhone,
-              className: targetClass?.name,
-              branchName: branch?.name,
-              month,
-              year,
-              presentCount: inv.presentCount,
-              presentDates,
-              feePerSession: inv.feePerSession,
-              totalAmount: inv.totalAmount,
-              status: inv.status,
-              transferContent,
-              vietQrUrl,
-              bankName: dataStore.bankConfig.bankName,
-              bankAccount: dataStore.bankConfig.bankAccount,
-              accountHolder: dataStore.bankConfig.accountHolder,
-            };
-          });
+              const transferContent = `HP ${student?.code || "HS"} T${month}`;
+              const vietQrUrl =
+                dataStore.bankConfig.useCustomQr && dataStore.bankConfig.customQrImage
+                  ? dataStore.bankConfig.customQrImage
+                  : generateVietQrUrl({
+                      bankId: dataStore.bankConfig.bankId,
+                      accountNo: dataStore.bankConfig.bankAccount,
+                      accountName: dataStore.bankConfig.accountHolder,
+                      template: "compact2",
+                      amount: inv.totalAmount,
+                      description: transferContent,
+                    });
+
+              const cleanPhone = (student?.parentPhone || "").replace(/[^0-9]/g, "");
+
+              return {
+                invoiceId: inv.id,
+                studentId: student?.id,
+                studentCode: student?.code,
+                studentName: student?.fullName,
+                parentName: student?.parentName,
+                parentPhone: student?.parentPhone,
+                cleanParentPhone: cleanPhone,
+                className: targetClass?.name,
+                branchName: branch?.name,
+                month,
+                year,
+                presentCount: inv.presentCount,
+                presentDates,
+                feePerSession: inv.feePerSession,
+                totalAmount: inv.totalAmount,
+                status: inv.status,
+                transferContent,
+                vietQrUrl,
+                bankName: dataStore.bankConfig.bankName,
+                bankAccount: dataStore.bankConfig.bankAccount,
+                accountHolder: dataStore.bankConfig.accountHolder,
+              };
+            });
+          }
 
           const exportBundle = {
             exportTime: new Date().toISOString(),
@@ -124,7 +219,7 @@ export async function GET(req: NextRequest) {
               branchName: branch?.name,
               month,
               year,
-              totalSessions: sessions.length,
+              totalSessions: isAll ? invoices.length : dataStore.sessions.filter((s) => s.classId === classId).length,
             },
             bankConfig: {
               bankName: dataStore.bankConfig.bankName,
@@ -220,66 +315,159 @@ export async function GET(req: NextRequest) {
   }
 
   const bank = dataStore.bankConfig;
-  const targetClass = dataStore.classes.find((c) => c.id === classId);
-  const branch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+  const isAll = classId === "all";
+  const targetClass = isAll
+    ? ({ id: "all", name: "Toàn bộ các lớp" } as any)
+    : dataStore.classes.find((c) => c.id === classId);
+  const branch = isAll
+    ? ({ id: "all", name: "Tất cả cơ sở" } as any)
+    : dataStore.branches.find((b) => b.id === targetClass?.branchId);
 
   const invoices = dataStore.invoices.filter(
-    (inv) => inv.classId === classId && inv.month === month && inv.year === year
+    (inv) => (isAll || inv.classId === classId) && inv.month === month && inv.year === year
   );
 
-  const sessions = dataStore.sessions.filter((s) => {
-    if (s.classId !== classId) return false;
-    const d = new Date(s.date);
-    return d.getMonth() + 1 === month && d.getFullYear() === year;
-  });
+  let studentsList: any[] = [];
+  if (isAll) {
+    const studentMap = new Map<string, any>();
+    invoices.forEach((inv) => {
+      const student = dataStore.students.find((s) => s.id === inv.studentId);
+      if (!student) return;
+      const cls = dataStore.classes.find((c) => c.id === inv.classId);
+      const br = dataStore.branches.find((b) => b.id === cls?.branchId);
 
-  const studentsList = invoices.map((inv) => {
-    const student = dataStore.students.find((s) => s.id === inv.studentId);
-    const presentDates: string[] = [];
-    sessions.forEach((sess) => {
-      const rec = sess.records.find((r) => r.studentId === student?.id);
-      if (rec && rec.status === "PRESENT") {
-        const d = new Date(sess.date);
-        presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+      const classSessions = dataStore.sessions.filter(
+        (s) => s.classId === inv.classId && new Date(s.date).getMonth() + 1 === month && new Date(s.date).getFullYear() === year
+      );
+      const presentDates: string[] = [];
+      classSessions.forEach((sess) => {
+        const rec = sess.records.find((r) => r.studentId === student.id);
+        if (rec && rec.status === "PRESENT") {
+          const d = new Date(sess.date);
+          presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+        }
+      });
+
+      const classItem = {
+        classId: inv.classId,
+        className: cls?.name || "Lớp học",
+        branchName: br?.name || "",
+        presentCount: inv.presentCount,
+        presentDates,
+        feePerSession: inv.feePerSession,
+        totalAmount: inv.totalAmount,
+        status: inv.status,
+      };
+
+      if (!studentMap.has(student.id)) {
+        studentMap.set(student.id, {
+          invoiceId: inv.id,
+          studentId: student.id,
+          studentCode: student.code || "HS",
+          studentName: student.fullName,
+          parentName: student.parentName,
+          parentPhone: student.parentPhone,
+          cleanParentPhone: (student.parentPhone || "").replace(/[^0-9]/g, ""),
+          className: cls?.name || "",
+          branchName: br?.name || "",
+          month,
+          year,
+          presentCount: inv.presentCount,
+          presentDates,
+          feePerSession: inv.feePerSession,
+          totalAmount: inv.totalAmount,
+          status: inv.status,
+          classList: [classItem],
+        });
+      } else {
+        const existing = studentMap.get(student.id)!;
+        existing.classList.push(classItem);
+        existing.presentCount += inv.presentCount;
+        existing.totalAmount += inv.totalAmount;
+        existing.presentDates = [...existing.presentDates, ...presentDates];
+        if (inv.status === "PENDING") existing.status = "PENDING";
+        existing.className = `Tổng hợp ${existing.classList.length} lớp (${existing.classList.map((c: any) => c.className).join(", ")})`;
       }
     });
 
-    const transferContent = `HP ${student?.code || "HS"} T${month}`;
-    const vietQrUrl = bank.useCustomQr && bank.customQrImage
-      ? bank.customQrImage
-      : generateVietQrUrl({
-          bankId: bank.bankId,
-          accountNo: bank.bankAccount,
-          accountName: bank.accountHolder,
-          template: "compact2",
-          amount: inv.totalAmount,
-          description: transferContent,
-        });
+    studentsList = Array.from(studentMap.values()).map((st) => {
+      const transferContent = `HP ${st.studentCode} T${month}`;
+      const vietQrUrl =
+        bank.useCustomQr && bank.customQrImage
+          ? bank.customQrImage
+          : generateVietQrUrl({
+              bankId: bank.bankId,
+              accountNo: bank.bankAccount,
+              accountName: bank.accountHolder,
+              template: "compact2",
+              amount: st.totalAmount,
+              description: transferContent,
+            });
+      return {
+        ...st,
+        transferContent,
+        vietQrUrl,
+        bankName: bank.bankName,
+        bankAccount: bank.bankAccount,
+        accountHolder: bank.accountHolder,
+        zaloChatUrl: `https://zalo.me/${st.cleanParentPhone}`,
+      };
+    });
+  } else {
+    const sessions = dataStore.sessions.filter((s) => {
+      if (s.classId !== classId) return false;
+      const d = new Date(s.date);
+      return d.getMonth() + 1 === month && d.getFullYear() === year;
+    });
 
-    const cleanPhone = (student?.parentPhone || "").replace(/[^0-9]/g, "");
+    studentsList = invoices.map((inv) => {
+      const student = dataStore.students.find((s) => s.id === inv.studentId);
+      const presentDates: string[] = [];
+      sessions.forEach((sess) => {
+        const rec = sess.records.find((r) => r.studentId === student?.id);
+        if (rec && rec.status === "PRESENT") {
+          const d = new Date(sess.date);
+          presentDates.push(`${d.getDate()}/${d.getMonth() + 1}`);
+        }
+      });
 
-    return {
-      invoiceId: inv.id,
-      studentId: student?.id,
-      studentCode: student?.code,
-      studentName: student?.fullName,
-      parentName: student?.parentName,
-      parentPhone: student?.parentPhone,
-      cleanParentPhone: cleanPhone,
-      className: targetClass?.name,
-      branchName: branch?.name,
-      month,
-      year,
-      presentCount: inv.presentCount,
-      presentDates,
-      feePerSession: inv.feePerSession,
-      totalAmount: inv.totalAmount,
-      status: inv.status,
-      transferContent,
-      vietQrUrl,
-      zaloChatUrl: `https://zalo.me/${cleanPhone}`,
-    };
-  });
+      const transferContent = `HP ${student?.code || "HS"} T${month}`;
+      const vietQrUrl = bank.useCustomQr && bank.customQrImage
+        ? bank.customQrImage
+        : generateVietQrUrl({
+            bankId: bank.bankId,
+            accountNo: bank.bankAccount,
+            accountName: bank.accountHolder,
+            template: "compact2",
+            amount: inv.totalAmount,
+            description: transferContent,
+          });
+
+      const cleanPhone = (student?.parentPhone || "").replace(/[^0-9]/g, "");
+
+      return {
+        invoiceId: inv.id,
+        studentId: student?.id,
+        studentCode: student?.code,
+        studentName: student?.fullName,
+        parentName: student?.parentName,
+        parentPhone: student?.parentPhone,
+        cleanParentPhone: cleanPhone,
+        className: targetClass?.name,
+        branchName: branch?.name,
+        month,
+        year,
+        presentCount: inv.presentCount,
+        presentDates,
+        feePerSession: inv.feePerSession,
+        totalAmount: inv.totalAmount,
+        status: inv.status,
+        transferContent,
+        vietQrUrl,
+        zaloChatUrl: `https://zalo.me/${cleanPhone}`,
+      };
+    });
+  }
 
   return NextResponse.json({
     success: true,

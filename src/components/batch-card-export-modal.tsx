@@ -257,13 +257,18 @@ export default function BatchCardExportModal({
                       </button>
 
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-[10px] font-bold text-slate-500">
                             {st.studentCode}
                           </span>
                           <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                             {st.studentName}
                           </h4>
+                          {st.classList && st.classList.length > 1 && (
+                            <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.5 text-[9.5px] font-extrabold border border-teal-200">
+                              Gộp {st.classList.length} lớp
+                            </span>
+                          )}
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
                           {st.presentCount} buổi thực học •{" "}
@@ -271,6 +276,11 @@ export default function BatchCardExportModal({
                             {formatCurrencyVND(st.totalAmount)}
                           </strong>
                         </p>
+                        {st.classList && st.classList.length > 1 && (
+                          <p className="text-[10px] text-teal-700 font-medium truncate mt-0.5">
+                            {st.classList.map((c) => `${c.className} (${c.presentCount}b)`).join(" + ")}
+                          </p>
+                        )}
                         <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">
                           Cú pháp: {st.transferContent}
                         </p>

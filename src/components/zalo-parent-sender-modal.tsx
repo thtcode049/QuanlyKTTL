@@ -30,6 +30,7 @@ import {
   copyInvoiceCardToClipboard,
   batchExportInvoiceCardsAsZip,
   InvoiceCardData,
+  InvoiceClassItem,
 } from "@/lib/invoice-card-generator";
 
 export interface StudentParentInvoiceItem {
@@ -55,13 +56,14 @@ export interface StudentParentInvoiceItem {
   bankName: string;
   bankAccount: string;
   accountHolder: string;
+  classList?: InvoiceClassItem[];
 }
 
 interface ZaloParentSenderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  classroom: ClassroomData | null;
-  branch: BranchData | null;
+  classroom: ClassroomData | { id: string; name: string; level?: string; feePerSession?: number; schedule?: string } | null;
+  branch?: BranchData | { id?: string; name: string; address?: string; phone?: string | null } | null;
   month: number;
   year: number;
   students: StudentParentInvoiceItem[];
@@ -163,7 +165,16 @@ export default function ZaloParentSenderModal({
     const nextMap = { ...sentMap, [studentId]: now };
     setSentMap(nextMap);
 
-    dataStore.markInvoiceZaloSentByStudent(classroom.id, studentId, month, year, now);
+    if (classroom.id === "all") {
+      dataStore.invoices.forEach((inv) => {
+        if (inv.studentId === studentId && inv.month === month && inv.year === year) {
+          inv.zaloSentAt = now;
+        }
+      });
+      dataStore.saveToLocalStorage();
+    } else {
+      dataStore.markInvoiceZaloSentByStudent(classroom.id, studentId, month, year, now);
+    }
 
     try {
       localStorage.setItem("kttl_zalo_sent_records", JSON.stringify(nextMap));
@@ -184,12 +195,21 @@ export default function ZaloParentSenderModal({
     delete nextMap[studentId];
     setSentMap(nextMap);
 
-    const inv = dataStore.invoices.find(
-      (i) => i.classId === classroom.id && i.studentId === studentId && i.month === month && i.year === year
-    );
-    if (inv) {
-      delete inv.zaloSentAt;
+    if (classroom.id === "all") {
+      dataStore.invoices.forEach((inv) => {
+        if (inv.studentId === studentId && inv.month === month && inv.year === year) {
+          delete inv.zaloSentAt;
+        }
+      });
       dataStore.saveToLocalStorage();
+    } else {
+      const inv = dataStore.invoices.find(
+        (i) => i.classId === classroom.id && i.studentId === studentId && i.month === month && i.year === year
+      );
+      if (inv) {
+        delete inv.zaloSentAt;
+        dataStore.saveToLocalStorage();
+      }
     }
 
     try {
@@ -206,8 +226,17 @@ export default function ZaloParentSenderModal({
     const nextMap = { ...sentMap };
     students.forEach((st) => {
       nextMap[st.studentId] = now;
-      dataStore.markInvoiceZaloSentByStudent(classroom.id, st.studentId, month, year, now);
+      if (classroom.id === "all") {
+        dataStore.invoices.forEach((inv) => {
+          if (inv.studentId === st.studentId && inv.month === month && inv.year === year) {
+            inv.zaloSentAt = now;
+          }
+        });
+      } else {
+        dataStore.markInvoiceZaloSentByStudent(classroom.id, st.studentId, month, year, now);
+      }
     });
+    dataStore.saveToLocalStorage();
     setSentMap(nextMap);
 
     try {
@@ -236,16 +265,16 @@ export default function ZaloParentSenderModal({
       classroom: {
         id: classroom.id,
         name: classroom.name,
-        level: classroom.level,
-        feePerSession: classroom.feePerSession,
-        schedule: classroom.schedule,
+        level: classroom.level || "Tất cả",
+        feePerSession: classroom.feePerSession || 0,
+        schedule: classroom.schedule || "",
       },
       branch: branch
         ? {
-            id: branch.id,
+            id: branch.id || "",
             name: branch.name,
-            address: branch.address,
-            phone: branch.phone,
+            address: branch.address || "",
+            phone: branch.phone || null,
           }
         : null,
       bankConfig: {
@@ -465,6 +494,7 @@ export default function ZaloParentSenderModal({
                       accountHolder: s.accountHolder,
                       transferContent: s.transferContent,
                       vietQrUrl: s.vietQrUrl,
+                      classList: s.classList,
                     }));
                     const safeClass = classroom.name.replace(/[^a-zA-Z0-9\-_]/g, "_");
                     await batchExportInvoiceCardsAsZip(
@@ -889,35 +919,64 @@ export default function ZaloParentSenderModal({
                         </span>
                       </div>
 
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Lớp học:</span>
-                        <span className="font-bold text-slate-900 text-right max-w-[65%]">
-                          {previewStudent.className} – {previewStudent.branchName}
-                        </span>
-                      </div>
+                      {previewStudent.classList && previewStudent.classList.length > 1 ? (
+                        <div className="space-y-1.5 py-1">
+                          <div className="flex justify-between items-center text-[11px] font-bold text-slate-700">
+                            <span>Chi tiết các lớp học ({previewStudent.classList.length} lớp):</span>
+                            <span className="text-[10px] text-emerald-600 font-extrabold uppercase">Thực học - Thực trả</span>
+                          </div>
+                          {previewStudent.classList.map((clsItem, cIdx) => (
+                            <div key={cIdx} className="rounded-xl bg-slate-50 p-2 border border-slate-200/80 text-xs">
+                              <div className="flex justify-between items-start">
+                                <span className="font-bold text-slate-800">{cIdx + 1}. {clsItem.className}</span>
+                                <span className="font-black text-emerald-700">{formatCurrencyVND(clsItem.totalAmount)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-[10.5px] text-slate-500 mt-1">
+                                <span>{clsItem.presentCount} buổi × {formatCurrencyVND(clsItem.feePerSession)}/b</span>
+                                {clsItem.presentDates && clsItem.presentDates.length > 0 && (
+                                  <span className="text-slate-400">({clsItem.presentDates.join(", ")})</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="flex justify-between pt-1">
+                            <span className="text-slate-500">Tổng số buổi thực học:</span>
+                            <span className="font-bold text-slate-900">{previewStudent.presentCount} buổi</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Lớp học:</span>
+                            <span className="font-bold text-slate-900 text-right max-w-[65%]">
+                              {previewStudent.className} – {previewStudent.branchName}
+                            </span>
+                          </div>
 
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Số buổi thực học:</span>
-                        <span className="font-bold text-slate-900">
-                          {previewStudent.presentCount} buổi
-                        </span>
-                      </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Số buổi thực học:</span>
+                            <span className="font-bold text-slate-900">
+                              {previewStudent.presentCount} buổi
+                            </span>
+                          </div>
 
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Các ngày có mặt:</span>
-                        <span className="font-bold text-slate-900 text-right">
-                          {previewStudent.presentDates && previewStudent.presentDates.length > 0
-                            ? previewStudent.presentDates.join(", ")
-                            : "Chưa có buổi học"}
-                        </span>
-                      </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Các ngày có mặt:</span>
+                            <span className="font-bold text-slate-900 text-right">
+                              {previewStudent.presentDates && previewStudent.presentDates.length > 0
+                                ? previewStudent.presentDates.join(", ")
+                                : "Chưa có buổi học"}
+                            </span>
+                          </div>
 
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Đơn giá:</span>
-                        <span className="font-bold text-slate-900">
-                          {formatCurrencyVND(previewStudent.feePerSession)}/buổi
-                        </span>
-                      </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Đơn giá:</span>
+                            <span className="font-bold text-slate-900">
+                              {formatCurrencyVND(previewStudent.feePerSession)}/buổi
+                            </span>
+                          </div>
+                        </>
+                      )}
 
                       {/* Highlight row */}
                       <div className="my-1.5 flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 border border-emerald-200">
@@ -984,6 +1043,7 @@ export default function ZaloParentSenderModal({
                             accountHolder: previewStudent.accountHolder,
                             transferContent: previewStudent.transferContent,
                             vietQrUrl: previewStudent.vietQrUrl,
+                            classList: previewStudent.classList,
                           };
                           const success = await copyInvoiceCardToClipboard(cardData);
                           if (success) {
@@ -1017,6 +1077,7 @@ export default function ZaloParentSenderModal({
                             accountHolder: previewStudent.accountHolder,
                             transferContent: previewStudent.transferContent,
                             vietQrUrl: previewStudent.vietQrUrl,
+                            classList: previewStudent.classList,
                           };
                           downloadInvoiceCardPng(cardData);
                           showToast(`📥 Đã tải ảnh PNG thẻ học phí em ${previewStudent.studentName}!`);

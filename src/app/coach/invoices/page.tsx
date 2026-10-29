@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import {
   Settings,
   FileImage,
   FolderArchive,
+  Layers,
 } from "lucide-react";
 import {
   dataStore,
@@ -40,7 +41,35 @@ import {
   downloadInvoiceCardPng,
   copyInvoiceCardToClipboard,
   InvoiceCardData,
+  InvoiceClassItem,
 } from "@/lib/invoice-card-generator";
+
+export interface AggregatedStudentInvoice {
+  studentId: string;
+  student: StudentData;
+  studentCode: string;
+  studentName: string;
+  parentPhone: string;
+  classItems: Array<{
+    invoiceId: string;
+    classId: string;
+    className: string;
+    branchName: string;
+    presentCount: number;
+    presentDates: string[];
+    feePerSession: number;
+    totalAmount: number;
+    status: "PENDING" | "PAID";
+    zaloSentAt?: string;
+  }>;
+  totalPresentCount: number;
+  totalAmount: number;
+  status: "PENDING" | "PAID";
+  invoiceIds: string[];
+  zaloSentAt?: string;
+  vietQrUrl: string;
+  transferContent: string;
+}
 
 function InvoicesContent() {
   const searchParams = useSearchParams();
@@ -105,12 +134,77 @@ function InvoicesContent() {
   // Modal Xuất Hàng Loạt Ảnh Thẻ Học Phí (PNG / ZIP)
   const [batchExportModalOpen, setBatchExportModalOpen] = useState(false);
 
-  // Helper tạo dữ liệu thẻ học phí
-  const buildInvoiceCardData = (inv: MonthlyInvoiceData, student: StudentData): InvoiceCardData => {
+  // Tùy chọn gộp phiếu thu cho học viên học nhiều lớp khi đang xem từng lớp riêng
+  const [preferConsolidatedCards, setPreferConsolidatedCards] = useState<boolean>(true);
+
+  // Helper tạo dữ liệu thẻ học phí cho từng dòng hóa đơn
+  const buildInvoiceCardData = (
+    inv: MonthlyInvoiceData,
+    student: StudentData,
+    includeOtherClasses: boolean = preferConsolidatedCards
+  ): InvoiceCardData => {
     const bank = dataStore.bankConfig;
     const transferContent = `HP ${student.code} T${selectedMonth}`;
     const targetClass = classes.find((c) => c.id === inv.classId) || selectedClass;
     const targetBranch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+
+    // Nếu yêu cầu gộp các lớp khác và học viên có nhiều hơn 1 lớp trong tháng
+    const studentInvsInMonth = dataStore.invoices.filter(
+      (i) => i.studentId === student.id && i.month === selectedMonth && i.year === selectedYear
+    );
+
+    if (includeOtherClasses && studentInvsInMonth.length > 1) {
+      const classList: InvoiceClassItem[] = studentInvsInMonth.map((otherInv) => {
+        const cls =
+          classes.find((c) => c.id === otherInv.classId) ||
+          dataStore.classes.find((c) => c.id === otherInv.classId);
+        const br = dataStore.branches.find((b) => b.id === cls?.branchId);
+        return {
+          className: cls?.name || "Lớp học",
+          branchName: br?.name || "",
+          presentCount: otherInv.presentCount,
+          presentDates: getPresentDatesForStudent(student.id, otherInv.classId),
+          feePerSession: otherInv.feePerSession,
+          totalAmount: otherInv.totalAmount,
+        };
+      });
+      const totalAmount = studentInvsInMonth.reduce((s, i) => s + i.totalAmount, 0);
+      const totalPresent = studentInvsInMonth.reduce((s, i) => s + i.presentCount, 0);
+      const allDates = classList.flatMap((c) => c.presentDates);
+      const classNames = classList.map((c) => c.className).join(", ");
+
+      const vietQrUrl =
+        bank.useCustomQr && bank.customQrImage
+          ? bank.customQrImage
+          : generateVietQrUrl({
+              bankId: bank.bankId,
+              accountNo: bank.bankAccount,
+              accountName: bank.accountHolder,
+              template: (bank.qrTemplate as any) || "compact2",
+              amount: totalAmount,
+              description: transferContent,
+            });
+
+      return {
+        studentCode: student.code,
+        studentName: student.fullName,
+        className: `Tổng hợp ${classList.length} lớp (${classNames})`,
+        branchName: targetBranch?.name || "",
+        month: selectedMonth,
+        year: selectedYear,
+        presentCount: totalPresent,
+        presentDates: allDates,
+        feePerSession: 0,
+        totalAmount,
+        bankName: bank.bankName,
+        bankAccount: bank.bankAccount,
+        accountHolder: bank.accountHolder,
+        transferContent,
+        vietQrUrl,
+        classList,
+      };
+    }
+
     const vietQrUrl =
       bank.useCustomQr && bank.customQrImage
         ? bank.customQrImage
@@ -139,6 +233,43 @@ function InvoicesContent() {
       accountHolder: bank.accountHolder,
       transferContent,
       vietQrUrl,
+    };
+  };
+
+  // Helper tạo dữ liệu thẻ học phí gộp cho học sinh học nhiều lớp
+  const buildAggregatedInvoiceCardData = (agg: AggregatedStudentInvoice): InvoiceCardData => {
+    const bank = dataStore.bankConfig;
+    const primaryClass = agg.classItems[0];
+    const classNames = agg.classItems.map((c) => c.className).join(", ");
+    const allDates = agg.classItems.flatMap((c) => c.presentDates);
+
+    return {
+      studentCode: agg.studentCode,
+      studentName: agg.studentName,
+      className:
+        agg.classItems.length === 1
+          ? primaryClass.className
+          : `Tổng hợp ${agg.classItems.length} lớp (${classNames})`,
+      branchName: primaryClass?.branchName || "",
+      month: selectedMonth,
+      year: selectedYear,
+      presentCount: agg.totalPresentCount,
+      presentDates: allDates,
+      feePerSession: agg.classItems.length === 1 ? primaryClass.feePerSession : 0,
+      totalAmount: agg.totalAmount,
+      bankName: bank.bankName,
+      bankAccount: bank.bankAccount,
+      accountHolder: bank.accountHolder,
+      transferContent: agg.transferContent,
+      vietQrUrl: agg.vietQrUrl,
+      classList: agg.classItems.map((c) => ({
+        className: c.className,
+        branchName: c.branchName,
+        presentCount: c.presentCount,
+        presentDates: c.presentDates,
+        feePerSession: c.feePerSession,
+        totalAmount: c.totalAmount,
+      })),
     };
   };
 
@@ -228,7 +359,7 @@ function InvoicesContent() {
     return dates;
   };
 
-  // Toggle trạng thái Đã thanh toán / Chờ thanh toán
+  // Toggle trạng thái Đã thanh toán / Chờ thanh toán cho 1 hóa đơn lẻ
   const togglePaymentStatus = (invoiceId: string) => {
     const inv = dataStore.invoices.find((i) => i.id === invoiceId);
     if (inv) {
@@ -237,29 +368,29 @@ function InvoicesContent() {
     }
   };
 
-  // Mở VietQR Modal
+  // Toggle trạng thái Đã thanh toán cho toàn bộ hóa đơn của học sinh gộp
+  const toggleAggregatedPaymentStatus = (agg: AggregatedStudentInvoice) => {
+    const nextStatus = agg.status === "PAID" ? "PENDING" : "PAID";
+    agg.invoiceIds.forEach((id) => {
+      const inv = dataStore.invoices.find((i) => i.id === id);
+      if (inv) inv.status = nextStatus;
+    });
+    dataStore.saveToLocalStorage();
+    reloadInvoices();
+  };
+
+  // Mở VietQR Modal cho hóa đơn đơn lẻ
   const handleOpenVietQr = (inv: MonthlyInvoiceData, student: StudentData) => {
     const bank = dataStore.bankConfig;
-    const transferContent = `HP ${student.code} T${selectedMonth}`;
-    const qrUrl = bank.useCustomQr && bank.customQrImage
-      ? bank.customQrImage
-      : generateVietQrUrl({
-          bankId: bank.bankId,
-          accountNo: bank.bankAccount,
-          accountName: bank.accountHolder,
-          template: (bank.qrTemplate as any) || "compact2",
-          amount: inv.totalAmount,
-          description: transferContent,
-        });
-
+    const cardData = buildInvoiceCardData(inv, student, preferConsolidatedCards);
     setActiveQrData({
       studentName: student.fullName,
       studentCode: student.code,
-      amount: inv.totalAmount,
+      amount: cardData.totalAmount,
       month: selectedMonth,
       year: selectedYear,
-      qrUrl,
-      transferContent,
+      qrUrl: cardData.vietQrUrl,
+      transferContent: cardData.transferContent,
       bankName: bank.bankName,
       bankAccount: bank.bankAccount,
       accountHolder: bank.accountHolder,
@@ -267,15 +398,145 @@ function InvoicesContent() {
     setVietQrModalOpen(true);
   };
 
-  // Xuất file Excel
+  // Mở VietQR Modal cho học viên gộp nhiều lớp
+  const handleOpenAggregatedVietQr = (agg: AggregatedStudentInvoice) => {
+    const bank = dataStore.bankConfig;
+    setActiveQrData({
+      studentName: agg.studentName,
+      studentCode: agg.studentCode,
+      amount: agg.totalAmount,
+      month: selectedMonth,
+      year: selectedYear,
+      qrUrl: agg.vietQrUrl,
+      transferContent: agg.transferContent,
+      bankName: bank.bankName,
+      bankAccount: bank.bankAccount,
+      accountHolder: bank.accountHolder,
+    });
+    setVietQrModalOpen(true);
+  };
+
+  // Danh sách học viên gộp nhiều lớp khi xem Toàn bộ các lớp
+  const aggregatedInvoices: AggregatedStudentInvoice[] = useMemo(() => {
+    if (!isAllClasses) return [];
+    const bank = dataStore.bankConfig;
+    const studentMap = new Map<string, AggregatedStudentInvoice>();
+
+    invoices.forEach((inv) => {
+      const student = dataStore.students.find((s) => s.id === inv.studentId);
+      if (!student) return;
+
+      const targetClass = classes.find((c) => c.id === inv.classId);
+      const targetBranch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+      const presentDates = getPresentDatesForStudent(student.id, inv.classId);
+
+      const classItem = {
+        invoiceId: inv.id,
+        classId: inv.classId,
+        className: targetClass?.name || "Lớp học",
+        branchName: targetBranch?.name || "",
+        presentCount: inv.presentCount,
+        presentDates,
+        feePerSession: inv.feePerSession,
+        totalAmount: inv.totalAmount,
+        status: inv.status,
+        zaloSentAt: inv.zaloSentAt,
+      };
+
+      if (!studentMap.has(student.id)) {
+        studentMap.set(student.id, {
+          studentId: student.id,
+          student,
+          studentCode: student.code || "HS",
+          studentName: student.fullName,
+          parentPhone: student.parentPhone || "",
+          classItems: [classItem],
+          totalPresentCount: inv.presentCount,
+          totalAmount: inv.totalAmount,
+          status: inv.status,
+          invoiceIds: [inv.id],
+          zaloSentAt: inv.zaloSentAt,
+          vietQrUrl: "",
+          transferContent: `HP ${student.code || "HS"} T${selectedMonth}`,
+        });
+      } else {
+        const existing = studentMap.get(student.id)!;
+        existing.classItems.push(classItem);
+        existing.totalPresentCount += inv.presentCount;
+        existing.totalAmount += inv.totalAmount;
+        existing.invoiceIds.push(inv.id);
+        if (inv.status === "PENDING") {
+          existing.status = "PENDING";
+        }
+        if (inv.zaloSentAt && (!existing.zaloSentAt || inv.zaloSentAt > existing.zaloSentAt)) {
+          existing.zaloSentAt = inv.zaloSentAt;
+        }
+      }
+    });
+
+    const result = Array.from(studentMap.values());
+    result.forEach((item) => {
+      item.vietQrUrl =
+        bank.useCustomQr && bank.customQrImage
+          ? bank.customQrImage
+          : generateVietQrUrl({
+              bankId: bank.bankId,
+              accountNo: bank.bankAccount,
+              accountName: bank.accountHolder,
+              template: "compact2",
+              amount: item.totalAmount,
+              description: item.transferContent,
+            });
+    });
+
+    return result;
+  }, [isAllClasses, invoices, classes, selectedMonth, selectedYear]);
+
+  // Bộ lọc tìm kiếm cho danh sách gộp
+  const filteredAggregatedInvoices = useMemo(() => {
+    if (!isAllClasses) return [];
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return aggregatedInvoices;
+    return aggregatedInvoices.filter((agg) => {
+      return (
+        agg.studentName.toLowerCase().includes(term) ||
+        agg.studentCode.toLowerCase().includes(term) ||
+        agg.parentPhone.includes(term) ||
+        agg.classItems.some((c) => c.className.toLowerCase().includes(term))
+      );
+    });
+  }, [isAllClasses, aggregatedInvoices, searchTerm]);
+
+  // Xuất file Excel (thông minh: gộp khi chọn Tất cả các lớp)
   const handleExportExcel = () => {
+    if (isAllClasses) {
+      const rows: InvoiceExportRow[] = aggregatedInvoices.map((agg, idx) => ({
+        stt: idx + 1,
+        studentCode: agg.studentCode,
+        fullName: `${agg.studentName} [${agg.classItems.map((c) => `${c.className} (${c.presentCount}b)`).join(" + ")}]`,
+        birthYear: agg.student?.birthYear || 0,
+        parentPhone: agg.parentPhone,
+        presentCount: agg.totalPresentCount,
+        feePerSession: agg.classItems.length === 1 ? agg.classItems[0].feePerSession : 0,
+        totalAmount: agg.totalAmount,
+        statusText: agg.status === "PAID" ? "Đã thanh toán" : "Chờ thanh toán",
+      }));
+
+      exportInvoicesToExcel(
+        rows,
+        `Tat_Ca_${classes.length}_Lop_Tong_Hop`,
+        selectedMonth,
+        selectedYear
+      );
+      return;
+    }
+
     const rows: InvoiceExportRow[] = invoices.map((inv, idx) => {
       const student = dataStore.students.find((s) => s.id === inv.studentId);
-      const cls = classes.find((c) => c.id === inv.classId);
       return {
         stt: idx + 1,
         studentCode: student?.code || "",
-        fullName: isAllClasses ? `${student?.fullName || ""} (${cls?.name || ""})` : (student?.fullName || ""),
+        fullName: student?.fullName || "",
         birthYear: student?.birthYear || 0,
         parentPhone: student?.parentPhone || "",
         presentCount: inv.presentCount,
@@ -287,15 +548,21 @@ function InvoicesContent() {
 
     exportInvoicesToExcel(
       rows,
-      isAllClasses ? `Tat_Ca_${classes.length}_Lop` : (selectedClass?.name || "Lop_Co_Vua"),
+      selectedClass?.name || "Lop_Co_Vua",
       selectedMonth,
       selectedYear
     );
   };
 
   // Tính tổng
-  const totalDue = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const totalPaid = invoices.filter((i) => i.status === "PAID").reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const totalDue = isAllClasses
+    ? aggregatedInvoices.reduce((sum, agg) => sum + agg.totalAmount, 0)
+    : invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+
+  const totalPaid = isAllClasses
+    ? aggregatedInvoices.filter((i) => i.status === "PAID").reduce((sum, agg) => sum + agg.totalAmount, 0)
+    : invoices.filter((i) => i.status === "PAID").reduce((sum, inv) => sum + inv.totalAmount, 0);
+
   const totalPending = totalDue - totalPaid;
 
   const filteredInvoices = invoices.filter((inv) => {
@@ -458,6 +725,51 @@ function InvoicesContent() {
         </div>
       </div>
 
+      {/* Tùy chọn gộp phiếu thu cho học viên học nhiều lớp khi xem riêng từng lớp */}
+      {!isAllClasses && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 p-3 sm:px-4 text-xs shadow-xs">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-emerald-700 shrink-0" />
+            <div>
+              <span className="text-slate-900 font-bold">
+                Học viên học nhiều lớp:
+              </span>{" "}
+              <span className="text-slate-600 text-[11.5px]">
+                {preferConsolidatedCards
+                  ? "Đang bật chế độ Gộp đủ các lớp (Thẻ học phí & VietQR tổng hợp 1 lần đóng cho phụ huynh)."
+                  : "Đang bật chế độ Tách riêng từng lớp (Thẻ học phí & VietQR chỉ tính riêng buổi của lớp này)."}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-emerald-200 shadow-xs self-start sm:self-center">
+            <button
+              type="button"
+              onClick={() => setPreferConsolidatedCards(true)}
+              className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+                preferConsolidatedCards
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Khi bấm tải ảnh hoặc xem QR, tự động gộp cả các lớp khác của học sinh đó"
+            >
+              ✓ Gộp đủ các lớp
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreferConsolidatedCards(false)}
+              className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+                !preferConsolidatedCards
+                  ? "bg-slate-700 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Chỉ xuất phiếu thu riêng của lớp này"
+            >
+              Tách riêng lớp này
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
@@ -467,7 +779,7 @@ function InvoicesContent() {
           </p>
           <p className="mt-1 text-[11px] text-slate-400">
             {isAllClasses
-              ? `Toàn bộ ${classes.length} lớp học • ${invoices.length} lượt học viên`
+              ? `Toàn bộ ${classes.length} lớp học • ${aggregatedInvoices.length} học viên (${invoices.length} lượt học viên)`
               : `Tính trên ${invoices.length} học viên • Đơn giá ${formatCurrencyVND(selectedClass?.feePerSession || 0)}/b`}
           </p>
         </div>
@@ -480,7 +792,9 @@ function InvoicesContent() {
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-600 font-semibold">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>
-              {invoices.filter((i) => i.status === "PAID").length} / {invoices.length} học viên đã hoàn tất
+              {isAllClasses
+                ? `${aggregatedInvoices.filter((i) => i.status === "PAID").length} / ${aggregatedInvoices.length} học viên đã hoàn tất`
+                : `${invoices.filter((i) => i.status === "PAID").length} / ${invoices.length} học viên đã hoàn tất`}
             </span>
           </div>
         </div>
@@ -493,7 +807,9 @@ function InvoicesContent() {
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-600 font-semibold">
             <Clock className="h-3.5 w-3.5" />
             <span>
-              {invoices.filter((i) => i.status === "PENDING").length} học viên chờ thanh toán
+              {isAllClasses
+                ? `${aggregatedInvoices.filter((i) => i.status === "PENDING").length} học viên chờ thanh toán`
+                : `${invoices.filter((i) => i.status === "PENDING").length} học viên chờ thanh toán`}
             </span>
           </div>
         </div>
@@ -527,94 +843,198 @@ function InvoicesContent() {
 
         {/* Mobile Invoice Cards (< sm) */}
         <div className="block sm:hidden divide-y divide-slate-100">
-          {filteredInvoices.map((inv) => {
-            const student = dataStore.students.find((s) => s.id === inv.studentId);
-            const isPaid = inv.status === "PAID";
+          {isAllClasses ? (
+            // Mobile: Chế độ Toàn Bộ Các Lớp (Gộp theo học viên)
+            filteredAggregatedInvoices.map((agg) => {
+              const isPaid = agg.status === "PAID";
+              return (
+                <div key={agg.studentId} className="p-3.5 bg-white hover:bg-slate-50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-[10px] font-bold text-slate-400">
+                          {agg.studentCode}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900">{agg.studentName}</h4>
+                        {agg.classItems.length > 1 && (
+                          <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.2 text-[9.5px] font-extrabold border border-teal-200">
+                            Học {agg.classItems.length} lớp
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {agg.classItems.map((c) => (
+                          <span key={c.classId} className="rounded bg-emerald-50 text-emerald-800 px-1.5 py-0.2 text-[9.5px] font-bold border border-emerald-200">
+                            {c.className} ({c.presentCount}b)
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-[11px] font-mono text-slate-500 mt-1">
+                        SĐT: {agg.parentPhone}
+                      </p>
+                    </div>
 
-            return (
-              <div key={inv.id} className="p-3.5 bg-white hover:bg-slate-50 transition-colors">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-mono text-[10px] font-bold text-slate-400">
-                        {student?.code}
+                    <button
+                      onClick={() => toggleAggregatedPaymentStatus(agg)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all shadow-sm ${
+                        isPaid
+                          ? "bg-emerald-100 text-brand-primary active:bg-emerald-200"
+                          : "bg-amber-100 text-amber-800 active:bg-amber-200"
+                      }`}
+                    >
+                      {isPaid ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                      <span>{isPaid ? "Đã đóng" : "Chờ đóng"}</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-50 pt-2">
+                    <div>
+                      <span className="text-[10px] text-slate-400">Tổng buổi học: </span>
+                      <span className="text-xs font-bold text-slate-700">
+                        {agg.totalPresentCount} buổi
                       </span>
-                      <h4 className="text-xs font-bold text-slate-900">{student?.fullName}</h4>
-                      {isAllClasses && (
-                        <span className="rounded bg-emerald-100 text-brand-primary px-1.5 py-0.5 text-[10px] font-bold border border-emerald-200">
-                          {classes.find((c) => c.id === inv.classId)?.name}
+                      {agg.classItems.length > 1 && (
+                        <span className="text-[10px] text-slate-400 ml-1">
+                          ({agg.classItems.map((c) => `${c.presentCount}b`).join(" + ")})
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] font-mono text-slate-500 mt-0.5">
-                      SĐT: {student?.parentPhone}
-                    </p>
-                  </div>
-
-                  {/* Payment toggle button */}
-                  <button
-                    onClick={() => togglePaymentStatus(inv.id)}
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all shadow-sm ${
-                      isPaid
-                        ? "bg-emerald-100 text-brand-primary active:bg-emerald-200"
-                        : "bg-amber-100 text-amber-800 active:bg-amber-200"
-                    }`}
-                  >
-                    {isPaid ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                    <span>{isPaid ? "Đã đóng" : "Chờ đóng"}</span>
-                  </button>
-                </div>
-
-                <div className="mt-2.5 flex items-center justify-between border-t border-slate-50 pt-2">
-                  <div>
-                    <span className="text-[10px] text-slate-400">Đã học: </span>
-                    <span className="text-xs font-bold text-slate-700">
-                      {inv.presentCount} / {classSessions.length} buổi
-                    </span>
-                    <span className="text-[10px] text-slate-400 ml-1">
-                      ({formatCurrencyVND(inv.feePerSession)}/b)
+                    <span className="text-sm font-black text-brand-primary">
+                      {formatCurrencyVND(agg.totalAmount)}
                     </span>
                   </div>
-                  <span className="text-sm font-black text-brand-primary">
-                    {formatCurrencyVND(inv.totalAmount)}
-                  </span>
-                </div>
 
-                {/* Quick Action Buttons on Mobile */}
-                <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
-                  <button
-                    onClick={() => student && handleOpenVietQr(inv, student)}
-                    className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
-                  >
-                    <QrCode className="h-3.5 w-3.5" />
-                    <span>Mã QR</span>
-                  </button>
-                  <button
-                    onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student))}
-                    className="flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 text-[11px] font-bold text-slate-700 border border-slate-200 active:bg-slate-200"
-                    title="Tải ảnh PNG thẻ học phí"
-                  >
-                    <FileImage className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>Ảnh PNG</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (student) {
-                        setSelectedStudentForParentModal(student.id);
+                  {/* Quick Action Buttons on Mobile */}
+                  <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => handleOpenAggregatedVietQr(agg)}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
+                    >
+                      <QrCode className="h-3.5 w-3.5" />
+                      <span>Mã QR</span>
+                    </button>
+                    <button
+                      onClick={() => downloadInvoiceCardPng(buildAggregatedInvoiceCardData(agg))}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 text-[11px] font-bold text-slate-700 border border-slate-200 active:bg-slate-200"
+                      title="Tải ảnh PNG thẻ học phí gộp"
+                    >
+                      <FileImage className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Ảnh PNG</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedStudentForParentModal(agg.studentId);
                         setZaloParentModalOpen(true);
-                      }
-                    }}
-                    className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
-                  >
-                    <Send className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>Tool Zalo</span>
-                  </button>
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
+                    >
+                      <Send className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Tool Zalo</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            // Mobile: Chế độ Lớp Đơn lẻ
+            filteredInvoices.map((inv) => {
+              const student = dataStore.students.find((s) => s.id === inv.studentId);
+              const isPaid = inv.status === "PAID";
+              const otherInvs = student
+                ? dataStore.invoices.filter(
+                    (o) =>
+                      o.studentId === student.id &&
+                      o.classId !== inv.classId &&
+                      o.month === selectedMonth &&
+                      o.year === selectedYear
+                  )
+                : [];
 
-          {filteredInvoices.length === 0 && (
+              return (
+                <div key={inv.id} className="p-3.5 bg-white hover:bg-slate-50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-[10px] font-bold text-slate-400">
+                          {student?.code}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900">{student?.fullName}</h4>
+                        {otherInvs.length > 0 && (
+                          <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.2 text-[9.5px] font-extrabold border border-teal-200">
+                            Học {1 + otherInvs.length} lớp
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                        SĐT: {student?.parentPhone}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => togglePaymentStatus(inv.id)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all shadow-sm ${
+                        isPaid
+                          ? "bg-emerald-100 text-brand-primary active:bg-emerald-200"
+                          : "bg-amber-100 text-amber-800 active:bg-amber-200"
+                      }`}
+                    >
+                      {isPaid ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                      <span>{isPaid ? "Đã đóng" : "Chờ đóng"}</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-50 pt-2">
+                    <div>
+                      <span className="text-[10px] text-slate-400">Đã học: </span>
+                      <span className="text-xs font-bold text-slate-700">
+                        {inv.presentCount} / {classSessions.length} buổi
+                      </span>
+                      <span className="text-[10px] text-slate-400 ml-1">
+                        ({formatCurrencyVND(inv.feePerSession)}/b)
+                      </span>
+                    </div>
+                    <span className="text-sm font-black text-brand-primary">
+                      {formatCurrencyVND(inv.totalAmount)}
+                    </span>
+                  </div>
+
+                  {/* Quick Action Buttons on Mobile */}
+                  <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => student && handleOpenVietQr(inv, student)}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
+                    >
+                      <QrCode className="h-3.5 w-3.5" />
+                      <span>Mã QR</span>
+                    </button>
+                    <button
+                      onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 text-[11px] font-bold text-slate-700 border border-slate-200 active:bg-slate-200"
+                      title="Tải ảnh PNG thẻ học phí"
+                    >
+                      <FileImage className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Ảnh PNG</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (student) {
+                          setSelectedStudentForParentModal(student.id);
+                          setZaloParentModalOpen(true);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
+                    >
+                      <Send className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Tool Zalo</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          {((isAllClasses && filteredAggregatedInvoices.length === 0) ||
+            (!isAllClasses && filteredInvoices.length === 0)) && (
             <div className="p-8 text-center text-slate-400 text-xs">
               Chưa có dữ liệu học phí cho lớp này.
             </div>
@@ -623,166 +1043,372 @@ function InvoicesContent() {
 
         {/* Desktop Table (sm and up) */}
         <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Mã HV</th>
-                <th className="px-4 py-3">Họ và Tên</th>
-                {isAllClasses && <th className="px-4 py-3">Lớp Học</th>}
-                <th className="px-4 py-3">Số Điện Thoại</th>
-                <th className="px-4 py-3 text-center">Buổi Có Mặt</th>
-                <th className="px-4 py-3">Ngày Đi Học</th>
-                <th className="px-4 py-3 text-right">Đơn Giá</th>
-                <th className="px-4 py-3 text-right">Tổng Học Phí</th>
-                <th className="px-4 py-3 text-center">Trạng Thái</th>
-                <th className="px-4 py-3 text-center">Hành Động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredInvoices.map((inv) => {
-                const student = dataStore.students.find((s) => s.id === inv.studentId);
-                const presentDates = student ? getPresentDatesForStudent(student.id, inv.classId) : [];
-                const invClass = classes.find((c) => c.id === inv.classId);
-
-                return (
-                  <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-slate-700">
-                      {student?.code}
-                    </td>
-                    <td className="px-4 py-3 font-bold text-slate-900">
-                      {student?.fullName}
-                    </td>
-                    {isAllClasses && (
-                      <td className="px-4 py-3">
-                        <span className="inline-block rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-brand-primary border border-emerald-200">
-                          {invClass?.name || "Lớp"}
-                        </span>
+          {isAllClasses ? (
+            // Bảng Desktop: Chế độ Toàn Bộ Các Lớp (Gộp học sinh 1 dòng duy nhất)
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Mã HV</th>
+                  <th className="px-4 py-3">Họ và Tên</th>
+                  <th className="px-4 py-3">Các Lớp Theo Học</th>
+                  <th className="px-4 py-3">Số Điện Thoại</th>
+                  <th className="px-4 py-3 text-center">Tổng Buổi Học</th>
+                  <th className="px-4 py-3">Chi Tiết Ngày / Lớp</th>
+                  <th className="px-4 py-3 text-right">Đơn Giá Từng Lớp</th>
+                  <th className="px-4 py-3 text-right">Tổng Học Phí</th>
+                  <th className="px-4 py-3 text-center">Trạng Thái</th>
+                  <th className="px-4 py-3 text-center">Hành Động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredAggregatedInvoices.map((agg) => {
+                  return (
+                    <tr key={agg.studentId} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                        {agg.studentCode}
                       </td>
-                    )}
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs font-bold text-slate-800">{student?.parentPhone}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 font-extrabold text-brand-primary border border-emerald-200">
-                        {inv.presentCount} / {classSessions.length} buổi
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[11px] text-slate-600">
-                      {presentDates.length > 0 ? presentDates.join(", ") : "Chưa có"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <div className="text-right">
-                          <p className="font-bold text-slate-800">{formatCurrencyVND(inv.feePerSession)}</p>
-                          {student?.customFeePerSession !== undefined && student?.customFeePerSession !== null ? (
-                            <span className="inline-block rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
-                              Giá riêng
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900">{agg.studentName}</span>
+                          {agg.classItems.length > 1 && (
+                            <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.5 text-[9.5px] font-extrabold border border-teal-200">
+                              Học {agg.classItems.length} lớp
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-400">Giá lớp</span>
                           )}
                         </div>
-                        <button
-                          onClick={() => student && handleOpenEditFee(student, inv.feePerSession)}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
-                          title="Sửa đơn giá học phí cho học viên này"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
-                      {formatCurrencyVND(inv.totalAmount)}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => togglePaymentStatus(inv.id)}
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ${
-                          inv.status === "PAID"
-                            ? "bg-emerald-100 text-brand-primary hover:bg-emerald-200"
-                            : "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                        }`}
-                        title="Bấm để đổi trạng thái"
-                      >
-                        {inv.status === "PAID" ? (
-                          <>
-                            <Check className="h-3 w-3" />
-                            <span>Đã đóng</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="h-3 w-3" />
-                            <span>Chờ đóng</span>
-                          </>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1 max-w-[220px]">
+                          {agg.classItems.map((c) => (
+                            <span
+                              key={c.classId}
+                              className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-brand-primary border border-emerald-200"
+                            >
+                              {c.className} ({c.presentCount}b)
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs font-bold text-slate-800">
+                          {agg.parentPhone}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 font-extrabold text-brand-primary border border-emerald-200">
+                          {agg.totalPresentCount} buổi
+                        </span>
+                        {agg.classItems.length > 1 && (
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                            ({agg.classItems.map((c) => `${c.presentCount}b`).join(" + ")})
+                          </p>
                         )}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {/* Nút VietQR */}
+                      </td>
+                      <td className="px-4 py-3 text-[11px] text-slate-600 max-w-[220px]">
+                        <div className="space-y-1">
+                          {agg.classItems.map((c) => (
+                            <div key={c.classId} className="truncate" title={`${c.className}: ${c.presentDates.join(", ")}`}>
+                              <strong className="text-slate-800">{c.className}:</strong>{" "}
+                              {c.presentDates.length > 0 ? c.presentDates.join(", ") : "Chưa có"}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {agg.classItems.length === 1 ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="font-bold text-slate-800">
+                              {formatCurrencyVND(agg.classItems[0].feePerSession)}
+                            </span>
+                            <button
+                              onClick={() => handleOpenEditFee(agg.student, agg.classItems[0].feePerSession)}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
+                              title="Sửa đơn giá học phí"
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5 text-[10.5px]">
+                            {agg.classItems.map((c) => (
+                              <div key={c.classId} className="text-slate-600 font-medium">
+                                {formatCurrencyVND(c.feePerSession)}/b
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
+                        {formatCurrencyVND(agg.totalAmount)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => student && handleOpenVietQr(inv, student)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
-                          title="Xem & tùy chỉnh mã VietQR Napas 247"
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </button>
-
-                        {/* Nút Tải Ảnh Thẻ Học Phí PNG */}
-                        <button
-                          onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student))}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
-                          title="Tải ảnh PNG thẻ học phí sắc nét của học viên này"
-                        >
-                          <FileImage className="h-3.5 w-3.5 text-emerald-600" />
-                        </button>
-
-                        {/* Nút Gửi Qua Tool Zalo */}
-                        <button
-                          onClick={() => {
-                            if (student) {
-                              setSelectedStudentForParentModal(student.id);
-                              setZaloParentModalOpen(true);
-                            }
-                          }}
-                          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold shadow-xs transition-all active:scale-95 ${
-                            inv.zaloSentAt
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
-                              : "bg-emerald-600 text-white hover:bg-emerald-700"
+                          onClick={() => toggleAggregatedPaymentStatus(agg)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ${
+                            agg.status === "PAID"
+                              ? "bg-emerald-100 text-brand-primary hover:bg-emerald-200"
+                              : "bg-amber-100 text-amber-800 hover:bg-amber-200"
                           }`}
-                          title={
-                            inv.zaloSentAt
-                              ? `Đã gửi qua Tool lúc ${new Date(inv.zaloSentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Bấm để xem.`
-                              : "Mở Tool Zalo để gửi thẻ học phí cho phụ huynh em này"
-                          }
+                          title="Bấm để đổi trạng thái tất cả các lớp của học sinh này"
                         >
-                          {inv.zaloSentAt ? (
+                          {agg.status === "PAID" ? (
                             <>
-                              <Check className="h-3 w-3 text-emerald-600" />
-                              <span>Đã gửi Tool</span>
+                              <Check className="h-3 w-3" />
+                              <span>Đã đóng</span>
                             </>
                           ) : (
                             <>
-                              <Send className="h-3 w-3" />
-                              <span>Tool Zalo</span>
+                              <Clock className="h-3 w-3" />
+                              <span>Chờ đóng</span>
                             </>
                           )}
                         </button>
-                      </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Nút VietQR Gộp */}
+                          <button
+                            onClick={() => handleOpenAggregatedVietQr(agg)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
+                            title="Xem mã VietQR tổng hợp đủ các lớp của học viên này"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </button>
+
+                          {/* Nút Tải Ảnh Thẻ Gộp */}
+                          <button
+                            onClick={() => downloadInvoiceCardPng(buildAggregatedInvoiceCardData(agg))}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                            title="Tải 1 ảnh PNG thẻ học phí tổng hợp đủ các lớp của em này"
+                          >
+                            <FileImage className="h-3.5 w-3.5 text-emerald-600" />
+                          </button>
+
+                          {/* Nút Gửi Qua Tool Zalo */}
+                          <button
+                            onClick={() => {
+                              setSelectedStudentForParentModal(agg.studentId);
+                              setZaloParentModalOpen(true);
+                            }}
+                            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold shadow-xs transition-all active:scale-95 ${
+                              agg.zaloSentAt
+                                ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                                : "bg-emerald-600 text-white hover:bg-emerald-700"
+                            }`}
+                            title={
+                              agg.zaloSentAt
+                                ? `Đã gửi qua Tool lúc ${new Date(agg.zaloSentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Bấm để xem.`
+                                : "Mở Tool Zalo để gửi thẻ học phí tổng hợp cho phụ huynh em này"
+                            }
+                          >
+                            {agg.zaloSentAt ? (
+                              <>
+                                <Check className="h-3 w-3 text-emerald-600" />
+                                <span>Đã gửi Tool</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-3 w-3" />
+                                <span>Tool Zalo</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredAggregatedInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="py-12 text-center text-slate-400">
+                      Chưa có dữ liệu học phí trong tháng {selectedMonth}/{selectedYear}.
                     </td>
                   </tr>
-                );
-              })}
-
-              {filteredInvoices.length === 0 && (
+                )}
+              </tbody>
+            </table>
+          ) : (
+            // Bảng Desktop: Chế độ Lớp Đơn lẻ
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
-                    Chưa có dữ liệu học phí cho lớp này trong tháng {selectedMonth}/{selectedYear}. Khi HLV thực hiện điểm danh học viên, hệ thống sẽ tự động tính học phí theo nguyên tắc Thực học - Thực trả.
-                  </td>
+                  <th className="px-4 py-3">Mã HV</th>
+                  <th className="px-4 py-3">Họ và Tên</th>
+                  <th className="px-4 py-3">Số Điện Thoại</th>
+                  <th className="px-4 py-3 text-center">Buổi Có Mặt</th>
+                  <th className="px-4 py-3">Ngày Đi Học</th>
+                  <th className="px-4 py-3 text-right">Đơn Giá</th>
+                  <th className="px-4 py-3 text-right">Tổng Học Phí</th>
+                  <th className="px-4 py-3 text-center">Trạng Thái</th>
+                  <th className="px-4 py-3 text-center">Hành Động</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredInvoices.map((inv) => {
+                  const student = dataStore.students.find((s) => s.id === inv.studentId);
+                  const presentDates = student ? getPresentDatesForStudent(student.id, inv.classId) : [];
+                  const otherInvs = student
+                    ? dataStore.invoices.filter(
+                        (o) =>
+                          o.studentId === student.id &&
+                          o.classId !== inv.classId &&
+                          o.month === selectedMonth &&
+                          o.year === selectedYear
+                      )
+                    : [];
+
+                  return (
+                    <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                        {student?.code}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900">{student?.fullName}</span>
+                          {otherInvs.length > 0 && (
+                            <span
+                              className="rounded bg-teal-50 text-teal-700 px-1.5 py-0.5 text-[9.5px] font-extrabold border border-teal-200"
+                              title={`Học sinh này còn tham gia ${otherInvs.length} lớp khác trong tháng`}
+                            >
+                              Học {1 + otherInvs.length} lớp
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs font-bold text-slate-800">{student?.parentPhone}</span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 font-extrabold text-brand-primary border border-emerald-200">
+                          {inv.presentCount} / {classSessions.length} buổi
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[11px] text-slate-600">
+                        {presentDates.length > 0 ? presentDates.join(", ") : "Chưa có"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <div className="text-right">
+                            <p className="font-bold text-slate-800">{formatCurrencyVND(inv.feePerSession)}</p>
+                            {student?.customFeePerSession !== undefined && student?.customFeePerSession !== null ? (
+                              <span className="inline-block rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                Giá riêng
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">Giá lớp</span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => student && handleOpenEditFee(student, inv.feePerSession)}
+                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
+                            title="Sửa đơn giá học phí cho học viên này"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
+                        {formatCurrencyVND(inv.totalAmount)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => togglePaymentStatus(inv.id)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ${
+                            inv.status === "PAID"
+                              ? "bg-emerald-100 text-brand-primary hover:bg-emerald-200"
+                              : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                          }`}
+                          title="Bấm để đổi trạng thái"
+                        >
+                          {inv.status === "PAID" ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>Đã đóng</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-3 w-3" />
+                              <span>Chờ đóng</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Nút VietQR */}
+                          <button
+                            onClick={() => student && handleOpenVietQr(inv, student)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
+                            title={
+                              otherInvs.length > 0 && preferConsolidatedCards
+                                ? "Xem mã VietQR tổng hợp đủ các lớp của em này"
+                                : "Xem mã VietQR riêng lớp này"
+                            }
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </button>
+
+                          {/* Nút Tải Ảnh Thẻ Học Phí PNG */}
+                          <button
+                            onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                            title={
+                              otherInvs.length > 0 && preferConsolidatedCards
+                                ? "Tải ảnh thẻ PNG tổng hợp đủ các lớp của em này"
+                                : "Tải ảnh thẻ PNG riêng lớp này"
+                            }
+                          >
+                            <FileImage className="h-3.5 w-3.5 text-emerald-600" />
+                          </button>
+
+                          {/* Nút Gửi Qua Tool Zalo */}
+                          <button
+                            onClick={() => {
+                              if (student) {
+                                setSelectedStudentForParentModal(student.id);
+                                setZaloParentModalOpen(true);
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold shadow-xs transition-all active:scale-95 ${
+                              inv.zaloSentAt
+                                ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                                : "bg-emerald-600 text-white hover:bg-emerald-700"
+                            }`}
+                            title={
+                              inv.zaloSentAt
+                                ? `Đã gửi qua Tool lúc ${new Date(inv.zaloSentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Bấm để xem.`
+                                : "Mở Tool Zalo để gửi thẻ học phí cho phụ huynh em này"
+                            }
+                          >
+                            {inv.zaloSentAt ? (
+                              <>
+                                <Check className="h-3 w-3 text-emerald-600" />
+                                <span>Đã gửi Tool</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-3 w-3" />
+                                <span>Tool Zalo</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
+                      Chưa có dữ liệu học phí cho lớp này trong tháng {selectedMonth}/{selectedYear}. Khi HLV thực hiện điểm danh học viên, hệ thống sẽ tự động tính học phí theo nguyên tắc Thực học - Thực trả.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>
@@ -883,67 +1509,117 @@ function InvoicesContent() {
       <ZaloParentSenderModal
         isOpen={zaloParentModalOpen}
         onClose={() => setZaloParentModalOpen(false)}
-        classroom={selectedClass || null}
+        classroom={
+          selectedClass || {
+            id: "all",
+            name: "Toàn bộ các lớp",
+            level: "Tất cả",
+            feePerSession: 0,
+            schedule: "",
+            branchId: "",
+            coachId: currentCoachId,
+            isActive: true,
+            shareWithAdmin: true,
+          }
+        }
         branch={branchInfo || null}
         month={selectedMonth}
         year={selectedYear}
         initialStudentId={selectedStudentForParentModal}
         onSentSuccess={reloadInvoices}
-        students={invoices.map((inv) => {
-          const student = dataStore.students.find((s) => s.id === inv.studentId);
-          const bank = dataStore.bankConfig;
-          const transferContent = `HP ${student?.code || "HS"} T${selectedMonth}`;
-          const vietQrUrl = bank.useCustomQr && bank.customQrImage
-            ? bank.customQrImage
-            : generateVietQrUrl({
-                bankId: bank.bankId,
-                accountNo: bank.bankAccount,
-                accountName: bank.accountHolder,
-                template: "compact2",
-                amount: inv.totalAmount,
-                description: transferContent,
-              });
+        students={
+          isAllClasses
+            ? aggregatedInvoices.map((agg) => {
+                const primaryClass = agg.classItems[0];
+                const classNames = agg.classItems.map((c) => c.className).join(", ");
+                return {
+                  invoiceId: agg.invoiceIds[0] || "",
+                  studentId: agg.studentId,
+                  studentCode: agg.studentCode,
+                  studentName: agg.studentName,
+                  parentName: agg.student?.parentName || "",
+                  parentPhone: agg.parentPhone,
+                  cleanParentPhone: agg.parentPhone.replace(/[^0-9]/g, ""),
+                  className:
+                    agg.classItems.length === 1
+                      ? primaryClass?.className || "Lớp học"
+                      : `Tổng hợp ${agg.classItems.length} lớp (${classNames})`,
+                  branchName: primaryClass?.branchName || "",
+                  month: selectedMonth,
+                  year: selectedYear,
+                  presentCount: agg.totalPresentCount,
+                  presentDates: agg.classItems.flatMap((c) => c.presentDates),
+                  feePerSession: agg.classItems.length === 1 ? primaryClass?.feePerSession || 0 : 0,
+                  totalAmount: agg.totalAmount,
+                  status: agg.status,
+                  zaloSentAt: agg.zaloSentAt,
+                  transferContent: agg.transferContent,
+                  vietQrUrl: agg.vietQrUrl,
+                  bankName: dataStore.bankConfig.bankName,
+                  bankAccount: dataStore.bankConfig.bankAccount,
+                  accountHolder: dataStore.bankConfig.accountHolder,
+                  classList: agg.classItems.map((c) => ({
+                    className: c.className,
+                    branchName: c.branchName,
+                    presentCount: c.presentCount,
+                    presentDates: c.presentDates,
+                    feePerSession: c.feePerSession,
+                    totalAmount: c.totalAmount,
+                  })),
+                };
+              })
+            : invoices.map((inv) => {
+                const student = dataStore.students.find((s) => s.id === inv.studentId);
+                const cardData = student
+                  ? buildInvoiceCardData(inv, student, preferConsolidatedCards)
+                  : null;
 
-          return {
-            invoiceId: inv.id,
-            studentId: student?.id || "",
-            studentCode: student?.code || "HS",
-            studentName: student?.fullName || "Học viên",
-            parentName: "",
-            parentPhone: student?.parentPhone || "",
-            cleanParentPhone: (student?.parentPhone || "").replace(/[^0-9]/g, ""),
-            className: selectedClass?.name || "",
-            branchName: branchInfo?.name || "",
-            month: selectedMonth,
-            year: selectedYear,
-            presentCount: inv.presentCount,
-            presentDates: getPresentDatesForStudent(student?.id || ""),
-            feePerSession: inv.feePerSession,
-            totalAmount: inv.totalAmount,
-            status: inv.status,
-            zaloSentAt: inv.zaloSentAt,
-            transferContent,
-            vietQrUrl,
-            bankName: bank.bankName,
-            bankAccount: bank.bankAccount,
-            accountHolder: bank.accountHolder,
-          };
-        })}
+                return {
+                  invoiceId: inv.id,
+                  studentId: student?.id || "",
+                  studentCode: student?.code || "HS",
+                  studentName: student?.fullName || "Học viên",
+                  parentName: student?.parentName || "",
+                  parentPhone: student?.parentPhone || "",
+                  cleanParentPhone: (student?.parentPhone || "").replace(/[^0-9]/g, ""),
+                  className: cardData?.className || selectedClass?.name || "",
+                  branchName: branchInfo?.name || "",
+                  month: selectedMonth,
+                  year: selectedYear,
+                  presentCount: cardData?.presentCount ?? inv.presentCount,
+                  presentDates: cardData?.presentDates || getPresentDatesForStudent(student?.id || ""),
+                  feePerSession: cardData?.feePerSession ?? inv.feePerSession,
+                  totalAmount: cardData?.totalAmount ?? inv.totalAmount,
+                  status: inv.status,
+                  zaloSentAt: inv.zaloSentAt,
+                  transferContent: cardData?.transferContent || `HP ${student?.code || "HS"} T${selectedMonth}`,
+                  vietQrUrl: cardData?.vietQrUrl || "",
+                  bankName: dataStore.bankConfig.bankName,
+                  bankAccount: dataStore.bankConfig.bankAccount,
+                  accountHolder: dataStore.bankConfig.accountHolder,
+                  classList: cardData?.classList,
+                };
+              })
+        }
       />
 
       {/* Modal Xuất Hàng Loạt Ảnh Thẻ Học Phí PNG / ZIP */}
       <BatchCardExportModal
         isOpen={batchExportModalOpen}
         onClose={() => setBatchExportModalOpen(false)}
-        className={selectedClass?.name || "Lop_Hoc"}
+        className={isAllClasses ? `Toàn_Bộ_${classes.length}_Lớp` : (selectedClass?.name || "Lớp học")}
         month={selectedMonth}
         year={selectedYear}
-        students={invoices
-          .map((inv) => {
-            const st = dataStore.students.find((s) => s.id === inv.studentId);
-            return st ? buildInvoiceCardData(inv, st) : null;
-          })
-          .filter(Boolean) as InvoiceCardData[]}
+        students={
+          isAllClasses
+            ? aggregatedInvoices.map((agg) => buildAggregatedInvoiceCardData(agg))
+            : (invoices
+                .map((inv) => {
+                  const st = dataStore.students.find((s) => s.id === inv.studentId);
+                  return st ? buildInvoiceCardData(inv, st, preferConsolidatedCards) : null;
+                })
+                .filter(Boolean) as InvoiceCardData[])
+        }
       />
     </div>
   );
