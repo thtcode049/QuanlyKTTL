@@ -146,12 +146,12 @@ ${currentPreview.footer}`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-transparent animate-fade-in overflow-y-auto">
-      <div className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10 my-auto max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/40 backdrop-blur-xs animate-fade-in overflow-y-auto">
+      <div className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-lg bg-white shadow-xl border border-slate-200 my-auto max-h-[92vh]">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between bg-[#0068FF] px-5 py-3.5 text-white flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white font-black text-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-white/20 text-white font-black text-sm">
               Z
             </div>
             <div>
@@ -170,7 +170,7 @@ ${currentPreview.footer}`;
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded text-white/80 hover:bg-white/20 hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -183,7 +183,7 @@ ${currentPreview.footer}`;
             onClick={() => setActiveTab("PREVIEW")}
             className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-bold transition-all ${
               activeTab === "PREVIEW"
-                ? "border-[#0068FF] text-[#0068FF] bg-white rounded-t-xl shadow-sm"
+                ? "border-[#0068FF] text-[#0068FF] bg-white rounded-t shadow-xs"
                 : "border-transparent text-slate-500 hover:text-slate-900"
             }`}
           >
@@ -195,7 +195,7 @@ ${currentPreview.footer}`;
             onClick={() => setActiveTab("EDIT")}
             className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-bold transition-all ${
               activeTab === "EDIT"
-                ? "border-[#0068FF] text-[#0068FF] bg-white rounded-t-xl shadow-sm"
+                ? "border-[#0068FF] text-[#0068FF] bg-white rounded-t shadow-xs"
                 : "border-transparent text-slate-500 hover:text-slate-900"
             }`}
           >
@@ -208,7 +208,7 @@ ${currentPreview.footer}`;
         {activeTab === "PREVIEW" && (
           <div className="flex-1 overflow-y-auto bg-[#E5E9EC] p-4 text-slate-800">
             {/* Zalo Verified OA Header Info */}
-            <div className="mb-3 flex items-center justify-between rounded-xl bg-white/90 p-2.5 shadow-sm backdrop-blur-sm">
+            <div className="mb-3 flex items-center justify-between rounded bg-white/90 p-2.5 shadow-xs backdrop-blur-sm">
               <div className="flex items-center gap-2.5">
                 <div className="relative h-10 w-10 flex-shrink-0 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-emerald-500 flex items-center justify-center overflow-hidden">
                   <img
@@ -245,10 +245,10 @@ ${currentPreview.footer}`;
             </div>
 
             {/* Message Bubble Card */}
-            <div className="mx-auto max-w-md rounded-2xl bg-white p-4 shadow-sm border border-slate-200/60">
+            <div className="mx-auto max-w-md rounded-md bg-white p-4 shadow-xs border border-slate-200/80">
               {/* Title & Body */}
               <div className="border-b border-slate-100 pb-2.5">
-                <span className="inline-block rounded-md bg-brand-primary/10 px-2 py-0.5 text-[11px] font-bold text-brand-primary">
+                <span className="inline-block rounded bg-brand-primary/10 px-2 py-0.5 text-[11px] font-bold text-brand-primary">
                   HỌC PHÍ THÁNG {payload.month}/{payload.year}
                 </span>
                 <h4 className="mt-1 text-sm font-bold text-slate-900">
@@ -266,7 +266,7 @@ ${currentPreview.footer}`;
                     key={idx}
                     className={`flex justify-between py-1 border-b border-slate-50 ${
                       field.label === "Tổng học phí"
-                        ? "rounded-lg bg-emerald-50 px-2 py-1.5 font-bold text-brand-primary"
+                        ? "rounded bg-emerald-50 px-2 py-1.5 font-bold text-brand-primary"
                         : ""
                     }`}
                   >
@@ -287,7 +287,7 @@ ${currentPreview.footer}`;
               </div>
 
               {/* Embedded QR Code in message */}
-              <div className="mt-3 rounded-xl bg-slate-50 p-3 text-center border border-slate-100">
+              <div className="mt-3 rounded bg-slate-50 p-3 text-center border border-slate-100">
                 <div className="flex items-center justify-between mb-1.5 px-1">
                   <p className="text-[11px] font-semibold text-slate-700">
                     {useUploadedQr ? "Mã QR thanh toán tùy chỉnh" : "Mã VietQR thanh toán nhanh Napas 247"}
@@ -300,11 +300,11 @@ ${currentPreview.footer}`;
                   </button>
                 </div>
 
-                <div className="mx-auto flex w-44 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-slate-200">
+                <div className="mx-auto flex w-44 items-center justify-center rounded bg-white p-2 shadow-xs border border-slate-200">
                   <img
                     src={activeQrImage}
                     alt="VietQR Zalo Embed"
-                    className="h-auto w-full rounded-lg object-contain"
+                    className="h-auto w-full rounded object-contain"
                   />
                 </div>
 
@@ -315,7 +315,7 @@ ${currentPreview.footer}`;
 
               {/* CTA button */}
               <div className="mt-3">
-                <div className="rounded-xl bg-gradient-to-r from-brand-primary to-emerald-600 py-2.5 text-center text-xs font-bold text-white shadow-sm">
+                <div className="rounded bg-gradient-to-r from-brand-primary to-emerald-600 py-2.5 text-center text-xs font-bold text-white shadow-xs">
                   Quét mã QR để đóng học phí ngay
                 </div>
               </div>
@@ -347,7 +347,7 @@ ${currentPreview.footer}`;
               <button
                 type="button"
                 onClick={handleResetToDefault}
-                className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1 rounded border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
                 <span>Khôi phục mẫu gốc</span>
@@ -364,7 +364,7 @@ ${currentPreview.footer}`;
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
                 placeholder="VD: [KTTLL] THÔNG BÁO HỌC PHÍ THÁNG..."
-                className="w-full rounded-xl border border-slate-300 p-2.5 font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                className="w-full rounded border border-slate-300 p-2.5 font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
               />
             </div>
 
@@ -383,12 +383,12 @@ ${currentPreview.footer}`;
                 value={customBody}
                 onChange={(e) => setCustomBody(e.target.value)}
                 placeholder="Nhập lời chào và nhận xét của HLV..."
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none leading-relaxed"
+                className="w-full rounded border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none leading-relaxed"
               />
             </div>
 
             {/* 3. Thay đổi mã QR */}
-            <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 space-y-3">
+            <div className="rounded-md bg-slate-50 p-4 border border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <QrCode className="h-4 w-4 text-brand-primary" />
@@ -402,9 +402,9 @@ ${currentPreview.footer}`;
                 <button
                   type="button"
                   onClick={() => setUseUploadedQr(false)}
-                  className={`flex items-center justify-center gap-1.5 rounded-xl p-2.5 font-bold transition-all border ${
+                  className={`flex items-center justify-center gap-1.5 rounded p-2.5 font-bold transition-all border ${
                     !useUploadedQr
-                      ? "bg-white text-brand-primary border-brand-primary shadow-sm"
+                      ? "bg-white text-brand-primary border-brand-primary shadow-xs"
                       : "bg-slate-100 text-slate-600 border-transparent hover:bg-slate-200"
                   }`}
                 >
@@ -415,9 +415,9 @@ ${currentPreview.footer}`;
                 <button
                   type="button"
                   onClick={() => setUseUploadedQr(true)}
-                  className={`flex items-center justify-center gap-1.5 rounded-xl p-2.5 font-bold transition-all border ${
+                  className={`flex items-center justify-center gap-1.5 rounded p-2.5 font-bold transition-all border ${
                     useUploadedQr
-                      ? "bg-white text-brand-primary border-brand-primary shadow-sm"
+                      ? "bg-white text-brand-primary border-brand-primary shadow-xs"
                       : "bg-slate-100 text-slate-600 border-transparent hover:bg-slate-200"
                   }`}
                 >
@@ -441,7 +441,7 @@ ${currentPreview.footer}`;
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
+                      className="flex items-center gap-1.5 rounded bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-xs"
                     >
                       <Upload className="h-3.5 w-3.5 text-brand-primary" />
                       <span>Tải ảnh mã QR từ máy tính</span>
@@ -453,11 +453,11 @@ ${currentPreview.footer}`;
                   </div>
 
                   {customQrUrl && (
-                    <div className="mt-2 flex items-center gap-3 rounded-xl bg-white p-2.5 border border-slate-200">
+                    <div className="mt-2 flex items-center gap-3 rounded bg-white p-2.5 border border-slate-200">
                       <img
                         src={customQrUrl}
                         alt="Custom QR Preview"
-                        className="h-16 w-16 object-contain rounded-lg border border-slate-100"
+                        className="h-16 w-16 object-contain rounded border border-slate-100"
                       />
                       <div>
                         <p className="font-bold text-slate-800">Ảnh QR tùy chỉnh đang được chọn</p>
@@ -469,7 +469,7 @@ ${currentPreview.footer}`;
                   )}
                 </div>
               ) : (
-                <div className="text-[11px] text-slate-600 bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                <div className="text-[11px] text-slate-600 bg-white p-3 rounded border border-slate-200 space-y-1">
                   <p>
                     <strong>Tài khoản nhận tiền:</strong> {payload.bankName} - STK:{" "}
                     <span className="font-mono font-bold text-slate-900">{payload.bankAccount}</span>
@@ -497,7 +497,7 @@ ${currentPreview.footer}`;
                 value={customFooter}
                 onChange={(e) => setCustomFooter(e.target.value)}
                 placeholder="VD: Quý phụ huynh vui lòng thanh toán đúng cú pháp..."
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none"
+                className="w-full rounded border border-slate-300 p-2.5 text-slate-800 focus:border-brand-primary focus:outline-none"
               />
             </div>
 
@@ -505,7 +505,7 @@ ${currentPreview.footer}`;
               <button
                 type="button"
                 onClick={() => setActiveTab("PREVIEW")}
-                className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover transition-colors"
+                className="flex items-center gap-1.5 rounded bg-brand-primary px-4 py-2 font-bold text-white shadow-xs hover:bg-brand-primary-hover transition-colors"
               >
                 <Eye className="h-4 w-4" />
                 <span>Áp Dụng & Xem Trước Tin Nhắn</span>
@@ -518,7 +518,7 @@ ${currentPreview.footer}`;
         <div className="flex items-center justify-between border-t border-slate-200 bg-white p-4 flex-shrink-0">
           <button
             onClick={handleCopyText}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
           >
             {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
             <span>{copied ? "Đã sao chép văn bản" : "Sao chép văn bản"}</span>
@@ -527,14 +527,14 @@ ${currentPreview.footer}`;
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="rounded border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
               Đóng
             </button>
             <button
               onClick={handleSendSimulation}
               disabled={isSending}
-              className="flex items-center gap-2 rounded-xl bg-[#0068FF] px-5 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/25 hover:bg-blue-600 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 rounded bg-[#0068FF] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
               {isSending ? (
                 <>

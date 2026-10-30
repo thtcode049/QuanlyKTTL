@@ -216,9 +216,9 @@ export default function RegisterPage() {
             Cổng đăng ký thành viên chính thức dành cho Huấn luyện viên và Ban Quản Trị CLB: Điểm danh 1 chạm, quản lý học viên, đối soát học phí VietQR và phân quyền linh hoạt theo từng cơ sở.
           </p>
 
-          <div className="mt-8 space-y-3.5">
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+          <div className="mt-8 space-y-3">
+            <div className="flex items-center gap-3 rounded-md bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-emerald-500/20 text-emerald-400">
                 <ArrowRightLeft className="h-5 w-5" />
               </div>
               <div className="text-xs">
@@ -227,8 +227,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+            <div className="flex items-center gap-3 rounded-md bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-amber-500/20 text-amber-400">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div className="text-xs">
@@ -279,13 +279,13 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="mb-5 rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-700 border border-rose-200">
+            <div className="mb-5 rounded bg-rose-50 p-3.5 text-xs font-semibold text-rose-700 border border-rose-200">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-2">
+            <div className="mb-5 rounded bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 animate-bounce" />
               <span>
                 Đăng ký thành công! Đang chuyển hướng bạn vào hệ thống...
@@ -295,7 +295,7 @@ export default function RegisterPage() {
 
           <form onSubmit={handleRegister} className="space-y-6">
             {/* Vai trò tham gia hệ thống: HLV, Chủ nhiệm, Phó chủ nhiệm, Chủ nhiệm cơ sở */}
-            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-3">
+            <div className="rounded-md bg-white p-5 shadow-xs border border-slate-200/80 space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-brand-primary" />
@@ -313,9 +313,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setSystemRole("COACH")}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded border transition-all ${
                     systemRole === "COACH"
-                      ? "border-brand-primary bg-emerald-50/70 shadow-sm ring-1 ring-brand-primary"
+                      ? "border-brand-primary bg-emerald-50/70 shadow-xs ring-1 ring-brand-primary"
                       : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
@@ -332,9 +332,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setSystemRole("CHUNHIEM")}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded border transition-all ${
                     systemRole === "CHUNHIEM"
-                      ? "border-amber-500 bg-amber-50/70 shadow-sm ring-1 ring-amber-500"
+                      ? "border-amber-500 bg-amber-50/70 shadow-xs ring-1 ring-amber-500"
                       : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
@@ -343,7 +343,7 @@ export default function RegisterPage() {
                       <Crown className="h-4 w-4 text-amber-600" />
                       <span className="text-xs font-black text-slate-900">Chủ nhiệm CLB</span>
                     </div>
-                    <span className="rounded-full bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5">
+                    <span className="rounded bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5">
                       Admin
                     </span>
                   </div>
@@ -356,9 +356,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setSystemRole("PHOCHUNHIEM")}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded border transition-all ${
                     systemRole === "PHOCHUNHIEM"
-                      ? "border-indigo-500 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500"
+                      ? "border-indigo-500 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-500"
                       : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
@@ -367,7 +367,7 @@ export default function RegisterPage() {
                       <ShieldCheck className="h-4 w-4 text-indigo-600" />
                       <span className="text-xs font-black text-slate-900">Phó chủ nhiệm CLB</span>
                     </div>
-                    <span className="rounded-full bg-indigo-100 text-indigo-800 text-[9px] font-black px-1.5 py-0.5">
+                    <span className="rounded bg-indigo-100 text-indigo-800 text-[9px] font-black px-1.5 py-0.5">
                       Admin
                     </span>
                   </div>
@@ -380,9 +380,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setSystemRole("CHUCOSO")}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded border transition-all ${
                     systemRole === "CHUCOSO"
-                      ? "border-blue-500 bg-blue-50/70 shadow-sm ring-1 ring-blue-500"
+                      ? "border-blue-500 bg-blue-50/70 shadow-xs ring-1 ring-blue-500"
                       : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
@@ -391,7 +391,7 @@ export default function RegisterPage() {
                       <Building2 className="h-4 w-4 text-blue-600" />
                       <span className="text-xs font-black text-slate-900">Chủ nhiệm cơ sở</span>
                     </div>
-                    <span className="rounded-full bg-blue-100 text-blue-800 text-[9px] font-black px-1.5 py-0.5">
+                    <span className="rounded bg-blue-100 text-blue-800 text-[9px] font-black px-1.5 py-0.5">
                       Admin
                     </span>
                   </div>
@@ -403,7 +403,7 @@ export default function RegisterPage() {
 
               {/* Lời nhắc chuyển đổi vai trò cho tài khoản có quyền Admin */}
               {isAdminRole && (
-                <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
+                <div className="rounded bg-slate-50 p-3 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
                   <ArrowRightLeft className="h-4 w-4 text-brand-primary flex-shrink-0 mt-0.5" />
                   <span>
                     <strong>Lưu ý:</strong> Tài khoản có vai trò Quản trị (Chủ nhiệm, Phó chủ nhiệm, Chủ nhiệm cơ sở) có thể chuyển qua lại giữa màn hình <strong>Quản trị</strong> và màn hình <strong>Huấn luyện viên</strong> trên thanh menu để trực tiếp quản lý lớp học riêng của mình.
@@ -413,7 +413,7 @@ export default function RegisterPage() {
 
               {/* CHỌN CƠ SỞ KHI LÀ CHỦ NHIỆM CƠ SỞ */}
               {systemRole === "CHUCOSO" && (
-                <div className="rounded-xl bg-blue-50/80 p-3.5 border border-blue-200 space-y-2 animate-fade-in">
+                <div className="rounded bg-blue-50/80 p-3.5 border border-blue-200 space-y-2 animate-fade-in">
                   <label className="block text-xs font-bold text-blue-950 flex items-center gap-1.5">
                     <Building2 className="h-4 w-4 text-blue-600" />
                     <span>Chọn cơ sở bạn làm Chủ nhiệm *</span>
@@ -421,7 +421,7 @@ export default function RegisterPage() {
                   <select
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
-                    className="w-full rounded-xl border border-blue-300 bg-white p-2.5 text-xs font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+                    className="w-full rounded border border-blue-300 bg-white p-2 text-xs font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
                     required
                   >
                     {branches.map((b) => (
@@ -438,7 +438,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Section 1: Thông tin cá nhân & tài khoản */}
-            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
+            <div className="rounded-md bg-white p-5 shadow-xs border border-slate-200/80 space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
                 <User className="h-4 w-4 text-brand-primary" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
@@ -457,7 +457,7 @@ export default function RegisterPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="VD: Hoàng Tấn Đức"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none"
                   />
                 </div>
 
@@ -469,7 +469,7 @@ export default function RegisterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="VD: ducth162000@gmail.com"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
 
@@ -481,7 +481,7 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Tối thiểu 6 ký tự"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none"
                   />
                 </div>
 
@@ -493,7 +493,7 @@ export default function RegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Xác nhận mật khẩu"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none"
                   />
                 </div>
 
@@ -505,7 +505,7 @@ export default function RegisterPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0912.xxx.xxx"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
 
@@ -515,7 +515,7 @@ export default function RegisterPage() {
                     <select
                       value={branchId}
                       onChange={(e) => setBranchId(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
+                      className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none bg-white font-medium"
                     >
                       {branches.map((b) => (
                         <option key={b.id} value={b.id}>
@@ -529,7 +529,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Section 2: Chuyên môn & Tài khoản nhận lương */}
-            <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 space-y-4">
+            <div className="rounded-md bg-white p-5 shadow-xs border border-slate-200/80 space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
                 <Wallet className="h-4 w-4 text-emerald-600" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
@@ -543,7 +543,7 @@ export default function RegisterPage() {
                   <select
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none bg-white font-medium"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none bg-white font-medium"
                   >
                     <option value="MBBank">MBBank (Quân Đội)</option>
                     <option value="Vietcombank">Vietcombank</option>
@@ -563,7 +563,7 @@ export default function RegisterPage() {
                     value={bankAccount}
                     onChange={(e) => setBankAccount(e.target.value)}
                     placeholder="STK nhận thù lao"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
 
@@ -574,7 +574,7 @@ export default function RegisterPage() {
                     value={accountHolder}
                     onChange={(e) => setAccountHolder(e.target.value.toUpperCase())}
                     placeholder="VD: HOANG TAN DUC"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 focus:border-brand-primary focus:outline-none font-mono uppercase"
+                    className="mt-1 w-full rounded border border-slate-300 p-2 text-xs focus:border-brand-primary focus:outline-none font-mono uppercase"
                   />
                 </div>
               </div>
@@ -585,7 +585,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading || success}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 transition-all hover:bg-brand-primary-hover active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                className="flex w-full items-center justify-center gap-2 rounded bg-brand-primary py-3 text-xs font-bold text-white shadow-xs hover:bg-brand-primary-hover active:scale-[0.99] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />

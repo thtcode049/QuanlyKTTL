@@ -391,57 +391,57 @@ export default function ZaloParentSenderModal({
   const previewStudent = selectedStudent || students[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      {/* Toast Popup - đặt ở góc trên bên phải với z-[99999] để không bao giờ bị che khuất */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/50 backdrop-blur-xs animate-fade-in overflow-y-auto">
+      {/* Toast Popup */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-[99999] flex items-center gap-3 rounded-2xl bg-slate-950/95 px-5 py-3.5 text-xs font-bold text-white shadow-2xl border border-slate-700/80 animate-in fade-in slide-in-from-top-4 backdrop-blur-md max-w-md ring-1 ring-white/10">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+        <div className="fixed top-5 right-5 z-[99999] flex items-center gap-2.5 rounded-md bg-slate-900 px-4 py-2.5 text-xs font-medium text-white shadow-xl border border-slate-800 animate-in fade-in slide-in-from-top-4 max-w-md">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
           <span className="leading-snug flex-1">{toastMessage}</span>
           <button
             onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white p-1 rounded-lg text-sm"
+            className="text-slate-400 hover:text-white p-0.5 rounded text-xs"
           >
             ✕
           </button>
         </div>
       )}
 
-      <div className="relative w-full max-w-5xl rounded-3xl bg-white shadow-2xl border border-slate-200 ring-1 ring-slate-900/10 my-auto overflow-hidden flex flex-col max-h-[94vh]">
+      <div className="relative w-full max-w-5xl rounded-lg bg-white shadow-xl border border-slate-200 my-auto overflow-hidden flex flex-col max-h-[94vh]">
         {/* Header Modal */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-50/70 via-white to-slate-50 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-600/25">
-              <Sparkles className="h-6 w-6" />
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded bg-brand-primary text-white shadow-xs">
+              <Sparkles className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-black text-slate-900 sm:text-lg">
+                <h3 className="text-sm font-bold text-slate-900 sm:text-base">
                   Gửi Thẻ Học Phí Bằng Tool Zalo Bulk Sender (EXE)
                 </h3>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
                   Tự Động 100%
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Lớp: <strong className="text-slate-800">{classroom.name}</strong> • Tháng {month}/{year} • {students.length} phụ huynh
+                Lớp: <strong className="text-slate-800">{classroom?.name}</strong> • Tháng {month}/{year} • {students.length} phụ huynh
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Action Toolbar */}
-        <div className="bg-slate-900 p-4 text-white border-b border-slate-800 shadow-inner">
+        <div className="bg-slate-900 p-3.5 text-white border-b border-slate-800">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
                   Quy trình gửi thẻ học phí chuẩn
                 </span>
               </div>
@@ -452,20 +452,20 @@ export default function ZaloParentSenderModal({
 
             <div className="flex items-center gap-2 flex-wrap">
               {/* NÚT 1: TẢI TOOL EXE & ZIP */}
-              <div className="inline-flex rounded-xl shadow-md">
+              <div className="inline-flex rounded shadow-xs">
                 <a
                   href="/api/tool/download"
                   download="Zalo_Bulk_Sender.exe"
-                  className="rounded-l-xl border border-amber-400/50 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-2 text-xs font-black text-slate-950 active:scale-95 transition-all flex items-center gap-1.5"
+                  className="rounded-l border border-amber-400/50 bg-amber-500 hover:bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-950 active:scale-95 transition-all flex items-center gap-1.5"
                   title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3.5 w-3.5" />
                   <span>📥 Tải Tool (.exe)</span>
                 </a>
                 <a
                   href="/api/tool/download?format=zip"
                   download="Zalo_Bulk_Sender.zip"
-                  className="rounded-r-xl border-y border-r border-amber-400/50 bg-amber-600 hover:bg-amber-500 px-2.5 py-2 text-[11px] font-black text-slate-950 active:scale-95 transition-all flex items-center"
+                  className="rounded-r border-y border-r border-amber-400/50 bg-amber-600 hover:bg-amber-500 px-2 py-1.5 text-[11px] font-semibold text-slate-950 active:scale-95 transition-all flex items-center"
                   title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
                 >
                   <span>.ZIP</span>
@@ -496,7 +496,7 @@ export default function ZaloParentSenderModal({
                       vietQrUrl: s.vietQrUrl,
                       classList: s.classList,
                     }));
-                    const safeClass = classroom.name.replace(/[^a-zA-Z0-9\-_]/g, "_");
+                    const safeClass = (classroom?.name || "Lop").replace(/[^a-zA-Z0-9\-_]/g, "_");
                     await batchExportInvoiceCardsAsZip(
                       cardList,
                       `KTTLL_AnhTheHocPhi_${safeClass}_T${month}_${year}.zip`,
@@ -510,10 +510,10 @@ export default function ZaloParentSenderModal({
                     showToast("Lỗi khi xuất ảnh thẻ PNG!");
                   }
                 }}
-                className="rounded-xl border border-teal-400/50 bg-teal-600 hover:bg-teal-500 px-3.5 py-2 text-xs font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                className="rounded border border-teal-400/50 bg-teal-600 hover:bg-teal-500 px-3 py-1.5 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
                 title="Tải toàn bộ ảnh thẻ học phí định dạng PNG của lớp thành 1 file .ZIP"
               >
-                <FolderArchive className="h-4 w-4" />
+                <FolderArchive className="h-3.5 w-3.5" />
                 <span>📥 Tải Bộ Ảnh PNG (.zip)</span>
               </button>
 
@@ -521,10 +521,10 @@ export default function ZaloParentSenderModal({
               <button
                 type="button"
                 onClick={exportInvoicesJsonForTool}
-                className="rounded-xl border border-emerald-400/50 bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                className="rounded border border-emerald-400/50 bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
                 title="Tải file dữ liệu học phí JSON của cả lớp để nạp vào Tool Zalo"
               >
-                <FileCode className="h-4 w-4" />
+                <FileCode className="h-3.5 w-3.5" />
                 <span>📥 Tải File Dữ Liệu (.json)</span>
               </button>
 
@@ -532,10 +532,10 @@ export default function ZaloParentSenderModal({
               <button
                 type="button"
                 onClick={handleDirectLaunchTool}
-                className="rounded-xl border border-indigo-400/40 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-3.5 py-2 text-xs font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                className="rounded border border-indigo-400/40 bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
                 title="Tự động tải file và khởi động phần mềm Zalo Bulk Sender trên máy có sẵn tool"
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-3.5 w-3.5" />
                 <span>🚀 Mở Tool Trên Máy</span>
               </button>
 
@@ -543,14 +543,14 @@ export default function ZaloParentSenderModal({
               <button
                 type="button"
                 onClick={() => setShowGuide(!showGuide)}
-                className={`rounded-xl px-3 py-2 text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                className={`rounded px-2.5 py-1.5 text-xs font-medium transition-all flex items-center gap-1.5 border ${
                   showGuide
                     ? "bg-slate-700 text-white border-slate-500"
                     : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
                 }`}
               >
-                <HelpCircle className="h-4 w-4 text-emerald-400" />
-                <span>{showGuide ? "Ẩn Hướng Dẫn" : "Hướng Dẫn Dùng"}</span>
+                <HelpCircle className="h-3.5 w-3.5 text-emerald-400" />
+                <span>{showGuide ? "Ẩn Hướng Dẫn" : "Hướng Dẫn"}</span>
               </button>
             </div>
           </div>
@@ -558,7 +558,7 @@ export default function ZaloParentSenderModal({
           {/* Banner Thông Báo Khởi Động Tool Trực Tiếp Trong Modal */}
           {launchStatus && (
             <div
-              className={`mt-3.5 rounded-2xl p-3.5 text-xs flex items-start gap-3 border shadow-md ${
+              className={`mt-3 rounded p-3 text-xs flex items-start gap-2.5 border shadow-xs ${
                 launchStatus.type === "success"
                   ? "bg-emerald-950/80 text-emerald-200 border-emerald-500/40"
                   : launchStatus.type === "loading"
@@ -566,14 +566,14 @@ export default function ZaloParentSenderModal({
                   : "bg-amber-950/80 text-amber-200 border-amber-500/40"
               }`}
             >
-              <span className="text-lg flex-shrink-0">
+              <span className="text-base flex-shrink-0">
                 {launchStatus.type === "success"
                   ? "🚀"
                   : launchStatus.type === "loading"
                   ? "⏳"
                   : "💡"}
               </span>
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 space-y-0.5">
                 <div className="font-bold">{launchStatus.message}</div>
                 <div className="text-[11px] opacity-85 leading-relaxed">
                   <strong>Thao tác nhanh:</strong> Trong cửa sổ phần mềm <strong>Zalo Bulk Sender</strong>, chỉ cần bấm nút xanh <strong>⚡ Nhận file mới từ Downloads</strong> là danh sách học phí vừa tải sẽ được nạp vào ngay lập tức!
@@ -581,7 +581,7 @@ export default function ZaloParentSenderModal({
               </div>
               <button
                 onClick={() => setLaunchStatus(null)}
-                className="text-slate-400 hover:text-white p-1 rounded"
+                className="text-slate-400 hover:text-white p-0.5 rounded text-xs"
               >
                 ✕
               </button>
@@ -590,10 +590,10 @@ export default function ZaloParentSenderModal({
 
           {/* Collapsible Quick Guide */}
           {showGuide && (
-            <div className="mt-4 rounded-2xl bg-slate-950 p-4 border border-slate-800 space-y-3 animate-in fade-in">
+            <div className="mt-3 rounded bg-slate-950 p-3.5 border border-slate-800 space-y-2.5 animate-in fade-in">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1.5">
-                  <BookOpen className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase text-emerald-400 tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" />
                   <span>4 Bước Sử Dụng Phần Mềm Zalo Bulk Sender:</span>
                 </span>
                 <span className="text-[11px] text-slate-400">
@@ -601,10 +601,10 @@ export default function ZaloParentSenderModal({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                <div className="rounded-xl bg-slate-900 p-3 border border-slate-800 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-black text-slate-950">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+                <div className="rounded bg-slate-900 p-2.5 border border-slate-800 space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-black text-slate-950">
                       1
                     </span>
                     <strong className="text-amber-300">Tải Tool Zalo (.exe)</strong>
@@ -614,9 +614,9 @@ export default function ZaloParentSenderModal({
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-slate-900 p-3 border border-slate-800 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-black text-slate-950">
+                <div className="rounded bg-slate-900 p-2.5 border border-slate-800 space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-slate-950">
                       2
                     </span>
                     <strong className="text-emerald-300">Tải File Dữ Liệu (.json)</strong>
@@ -626,9 +626,9 @@ export default function ZaloParentSenderModal({
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-slate-900 p-3 border border-slate-800 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[11px] font-black text-white">
+                <div className="rounded bg-slate-900 p-2.5 border border-slate-800 space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-black text-white">
                       3
                     </span>
                     <strong className="text-indigo-300">Mở Tool & Nhận File</strong>
@@ -638,9 +638,9 @@ export default function ZaloParentSenderModal({
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-slate-900 p-3 border border-slate-800 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-500 text-[11px] font-black text-white">
+                <div className="rounded bg-slate-900 p-2.5 border border-slate-800 space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-500 text-[10px] font-black text-white">
                       4
                     </span>
                     <strong className="text-purple-300">Bắt Đầu Gửi</strong>
@@ -655,16 +655,16 @@ export default function ZaloParentSenderModal({
         </div>
 
         {/* Content Body */}
-        <div className="overflow-y-auto p-4 sm:p-6 space-y-5 flex-1">
+        <div className="overflow-y-auto p-4 sm:p-5 space-y-4 flex-1">
           {/* Banner Xác Nhận Đã Gửi Xong Cho Cả Lớp */}
           {sentCount === students.length && (
-            <div className="rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-4 text-emerald-950 shadow-sm animate-in fade-in">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md flex-shrink-0">
-                  <CheckCircle2 className="h-6 w-6" />
+            <div className="rounded border border-emerald-300 bg-emerald-50/80 p-3.5 text-emerald-950 shadow-xs animate-in fade-in">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-emerald-600 text-white shadow-xs flex-shrink-0">
+                  <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs sm:text-sm font-extrabold text-emerald-900">
+                  <h4 className="text-xs font-bold text-emerald-900">
                     🎉 Toàn Bộ Phụ Huynh Trong Lớp Đã Được Xác Nhận Gửi Thẻ Học Phí!
                   </h4>
                   <p className="text-[11px] text-emerald-700 mt-0.5">
@@ -676,18 +676,18 @@ export default function ZaloParentSenderModal({
           )}
 
           {/* Main Grid: Student List (Left) + Card Visual Preview (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Column: Student List (7 cols) */}
-            <div className="lg:col-span-7 space-y-3">
+            <div className="lg:col-span-7 space-y-2.5">
               {/* Header with Filter Tabs & Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded">
                   <button
                     type="button"
                     onClick={() => setFilterTab("ALL")}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                    className={`rounded px-2.5 py-1 text-xs font-medium transition-all ${
                       filterTab === "ALL"
-                        ? "bg-white text-slate-900 shadow-xs"
+                        ? "bg-white text-slate-900 shadow-xs font-semibold"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
@@ -696,9 +696,9 @@ export default function ZaloParentSenderModal({
                   <button
                     type="button"
                     onClick={() => setFilterTab("UNSENT")}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all flex items-center gap-1 ${
+                    className={`rounded px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1 ${
                       filterTab === "UNSENT"
-                        ? "bg-white text-amber-700 shadow-xs"
+                        ? "bg-white text-amber-700 shadow-xs font-semibold"
                         : "text-slate-600 hover:text-amber-700"
                     }`}
                   >
@@ -707,9 +707,9 @@ export default function ZaloParentSenderModal({
                   <button
                     type="button"
                     onClick={() => setFilterTab("SENT")}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all flex items-center gap-1 ${
+                    className={`rounded px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1 ${
                       filterTab === "SENT"
-                        ? "bg-white text-emerald-700 shadow-xs"
+                        ? "bg-white text-emerald-700 shadow-xs font-semibold"
                         : "text-slate-600 hover:text-emerald-700"
                     }`}
                   >
@@ -721,13 +721,13 @@ export default function ZaloParentSenderModal({
                   <button
                     type="button"
                     onClick={markAllStudentsAsSent}
-                    className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors"
+                    className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 transition-colors"
                     title="Đánh dấu đã gửi thành công toàn bộ học viên bằng Tool"
                   >
                     Đánh dấu đã gửi cả lớp
                   </button>
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                    Tổng HP: {formatCurrencyVND(totalAmount)}
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Tổng: {formatCurrencyVND(totalAmount)}
                   </span>
                 </div>
               </div>
@@ -743,20 +743,20 @@ export default function ZaloParentSenderModal({
                     <div
                       key={st.studentId}
                       onClick={() => setSelectedStudent(st)}
-                      className={`cursor-pointer rounded-2xl p-3.5 transition-all border ${
+                      className={`cursor-pointer rounded p-3 transition-all border ${
                         isSelected
-                          ? "border-emerald-500 bg-emerald-50/40 shadow-sm ring-1 ring-emerald-500"
+                          ? "border-emerald-500 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-500"
                           : isSent
                           ? "border-emerald-200/60 bg-emerald-50/15 hover:border-emerald-300"
                           : "border-slate-200/80 bg-white hover:border-slate-300 hover:bg-slate-50/50"
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                         <div className="flex items-start gap-2.5 min-w-0">
                           <div
-                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-xs ${
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded font-bold text-xs ${
                               isSelected
-                                ? "bg-emerald-600 text-white shadow-sm"
+                                ? "bg-emerald-600 text-white shadow-xs"
                                 : isSent
                                 ? "bg-emerald-100 text-emerald-800"
                                 : "bg-slate-100 text-slate-700"
@@ -765,14 +765,14 @@ export default function ZaloParentSenderModal({
                             {st.studentCode}
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">
                                 {st.studentName}
                               </h4>
 
                               {/* Trạng thái thanh toán */}
                               <span
-                                className={`rounded-full px-2 py-0.2 text-[10px] font-bold ${
+                                className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
                                   st.status === "PAID"
                                     ? "bg-emerald-100 text-emerald-700"
                                     : "bg-amber-100 text-amber-700"
@@ -783,12 +783,12 @@ export default function ZaloParentSenderModal({
 
                               {/* Huy hiệu xác nhận đã gửi qua Tool */}
                               {isSent ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.2 text-[10px] font-bold text-emerald-800 border border-emerald-300">
+                                <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.2 text-[10px] font-bold text-emerald-800 border border-emerald-300">
                                   <Check className="h-2.5 w-2.5 text-emerald-600" />
                                   <span>Đã gửi ({formatSentTime(sentTimeIso)})</span>
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[10px] font-medium text-slate-500">
+                                <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-medium text-slate-500">
                                   ⚪ Chờ gửi qua Tool
                                 </span>
                               )}
@@ -799,9 +799,9 @@ export default function ZaloParentSenderModal({
                               <span className="font-mono text-slate-700 font-semibold">{st.parentPhone}</span>
                             </p>
 
-                            <p className="mt-1 text-[11px] text-slate-600">
+                            <p className="mt-0.5 text-[11px] text-slate-600">
                               Thực học: <strong>{st.presentCount}</strong> buổi | Số tiền:{" "}
-                              <strong className="text-emerald-700 font-black">
+                              <strong className="text-emerald-700 font-bold">
                                 {formatCurrencyVND(st.totalAmount)}
                               </strong>
                             </p>
@@ -823,7 +823,7 @@ export default function ZaloParentSenderModal({
                                 showToast(`Đã đánh dấu em ${st.studentName} là "Đã gửi qua Tool"!`);
                               }
                             }}
-                            className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition-all ${
+                            className={`flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-semibold transition-all ${
                               isSent
                                 ? "bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
                                 : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
@@ -840,7 +840,7 @@ export default function ZaloParentSenderModal({
                 })}
 
                 {filteredStudents.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-xs">
+                  <div className="rounded border border-dashed border-slate-200 p-8 text-center text-slate-400 text-xs">
                     {filterTab === "UNSENT"
                       ? "Tuyệt vời! Toàn bộ phụ huynh đã nhận thẻ học phí."
                       : filterTab === "SENT"
@@ -854,8 +854,8 @@ export default function ZaloParentSenderModal({
             {/* Right Column: Card Visual Preview & Download (5 cols) */}
             <div className="lg:col-span-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <ImageIcon className="h-4 w-4 text-emerald-600" />
+                <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-emerald-600" />
                   Ảnh Thẻ Học Phí Tool Sẽ Tự Động Bắn:
                 </h3>
               </div>
@@ -864,8 +864,8 @@ export default function ZaloParentSenderModal({
                 <div className="space-y-3">
                   {/* Sent Confirmation Badge for Selected Student */}
                   {sentMap[previewStudent.studentId] ? (
-                    <div className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 flex items-center justify-between text-xs text-emerald-900 shadow-xs">
-                      <div className="flex items-center gap-2">
+                    <div className="rounded border border-emerald-300 bg-emerald-50 px-3 py-2 flex items-center justify-between text-xs text-emerald-900 shadow-xs">
+                      <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                         <div>
                           <strong>Đã gửi qua Tool:</strong>{" "}
@@ -883,35 +883,35 @@ export default function ZaloParentSenderModal({
                       </button>
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500 flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-slate-400" />
+                    <div className="rounded border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-500 flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
                       <span>Chưa gửi thông báo qua Tool cho phụ huynh học viên này.</span>
                     </div>
                   )}
 
                   {/* Card Visual Preview */}
-                  <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-lg relative overflow-hidden">
+                  <div className="rounded-md border border-slate-200 bg-white p-4 shadow-xs relative overflow-hidden">
                     {/* Stamp */}
-                    <div className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white font-black text-xs shadow-md">
+                    <div className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-xs">
                       ♔
                     </div>
 
                     {/* Header Badge */}
-                    <span className="inline-block rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold uppercase text-emerald-700 tracking-wide">
+                    <span className="inline-block rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 tracking-wide">
                       HỌC PHÍ THÁNG {previewStudent.month}/{previewStudent.year}
                     </span>
 
                     {/* Title */}
-                    <h4 className="mt-2 text-sm font-extrabold text-slate-900 leading-tight">
+                    <h4 className="mt-1.5 text-xs font-bold text-slate-900 leading-tight">
                       [KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {previewStudent.month}/{previewStudent.year}
                     </h4>
 
-                    <p className="mt-2 text-[11.5px] leading-relaxed text-slate-600">
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-slate-600">
                       Kính gửi phụ huynh em <strong>{previewStudent.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {previewStudent.month}/{previewStudent.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
                     </p>
 
                     {/* Details Table */}
-                    <div className="mt-3.5 space-y-1.5 text-xs border-t border-b border-slate-100 py-3">
+                    <div className="mt-2.5 space-y-1 text-xs border-t border-b border-slate-100 py-2.5">
                       <div className="flex justify-between">
                         <span className="text-slate-500">Học viên:</span>
                         <span className="font-bold text-slate-900">
@@ -920,18 +920,18 @@ export default function ZaloParentSenderModal({
                       </div>
 
                       {previewStudent.classList && previewStudent.classList.length > 1 ? (
-                        <div className="space-y-1.5 py-1">
+                        <div className="space-y-1 py-1">
                           <div className="flex justify-between items-center text-[11px] font-bold text-slate-700">
                             <span>Chi tiết các lớp học ({previewStudent.classList.length} lớp):</span>
-                            <span className="text-[10px] text-emerald-600 font-extrabold uppercase">Thực học - Thực trả</span>
+                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Thực học - Thực trả</span>
                           </div>
                           {previewStudent.classList.map((clsItem, cIdx) => (
-                            <div key={cIdx} className="rounded-xl bg-slate-50 p-2 border border-slate-200/80 text-xs">
+                            <div key={cIdx} className="rounded bg-slate-50 p-2 border border-slate-200/80 text-xs">
                               <div className="flex justify-between items-start">
-                                <span className="font-bold text-slate-800">{cIdx + 1}. {clsItem.className}</span>
-                                <span className="font-black text-emerald-700">{formatCurrencyVND(clsItem.totalAmount)}</span>
+                                <span className="font-semibold text-slate-800">{cIdx + 1}. {clsItem.className}</span>
+                                <span className="font-bold text-emerald-700">{formatCurrencyVND(clsItem.totalAmount)}</span>
                               </div>
-                              <div className="flex justify-between items-center text-[10.5px] text-slate-500 mt-1">
+                              <div className="flex justify-between items-center text-[10.5px] text-slate-500 mt-0.5">
                                 <span>{clsItem.presentCount} buổi × {formatCurrencyVND(clsItem.feePerSession)}/b</span>
                                 {clsItem.presentDates && clsItem.presentDates.length > 0 && (
                                   <span className="text-slate-400">({clsItem.presentDates.join(", ")})</span>
@@ -948,21 +948,21 @@ export default function ZaloParentSenderModal({
                         <>
                           <div className="flex justify-between">
                             <span className="text-slate-500">Lớp học:</span>
-                            <span className="font-bold text-slate-900 text-right max-w-[65%]">
+                            <span className="font-semibold text-slate-900 text-right max-w-[65%]">
                               {previewStudent.className} – {previewStudent.branchName}
                             </span>
                           </div>
 
                           <div className="flex justify-between">
                             <span className="text-slate-500">Số buổi thực học:</span>
-                            <span className="font-bold text-slate-900">
+                            <span className="font-semibold text-slate-900">
                               {previewStudent.presentCount} buổi
                             </span>
                           </div>
 
                           <div className="flex justify-between">
                             <span className="text-slate-500">Các ngày có mặt:</span>
-                            <span className="font-bold text-slate-900 text-right">
+                            <span className="font-semibold text-slate-900 text-right">
                               {previewStudent.presentDates && previewStudent.presentDates.length > 0
                                 ? previewStudent.presentDates.join(", ")
                                 : "Chưa có buổi học"}
@@ -971,7 +971,7 @@ export default function ZaloParentSenderModal({
 
                           <div className="flex justify-between">
                             <span className="text-slate-500">Đơn giá:</span>
-                            <span className="font-bold text-slate-900">
+                            <span className="font-semibold text-slate-900">
                               {formatCurrencyVND(previewStudent.feePerSession)}/buổi
                             </span>
                           </div>
@@ -979,16 +979,16 @@ export default function ZaloParentSenderModal({
                       )}
 
                       {/* Highlight row */}
-                      <div className="my-1.5 flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 border border-emerald-200">
-                        <span className="font-bold text-emerald-800 text-xs">Tổng học phí:</span>
-                        <span className="font-black text-emerald-600 text-base">
+                      <div className="my-1.5 flex items-center justify-between rounded bg-emerald-50 px-2.5 py-1.5 border border-emerald-200">
+                        <span className="font-semibold text-emerald-800 text-xs">Tổng học phí:</span>
+                        <span className="font-bold text-emerald-600 text-sm">
                           {formatCurrencyVND(previewStudent.totalAmount)}
                         </span>
                       </div>
 
                       <div className="flex justify-between text-[11px]">
                         <span className="text-slate-500">Ngân hàng:</span>
-                        <span className="font-semibold text-slate-900 text-right max-w-[60%]">
+                        <span className="font-medium text-slate-900 text-right max-w-[60%]">
                           {previewStudent.bankName} – {previewStudent.bankAccount}
                         </span>
                       </div>
@@ -1002,24 +1002,24 @@ export default function ZaloParentSenderModal({
                     </div>
 
                     {/* QR Box */}
-                    <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-center border border-slate-200/70">
-                      <p className="text-[11px] font-bold text-slate-700 flex items-center justify-center gap-1">
-                        <QrCode className="h-3.5 w-3.5 text-emerald-600" />
+                    <div className="mt-2.5 rounded bg-slate-50/70 p-2 text-center border border-slate-200/70">
+                      <p className="text-[10px] font-semibold text-slate-700 flex items-center justify-center gap-1">
+                        <QrCode className="h-3 w-3 text-emerald-600" />
                         Mã VietQR thanh toán Napas 247
                       </p>
-                      <div className="mt-2 mx-auto flex h-32 w-32 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-200">
+                      <div className="mt-1.5 mx-auto flex h-28 w-28 items-center justify-center rounded bg-white p-1 shadow-xs border border-slate-200">
                         <img
                           src={previewStudent.vietQrUrl}
                           alt="VietQR"
-                          className="h-full w-full object-contain rounded-lg"
+                          className="h-full w-full object-contain rounded"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Actions for Selected Student */}
-                  <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-200 space-y-2">
-                    <span className="text-[11px] font-black uppercase text-slate-500 tracking-wider block">
+                  <div className="rounded bg-slate-50/70 p-2.5 border border-slate-200 space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block">
                       Tùy chọn thẻ học phí em {previewStudent.studentName}:
                     </span>
 
@@ -1052,7 +1052,7 @@ export default function ZaloParentSenderModal({
                             showToast("Trình duyệt không hỗ trợ sao chép trực tiếp. Hãy bấm nút Tải PNG!");
                           }
                         }}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 active:scale-98 transition-all shadow-xs"
+                        className="flex items-center justify-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 active:scale-98 transition-all shadow-xs"
                       >
                         <Copy className="h-3.5 w-3.5 text-slate-600" />
                         <span>Sao Chép Ảnh</span>
@@ -1082,7 +1082,7 @@ export default function ZaloParentSenderModal({
                           downloadInvoiceCardPng(cardData);
                           showToast(`📥 Đã tải ảnh PNG thẻ học phí em ${previewStudent.studentName}!`);
                         }}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 active:scale-98 transition-all shadow-xs"
+                        className="flex items-center justify-center gap-1 rounded border border-emerald-300 bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-98 transition-all shadow-xs"
                       >
                         <Download className="h-3.5 w-3.5 text-white" />
                         <span>Tải Ảnh PNG</span>
@@ -1091,7 +1091,7 @@ export default function ZaloParentSenderModal({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 p-8 text-center text-slate-400 text-xs">
+                <div className="rounded border border-dashed border-slate-300 p-8 text-center text-slate-400 text-xs">
                   Chọn một học viên để xem trước thẻ học phí.
                 </div>
               )}
@@ -1100,9 +1100,9 @@ export default function ZaloParentSenderModal({
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50 px-5 sm:px-6 py-3.5 gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50/80 px-4 sm:px-5 py-3 gap-2.5">
           <p className="text-xs text-slate-500 flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
             <span>
               Mã VietQR Napas 24/7 tự động nhận diện tài khoản thụ hưởng và số tiền học phí thực tế.
             </span>
@@ -1112,16 +1112,16 @@ export default function ZaloParentSenderModal({
             <button
               type="button"
               onClick={exportInvoicesJsonForTool}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 rounded bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-xs active:scale-95 transition-all"
             >
-              <FileCode className="h-4 w-4" />
+              <FileCode className="h-3.5 w-3.5" />
               <span>Tải File Dữ Liệu (.json)</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 transition-colors"
+              className="rounded bg-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300 transition-colors"
             >
               Đóng
             </button>

@@ -34,7 +34,7 @@ export const EvaluationStars: React.FC<EvaluationStarsProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 border border-slate-200/70">
+    <div className="flex items-center justify-between rounded bg-slate-50/70 p-2 border border-slate-100">
       <div className="flex items-center gap-2">
         {getIcon()}
         <span className="text-xs font-semibold text-slate-700">{label}</span>

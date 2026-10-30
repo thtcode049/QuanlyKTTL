@@ -75,8 +75,8 @@ export default function AdminLayout({
   if (isAuthorized === false) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm">
-          <ShieldAlert className="h-8 w-8" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+          <ShieldAlert className="h-7 w-7" />
         </div>
         <h1 className="mt-4 text-xl font-black text-slate-900">
           Không có quyền truy cập trang Quản trị
@@ -86,7 +86,7 @@ export default function AdminLayout({
         </p>
         <Link
           href="/coach/classes"
-          className="mt-6 flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-primary-hover transition-colors"
+          className="mt-6 flex items-center gap-2 rounded bg-brand-primary px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-primary-hover transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Quay lại Trang Lớp Học Của Tôi</span>

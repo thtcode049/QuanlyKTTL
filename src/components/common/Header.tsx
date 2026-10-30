@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur-md sm:px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-100 bg-white/95 px-3 backdrop-blur-md sm:px-4 md:px-6">
       {/* Left info & Breadcrumb */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Mobile Menu Toggle Button */}
@@ -123,16 +123,16 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           type="button"
           onClick={handleToggleMobileMenu}
           aria-label="Mở menu"
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all md:hidden cursor-pointer"
+          className="flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all md:hidden cursor-pointer"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" />
         </button>
 
         <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex">
           <Calendar className="h-4 w-4 text-brand-primary" />
           <span className="capitalize">{todayStr}</span>
         </div>
-        <div className="hidden h-4 w-px bg-slate-200 sm:block" />
+        <div className="hidden h-3.5 w-px bg-slate-200 sm:block" />
         <span className="text-xs font-bold text-slate-800 line-clamp-1 max-w-[130px] sm:max-w-none">
           CLB Kiện Tướng Tương Lai
         </span>
@@ -145,10 +145,10 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
           href="https://kientuongtuonglai.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-brand-primary hover:text-brand-primary lg:flex"
+          className="hidden items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-brand-primary lg:flex"
         >
           <span>Website CLB</span>
-          <ExternalLink className="h-3.5 w-3.5" />
+          <ExternalLink className="h-3 w-3" />
         </a>
 
         {/* Chuông Thông Báo */}
@@ -158,16 +158,16 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
         <button
           type="button"
           onClick={() => router.push(userRole === "ADMIN" ? "/admin/profile" : "/coach/profile")}
-          className="flex items-center gap-2 rounded-xl bg-slate-50 p-1.5 pr-2.5 sm:pr-3 border border-slate-200/70 hover:bg-slate-100 hover:border-brand-primary/40 transition-all text-left cursor-pointer group shadow-sm active:scale-95"
+          className="flex items-center gap-2 rounded bg-slate-50 px-2 py-1 hover:bg-slate-100 transition-all text-left cursor-pointer group"
           title="Bấm để mở trang Hồ Sơ Cá Nhân & Quản Trị"
         >
-          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg font-bold text-white shadow-sm transition-transform group-hover:scale-105 ${
-            userRole === "ADMIN" ? "bg-slate-900" : "bg-brand-primary"
+          <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded font-bold text-white transition-transform ${
+            userRole === "ADMIN" ? "bg-slate-800" : "bg-brand-primary"
           }`}>
             {userRole === "ADMIN" ? (
-              <ShieldCheck className="h-4 w-4" />
+              <ShieldCheck className="h-3.5 w-3.5" />
             ) : (
-              <UserCheck className="h-4 w-4" />
+              <UserCheck className="h-3.5 w-3.5" />
             )}
           </div>
           <div className="text-left leading-tight max-w-[90px] sm:max-w-[160px]">
@@ -187,9 +187,9 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
         {canAccessAdmin && (
           <button
             onClick={handleSwitchRole}
-            className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 md:px-3 md:py-2 text-xs font-bold transition-all shadow-sm ${
+            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
               userRole === "ADMIN"
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
                 : "bg-slate-900 text-white hover:bg-slate-800"
             }`}
             title={userRole === "ADMIN" ? "Chuyển sang giao diện HLV" : "Chuyển sang trang Quản trị"}
@@ -213,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+          className="flex h-8 w-8 items-center justify-center rounded text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
           title="Đăng xuất"
         >
           <LogOut className="h-4 w-4" />

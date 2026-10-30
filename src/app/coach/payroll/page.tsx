@@ -129,7 +129,7 @@ export default function CoachPayrollPage() {
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-bold text-slate-800 shadow-sm focus:border-brand-primary focus:outline-none"
+            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:border-brand-primary focus:outline-none cursor-pointer"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
               <option key={m} value={m}>
@@ -140,7 +140,7 @@ export default function CoachPayrollPage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-bold text-slate-800 shadow-sm focus:border-brand-primary focus:outline-none"
+            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:border-brand-primary focus:outline-none cursor-pointer"
           >
             <option value={2026}>Năm 2026</option>
             <option value={2025}>Năm 2025</option>
@@ -151,9 +151,9 @@ export default function CoachPayrollPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {/* Card 1: Số ca dạy */}
-        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500">Số Ca Dạy Đã Hoàn Thành</p>
-          <p className="mt-1 text-2xl sm:text-3xl font-black text-slate-900">
+        <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500">Số Ca Dạy Đã Hoàn Thành</p>
+          <p className="mt-1 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             {totalSessions} <span className="text-sm sm:text-base font-medium text-slate-500">ca</span>
           </p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-400">
@@ -162,14 +162,14 @@ export default function CoachPayrollPage() {
         </div>
 
         {/* Card 2: 50% Học Phí */}
-        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
+        <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-semibold text-slate-500">50% Học Phí Lớp</p>
-            <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-primary border border-emerald-200">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500">50% Học Phí Lớp</p>
+            <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-primary border border-emerald-100">
               50%
             </span>
           </div>
-          <p className="mt-1 text-xl sm:text-2xl font-black text-brand-primary">
+          <p className="mt-1 text-xl sm:text-2xl font-bold text-brand-primary tracking-tight">
             {formatCurrencyVND(tuitionCommission)}
           </p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
@@ -178,14 +178,14 @@ export default function CoachPayrollPage() {
         </div>
 
         {/* Card 3: 30% Tiền Sách */}
-        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-soft border border-slate-200/80">
+        <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-semibold text-slate-500">30% Tiền Sách</p>
-            <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500">30% Tiền Sách</p>
+            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-100">
               30%
             </span>
           </div>
-          <p className="mt-1 text-xl sm:text-2xl font-black text-amber-600">
+          <p className="mt-1 text-xl sm:text-2xl font-bold text-amber-600 tracking-tight">
             {formatCurrencyVND(bookCommission)}
           </p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
@@ -194,9 +194,9 @@ export default function CoachPayrollPage() {
         </div>
 
         {/* Card 4: Tổng Thu Nhập HLV */}
-        <div className="col-span-2 lg:col-span-1 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 sm:p-5 shadow-soft text-white">
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-300">Tổng Thu Nhập Tháng {month}</p>
-          <p className="mt-1 text-2xl sm:text-3xl font-black text-brand-secondary">
+        <div className="col-span-2 lg:col-span-1 rounded bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+          <p className="text-[11px] sm:text-xs font-medium text-slate-300">Tổng Thu Nhập Tháng {month}</p>
+          <p className="mt-1 text-2xl sm:text-3xl font-bold text-brand-secondary tracking-tight">
             {formatCurrencyVND(totalIncome)}
           </p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-300">
@@ -206,7 +206,7 @@ export default function CoachPayrollPage() {
       </div>
 
       {/* Breakdown by Class */}
-      <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80">
+      <div className="rounded bg-white border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         <div className="border-b border-slate-100 p-4">
           <h3 className="text-sm font-bold text-slate-900">
             Chi Tiết Thu Nhập Theo Từng Lớp Phụ Trách
@@ -219,18 +219,18 @@ export default function CoachPayrollPage() {
         {/* Mobile View: Thẻ danh sách từng lớp */}
         <div className="block sm:hidden divide-y divide-slate-100">
           {classBreakdowns.map((b) => (
-            <div key={b.class.id} className="p-4 space-y-3">
+            <div key={b.class.id} className="p-3.5 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h4 className="font-black text-slate-900 text-sm">{b.class.name}</h4>
+                  <h4 className="font-bold text-slate-900 text-sm">{b.class.name}</h4>
                   <p className="text-xs text-slate-500">{b.branch?.name} • {b.class.schedule}</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 whitespace-nowrap">
+                <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 whitespace-nowrap">
                   {b.studentCount} HV
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl text-xs">
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded text-xs">
                 <div>
                   <span className="text-[10px] text-slate-400 block font-semibold uppercase">50% Học phí</span>
                   <span className="font-bold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</span>
@@ -245,7 +245,7 @@ export default function CoachPayrollPage() {
 
               <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
                 <span className="font-medium text-slate-500">Tổng thu nhập lớp:</span>
-                <span className="text-base font-black text-slate-900">{formatCurrencyVND(b.totalIncome)}</span>
+                <span className="text-base font-bold text-slate-900">{formatCurrencyVND(b.totalIncome)}</span>
               </div>
             </div>
           ))}
@@ -257,34 +257,34 @@ export default function CoachPayrollPage() {
         {/* Desktop View: Table */}
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
+            <thead className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Lớp Học</th>
-                <th className="px-4 py-3">Cơ Sở</th>
-                <th className="px-4 py-3 text-center">Sĩ Số</th>
-                <th className="px-4 py-3 text-right">Tổng Học Phí</th>
-                <th className="px-4 py-3 text-right text-brand-primary">50% Học Phí</th>
-                <th className="px-4 py-3 text-center">Sách Đã Phát</th>
-                <th className="px-4 py-3 text-right">Tổng Tiền Sách</th>
-                <th className="px-4 py-3 text-right text-amber-700">30% Tiền Sách</th>
-                <th className="px-4 py-3 text-right font-black">Thu Nhập Lớp</th>
+                <th className="px-4 py-2.5">Lớp Học</th>
+                <th className="px-4 py-2.5">Cơ Sở</th>
+                <th className="px-4 py-2.5 text-center">Sĩ Số</th>
+                <th className="px-4 py-2.5 text-right">Tổng Học Phí</th>
+                <th className="px-4 py-2.5 text-right text-brand-primary">50% Học Phí</th>
+                <th className="px-4 py-2.5 text-center">Sách Đã Phát</th>
+                <th className="px-4 py-2.5 text-right">Tổng Tiền Sách</th>
+                <th className="px-4 py-2.5 text-right text-amber-700">30% Tiền Sách</th>
+                <th className="px-4 py-2.5 text-right font-bold">Thu Nhập Lớp</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {classBreakdowns.map((b) => (
-                <tr key={b.class.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="px-4 py-3 font-bold text-slate-900">
+                <tr key={b.class.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-4 py-3 font-semibold text-slate-900">
                     {b.class.name}
                     <span className="block text-[10px] font-normal text-slate-500">{b.class.schedule}</span>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{b.branch?.name}</td>
-                  <td className="px-4 py-3 text-center font-bold">{b.studentCount} HV</td>
+                  <td className="px-4 py-3 text-center font-semibold">{b.studentCount} HV</td>
                   <td className="px-4 py-3 text-right font-medium text-slate-700">{formatCurrencyVND(b.tuition)}</td>
-                  <td className="px-4 py-3 text-right font-bold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</td>
-                  <td className="px-4 py-3 text-center font-semibold text-slate-800">{b.booksCount} cuốn</td>
+                  <td className="px-4 py-3 text-right font-semibold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</td>
+                  <td className="px-4 py-3 text-center font-medium text-slate-800">{b.booksCount} cuốn</td>
                   <td className="px-4 py-3 text-right font-medium text-slate-700">{formatCurrencyVND(b.bookRevenue)}</td>
-                  <td className="px-4 py-3 text-right font-bold text-amber-700">{formatCurrencyVND(b.bookCommission)}</td>
-                  <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
+                  <td className="px-4 py-3 text-right font-semibold text-amber-700">{formatCurrencyVND(b.bookCommission)}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-900 text-sm">
                     {formatCurrencyVND(b.totalIncome)}
                   </td>
                 </tr>
@@ -295,7 +295,7 @@ export default function CoachPayrollPage() {
       </div>
 
       {/* Teaching Sessions Table */}
-      <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80">
+      <div className="rounded bg-white border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         <div className="border-b border-slate-100 p-4">
           <h3 className="text-sm font-bold text-slate-900">
             Nhật Ký Các Ca Dạy & Phát Sách Tháng {month}/{year}
@@ -317,12 +317,12 @@ export default function CoachPayrollPage() {
             const sessBookCommission = Math.round(sessBookPrice * 0.3);
 
             return (
-              <div key={sess.id} className="p-4 space-y-2 text-xs">
+              <div key={sess.id} className="p-3.5 space-y-2 text-xs">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900 text-sm">#{idx + 1} {cls?.name}</span>
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-brand-primary border border-emerald-200">
+                      <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-brand-primary border border-emerald-200">
                         {pCount} HV có mặt
                       </span>
                     </div>
@@ -337,7 +337,7 @@ export default function CoachPayrollPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-xl p-2.5 space-y-1.5">
+                <div className="bg-slate-50 rounded p-2.5 space-y-1.5">
                   <div>
                     <span className="text-[10px] font-semibold text-slate-400 uppercase">Chủ đề: </span>
                     <span className="font-medium text-slate-800 italic">{sess.topic}</span>
@@ -363,17 +363,17 @@ export default function CoachPayrollPage() {
         {/* Desktop View: Table */}
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
+            <thead className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">STT</th>
-                <th className="px-4 py-3">Ngày Dạy</th>
-                <th className="px-4 py-3">Lớp Học</th>
-                <th className="px-4 py-3">Cơ Sở</th>
-                <th className="px-4 py-3">Chủ Đề Đã Dạy</th>
-                <th className="px-4 py-3 text-center">Có Mặt</th>
-                <th className="px-4 py-3">Sách Phát Trong Buổi</th>
-                <th className="px-4 py-3 text-right">Tiền Sách</th>
-                <th className="px-4 py-3 text-right text-amber-700">30% Sách</th>
+                <th className="px-4 py-2.5">STT</th>
+                <th className="px-4 py-2.5">Ngày Dạy</th>
+                <th className="px-4 py-2.5">Lớp Học</th>
+                <th className="px-4 py-2.5">Cơ Sở</th>
+                <th className="px-4 py-2.5">Chủ Đề Đã Dạy</th>
+                <th className="px-4 py-2.5 text-center">Có Mặt</th>
+                <th className="px-4 py-2.5">Sách Phát Trong Buổi</th>
+                <th className="px-4 py-2.5 text-right">Tiền Sách</th>
+                <th className="px-4 py-2.5 text-right text-amber-700">30% Sách</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -387,9 +387,9 @@ export default function CoachPayrollPage() {
                 const sessBookCommission = Math.round(sessBookPrice * 0.3);
 
                 return (
-                  <tr key={sess.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={sess.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-4 py-3 font-semibold text-slate-500">{idx + 1}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900">
+                    <td className="px-4 py-3 font-semibold text-slate-900">
                       {new Date(sess.date).toLocaleDateString("vi-VN", {
                         weekday: "short",
                         day: "2-digit",
@@ -401,7 +401,7 @@ export default function CoachPayrollPage() {
                     <td className="px-4 py-3 text-slate-600">{branch?.name}</td>
                     <td className="px-4 py-3 text-slate-700 italic">{sess.topic}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-brand-primary border border-emerald-200">
+                      <span className="rounded bg-emerald-50 px-2 py-0.5 font-semibold text-brand-primary border border-emerald-200">
                         {pCount} học sinh
                       </span>
                     </td>
@@ -411,7 +411,7 @@ export default function CoachPayrollPage() {
                           {booksInSess.map((b) => (
                             <span
                               key={b.id}
-                              className="inline-block rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200 mr-1"
+                              className="inline-block rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200 mr-1"
                             >
                               📖 {b.bookTitle} ({formatCurrencyVND(b.bookPrice || 0)})
                             </span>
@@ -424,7 +424,7 @@ export default function CoachPayrollPage() {
                     <td className="px-4 py-3 text-right font-medium text-slate-700">
                       {sessBookPrice > 0 ? formatCurrencyVND(sessBookPrice) : "0 đ"}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-amber-700">
+                    <td className="px-4 py-3 text-right font-semibold text-amber-700">
                       {sessBookCommission > 0 ? `+${formatCurrencyVND(sessBookCommission)}` : "—"}
                     </td>
                   </tr>

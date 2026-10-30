@@ -148,13 +148,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
           {/* Role Indicator Banner */}
           {!isSmall ? (
-            <div className="mx-3 mt-3.5 rounded-xl bg-slate-50 p-2.5 border border-slate-100 flex items-center gap-2">
+            <div className="mx-3 mt-3 rounded bg-slate-50 p-2 text-slate-700 flex items-center gap-2">
               {userRole === "ADMIN" ? (
                 <Shield className="h-4 w-4 text-brand-secondary" />
               ) : (
                 <UserCheck className="h-4 w-4 text-brand-primary" />
               )}
-              <span className="text-xs font-bold text-slate-800">
+              <span className="text-xs font-semibold text-slate-800">
                 {userRole === "ADMIN" ? "Ban Quản Lý CLB" : "Huấn Luyện Viên"}
               </span>
             </div>
@@ -162,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
             <div className="mx-2 mt-3 flex justify-center">
               <span
                 title={userRole === "ADMIN" ? "Ban Quản Lý" : "Huấn Luyện Viên"}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-brand-primary"
+                className="flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-brand-primary"
               >
                 {userRole === "ADMIN" ? <Shield className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
               </span>
@@ -170,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
           )}
 
           {/* Navigation Links */}
-          <nav className={`mt-4 space-y-1 ${isSmall ? "px-2" : "px-3"}`}>
+          <nav className={`mt-3 space-y-1 ${isSmall ? "px-2" : "px-3"}`}>
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -180,19 +180,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
                   href={item.href}
                   title={isSmall ? item.name : undefined}
                   onClick={() => setMobileOpen(false)}
-                  className={`group flex items-center rounded-xl transition-all duration-150 ${
+                  className={`group flex items-center rounded transition-all duration-150 ${
                     isSmall
-                      ? "justify-center p-3"
-                      : "justify-between px-3.5 py-2.5 text-xs font-bold"
+                      ? "justify-center p-2.5"
+                      : "justify-between px-3 py-2 text-xs font-semibold"
                   } ${
                     isActive
-                      ? "bg-brand-primary text-white shadow-md shadow-brand-primary/25"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
+                      ? "bg-brand-primary text-white"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <Icon
-                      className={`h-4 w-4 flex-shrink-0 transition-transform duration-150 group-hover:scale-110 ${
+                      className={`h-4 w-4 flex-shrink-0 transition-transform duration-150 ${
                         isActive ? "text-white" : "text-slate-500 group-hover:text-brand-primary"
                       }`}
                     />
@@ -207,11 +207,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
           </nav>
         </div>
 
-        {/* Footer Area: Info CLB (Đã bỏ nút dài chiếm không gian) */}
+        {/* Footer Area: Info CLB */}
         <div className="border-t border-slate-100 p-3">
           {!isSmall ? (
-            <div className="rounded-xl bg-slate-50 p-2.5 text-xs border border-slate-100 text-slate-600">
-              <p className="font-bold text-slate-900">CLB Cờ Vua KTTLL</p>
+            <div className="rounded bg-slate-50 p-2 text-xs text-slate-600">
+              <p className="font-semibold text-slate-900">CLB Cờ Vua KTTLL</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Chủ nhiệm: GM Bùi Vinh</p>
             </div>
           ) : (

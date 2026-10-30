@@ -169,9 +169,9 @@ export default function LoginPage() {
           </p>
 
           {/* Core Highlights */}
-          <div className="mt-8 space-y-3.5">
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary/20 text-brand-primary">
+          <div className="mt-8 space-y-3">
+            <div className="flex items-center gap-3 rounded-md bg-white/5 p-3 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-brand-primary/20 text-brand-primary">
                 <CalendarCheck2 className="h-5 w-5" />
               </div>
               <div className="text-xs">
@@ -180,8 +180,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 backdrop-blur-sm border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-secondary/20 text-brand-secondary">
+            <div className="flex items-center gap-3 rounded-md bg-white/5 p-3 backdrop-blur-sm border border-white/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-brand-secondary/20 text-brand-secondary">
                 <QrCode className="h-5 w-5" />
               </div>
               <div className="text-xs">
@@ -211,7 +211,7 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-md">
           {/* Mobile Logo display */}
           <div className="mb-6 flex items-center gap-3 lg:hidden">
-            <div className="relative h-11 w-11 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-brand-primary flex items-center justify-center overflow-hidden">
+            <div className="relative h-11 w-11 rounded-full bg-white p-0.5 shadow-xs ring-2 ring-brand-primary flex items-center justify-center overflow-hidden">
               <img
                 src="/logo.png"
                 alt="Logo CLB"
@@ -238,7 +238,7 @@ export default function LoginPage() {
           {/* Regular Login Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
-              <div className="rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-600 border border-red-200">
+              <div className="rounded bg-red-50 p-3 text-xs font-semibold text-red-600 border border-red-200">
                 {error}
               </div>
             )}
@@ -246,7 +246,7 @@ export default function LoginPage() {
             <div>
               <label className="block text-xs font-bold text-slate-700">Email đăng nhập</label>
               <div className="relative mt-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
@@ -254,7 +254,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Nhập email của bạn"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                  className="w-full rounded border border-slate-300 bg-white py-2 pl-9 pr-3 text-xs font-medium text-slate-900 shadow-xs focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/20"
                 />
               </div>
             </div>
@@ -264,7 +264,7 @@ export default function LoginPage() {
                 <label className="block text-xs font-bold text-slate-700">Mật khẩu</label>
               </div>
               <div className="relative mt-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
@@ -272,7 +272,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                  className="w-full rounded border border-slate-300 bg-white py-2 pl-9 pr-3 text-xs font-medium text-slate-900 shadow-xs focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/20"
                 />
               </div>
             </div>
@@ -280,7 +280,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary py-3 text-xs font-bold text-white shadow-md shadow-brand-primary/25 transition-all hover:bg-brand-primary-hover active:scale-[0.98] disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded bg-brand-primary py-2.5 text-xs font-bold text-white shadow-xs hover:bg-brand-primary-hover active:scale-[0.99] disabled:opacity-50 transition-colors cursor-pointer"
             >
               {loading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -294,7 +294,7 @@ export default function LoginPage() {
           </form>
 
           {/* Registration Box for New Members */}
-          <div className="mt-6 rounded-2xl bg-white p-4.5 shadow-soft border border-slate-200/80">
+          <div className="mt-6 rounded-md bg-white p-4 shadow-xs border border-slate-200/80">
             <div className="text-center mb-3">
               <p className="text-xs font-bold text-slate-800">
                 Chưa có tài khoản tham gia hệ thống?
@@ -306,7 +306,7 @@ export default function LoginPage() {
 
             <Link
               href="/register"
-              className="group flex items-center justify-center gap-2 rounded-xl border border-brand-primary/30 bg-emerald-50/60 p-3 text-xs font-bold text-brand-primary transition-all hover:bg-brand-primary hover:text-white shadow-sm active:scale-95 text-center"
+              className="group flex items-center justify-center gap-2 rounded border border-brand-primary/30 bg-emerald-50/60 p-2.5 text-xs font-bold text-brand-primary transition-all hover:bg-brand-primary hover:text-white shadow-xs text-center"
             >
               <UserPlus className="h-4 w-4 text-brand-primary group-hover:text-white transition-colors" />
               <span>Đăng Ký Tài Khoản Mới</span>

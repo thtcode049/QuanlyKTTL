@@ -152,9 +152,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserI
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+        className={`relative flex h-9 w-9 items-center justify-center rounded transition-all duration-200 cursor-pointer ${
           isOpen
-            ? "bg-brand-primary/10 text-brand-primary shadow-sm"
+            ? "bg-brand-primary/10 text-brand-primary shadow-xs"
             : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 active:scale-95"
         }`}
         title="Thông báo hệ thống"
@@ -162,7 +162,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserI
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white shadow-md ring-2 ring-white animate-pulse">
+          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white shadow-xs ring-2 ring-white animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -170,7 +170,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserI
 
       {/* Popover Content */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200/90 bg-white shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-lg border border-slate-200/90 bg-white shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
             <div className="flex items-center gap-2">
@@ -208,7 +208,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserI
           <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
             {notifications.length === 0 ? (
               <div className="p-8 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-400">
                   <Bell className="h-6 w-6" />
                 </div>
                 <p className="mt-3 text-xs font-bold text-slate-700">Không có thông báo nào</p>
@@ -227,7 +227,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserI
                 >
                   {/* Icon badge */}
                   <div
-                    className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border ${getNotifBg(
+                    className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded border ${getNotifBg(
                       notif.type
                     )}`}
                   >

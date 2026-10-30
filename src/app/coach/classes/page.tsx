@@ -385,7 +385,7 @@ export default function CoachClassesPage() {
     <div className="space-y-6">
       {/* Toast notification floating popup */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-md bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-xl border border-slate-700 animate-in fade-in slide-in-from-bottom-5">
           <CheckCircle2 className="h-4 w-4 text-brand-primary" />
           <span>{toastMessage}</span>
         </div>
@@ -403,10 +403,10 @@ export default function CoachClassesPage() {
         </div>
 
         {/* Streamlined Top Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsCreateClassOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Tạo Lớp Mới</span>
@@ -414,14 +414,14 @@ export default function CoachClassesPage() {
           <button
             type="button"
             onClick={() => setIsBatchImportOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-700 shadow-sm hover:bg-emerald-100 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             <span>Nhập từ Sheet</span>
           </button>
           <button
             onClick={() => setIsAddStudentOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover transition-colors"
+            className="flex items-center gap-1.5 rounded bg-brand-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-colors"
           >
             <UserPlus className="h-4 w-4" />
             <span>Thêm Học Viên</span>
@@ -430,20 +430,20 @@ export default function CoachClassesPage() {
       </div>
 
       {classes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
-            <GraduationCap className="h-8 w-8" />
+        <div className="flex flex-col items-center justify-center rounded border border-dashed border-slate-200 bg-white p-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded bg-emerald-50 text-brand-primary">
+            <GraduationCap className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-black text-slate-900">
+          <h2 className="mt-3 text-base font-bold text-slate-900">
             Chào mừng Huấn luyện viên mới!
           </h2>
-          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+          <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500">
             Tài khoản của bạn đã được kích hoạt thành công và hoàn toàn sạch sẽ, không có bất kỳ dữ liệu mẫu hay học sinh ảo nào. Hãy bắt đầu bằng cách tạo lớp học đầu tiên của bạn để quản lý học sinh và cơ sở.
           </p>
           <button
             type="button"
             onClick={() => setIsCreateClassOpen(true)}
-            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+            className="mt-5 flex items-center gap-2 rounded bg-brand-primary px-5 py-2.5 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-all"
           >
             <Plus className="h-4 w-4" />
             <span>Tạo Lớp Học Đầu Tiên</span>
@@ -452,7 +452,7 @@ export default function CoachClassesPage() {
       ) : (
         <>
           {/* Class Selector Carousel Cards */}
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
+          <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
             {classes.map((cls) => {
               const isSelected = cls.id === selectedClass?.id;
               const branch = dataStore.branches.find((b) => b.id === cls.branchId);
@@ -462,16 +462,16 @@ export default function CoachClassesPage() {
                 <div
                   key={cls.id}
                   onClick={() => setSelectedClassId(cls.id)}
-                  className={`cursor-pointer rounded-2xl p-4 transition-all duration-200 min-w-[240px] sm:min-w-0 flex-shrink-0 sm:flex-shrink ${
+                  className={`cursor-pointer rounded p-3.5 transition-all duration-200 min-w-[240px] sm:min-w-0 flex-shrink-0 sm:flex-shrink ${
                     isSelected
-                      ? "bg-white shadow-card ring-2 ring-brand-primary border border-brand-primary/30"
-                      : "bg-white/80 shadow-soft hover:bg-white border border-slate-200/80"
+                      ? "bg-white ring-1 ring-brand-primary border border-brand-primary/40"
+                      : "bg-white hover:border-slate-300 border border-slate-100"
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span
-                        className={`rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                           cls.level === "Đội tuyển"
                             ? "bg-purple-100 text-purple-700"
                             : cls.level === "Nâng cao"
@@ -482,17 +482,17 @@ export default function CoachClassesPage() {
                         {cls.level}
                       </span>
                       {cls.shareWithAdmin === false && (
-                        <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
                           🔒 Riêng tư
                         </span>
                       )}
                     </div>
-                    <span className="text-xs font-bold text-slate-500">
+                    <span className="text-xs font-semibold text-slate-500">
                       {studentCount} Học viên
                     </span>
                   </div>
 
-                  <h3 className="mt-2.5 text-sm font-bold text-slate-900 line-clamp-1">
+                  <h3 className="mt-2 text-xs font-bold text-slate-900 line-clamp-1">
                     {cls.name}
                   </h3>
 
@@ -505,7 +505,7 @@ export default function CoachClassesPage() {
                       <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                       <span className="truncate">{cls.schedule}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 font-bold text-brand-primary">
+                    <div className="flex items-center gap-1.5 font-semibold text-brand-primary">
                       <DollarSign className="h-3.5 w-3.5 flex-shrink-0" />
                       <span>{formatCurrencyVND(cls.feePerSession)} / buổi</span>
                     </div>
@@ -513,13 +513,13 @@ export default function CoachClassesPage() {
 
                   {/* Action buttons directly on each class card */}
                   <div
-                    className="mt-3.5 pt-3 border-t border-slate-100 grid grid-cols-3 gap-1.5"
+                    className="mt-3 pt-2.5 border-t border-slate-100 grid grid-cols-3 gap-1.5"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
                       onClick={() => openEditClassModal(cls)}
-                      className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-1.5 px-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                      className="flex items-center justify-center gap-1 rounded border border-slate-200 bg-white py-1 px-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                       title="Sửa thông tin lớp học này"
                     >
                       <Edit2 className="h-3 w-3 text-slate-500" />
@@ -528,7 +528,7 @@ export default function CoachClassesPage() {
 
                     <Link
                       href={`/coach/attendance?classId=${cls.id}`}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-brand-primary py-1.5 px-2 text-[11px] font-bold text-white hover:bg-brand-primary-hover active:scale-95 transition-all text-center shadow-xs"
+                      className="flex items-center justify-center gap-1 rounded bg-brand-primary py-1 px-1.5 text-[11px] font-semibold text-white hover:bg-brand-primary-hover transition-all text-center"
                       title="Điểm danh buổi học"
                     >
                       <Calendar className="h-3 w-3" />
@@ -537,7 +537,7 @@ export default function CoachClassesPage() {
 
                     <Link
                       href={`/coach/invoices?classId=${cls.id}`}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-brand-secondary py-1.5 px-2 text-[11px] font-bold text-white hover:bg-brand-secondary-hover active:scale-95 transition-all text-center shadow-xs"
+                      className="flex items-center justify-center gap-1 rounded bg-brand-secondary py-1 px-1.5 text-[11px] font-semibold text-white hover:bg-brand-secondary-hover transition-all text-center"
                       title="Tổng kết học phí"
                     >
                       <DollarSign className="h-3 w-3" />
@@ -546,7 +546,7 @@ export default function CoachClassesPage() {
                   </div>
 
                   {isSelected && (
-                    <div className="mt-2 text-center text-[10px] font-extrabold text-brand-primary bg-emerald-50 py-0.5 rounded-lg border border-emerald-200">
+                    <div className="mt-2 text-center text-[10px] font-bold text-brand-primary bg-emerald-50 py-0.5 rounded">
                       ✓ Đang xem danh sách
                     </div>
                   )}
@@ -556,52 +556,52 @@ export default function CoachClassesPage() {
           </div>
 
       {/* Student List in Selected Class */}
-      <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80 overflow-hidden">
+      <div className="rounded bg-white border border-slate-100 overflow-hidden">
         {/* Table Top Controls & Tips */}
-        <div className="border-b border-slate-100 p-4">
+        <div className="border-b border-slate-100 p-3.5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900">
                   Danh Sách Học Viên ({classStudents.length})
                 </h3>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-brand-primary border border-emerald-200">
+                <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
                   Lớp {selectedClass?.name} ({selectedClass?.level})
                 </span>
                 {selectedClass?.shareWithAdmin === false && (
-                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                  <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                     🔒 Lớp riêng (HLV)
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 {branchInfo?.name} • {selectedClass?.schedule} • Đơn giá:{" "}
-                <span className="font-bold text-slate-800">
+                <span className="font-semibold text-slate-800">
                   {formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi
                 </span>
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-400 mt-0.5">
                 Nhấp chuột phải vào bất kỳ học viên nào để mở menu thao tác nhanh. Nhấp đúp vào dòng để sửa trực tiếp.
               </p>
             </div>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm theo tên, SĐT phụ huynh..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs focus:border-brand-primary focus:bg-white focus:outline-none"
+                className="w-full rounded border border-slate-200 bg-slate-50/60 py-1.5 pl-8 pr-3 text-xs focus:border-brand-primary focus:bg-white focus:outline-none"
               />
             </div>
           </div>
 
           {/* Quick Tip Banner */}
-          <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50/70 p-2.5 text-[11px] font-medium text-emerald-900 border border-emerald-200/60">
-            <Sparkles className="h-4 w-4 text-brand-primary flex-shrink-0" />
+          <div className="mt-2.5 flex items-center gap-1.5 rounded bg-emerald-50/60 p-2 text-[11px] font-medium text-emerald-900">
+            <Sparkles className="h-3.5 w-3.5 text-brand-primary flex-shrink-0" />
             <span>
-              <strong>Thao tác tinh gọn:</strong> Click vào ảnh đại diện để xem Hồ sơ & tải ảnh mới. Nhấp chuột phải (hoặc bấm nút ···) để mở menu thao tác mà không cần nhiều nút bấm rườm rà.
+              <strong>Thao tác tinh gọn:</strong> Click vào ảnh đại diện để xem Hồ sơ & tải ảnh mới. Nhấp chuột phải (hoặc bấm nút ···) để mở menu thao tác nhanh.
             </span>
           </div>
         </div>
@@ -681,7 +681,7 @@ export default function CoachClassesPage() {
                       <img
                         src={avatarUrl}
                         alt={std.fullName}
-                        className="h-full w-full rounded-xl object-cover ring-1 ring-slate-200 shadow-sm"
+                        className="h-full w-full rounded object-cover ring-1 ring-slate-200 shadow-xs"
                       />
                     </div>
                     <div className="min-w-0">
@@ -903,7 +903,7 @@ export default function CoachClassesPage() {
                         className="flex items-center gap-2.5 cursor-pointer group-hover:text-brand-primary"
                         title="Click để xem & chỉnh sửa hồ sơ học viên"
                       >
-                        <div className="relative h-9 w-9 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 group-hover:ring-brand-primary transition-all flex-shrink-0">
+                        <div className="relative h-9 w-9 rounded overflow-hidden bg-slate-100 ring-1 ring-slate-200 group-hover:ring-brand-primary transition-all flex-shrink-0">
                           <img
                             src={avatarUrl}
                             alt={std.fullName}
@@ -988,7 +988,7 @@ export default function CoachClassesPage() {
                         <button
                           type="button"
                           onClick={() => setIsAddStudentOpen(true)}
-                          className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm"
+                          className="flex items-center gap-1.5 rounded bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                         >
                           <UserPlus className="h-3.5 w-3.5" />
                           <span>Thêm Học Viên</span>
@@ -996,7 +996,7 @@ export default function CoachClassesPage() {
                         <button
                           type="button"
                           onClick={() => setIsBatchImportOpen(true)}
-                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm"
+                          className="flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
                         >
                           <FileSpreadsheet className="h-3.5 w-3.5" />
                           <span>Nhập Từ Sheet</span>
@@ -1037,8 +1037,8 @@ export default function CoachClassesPage() {
 
       {/* Modal: Thêm Học Viên */}
       {isAddStudentOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-transparent animate-fade-in overflow-y-auto">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10 my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl border border-slate-100 my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">
@@ -1060,11 +1060,11 @@ export default function CoachClassesPage() {
             </div>
 
             {/* Dual / Triple Tabs Switcher */}
-            <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold">
+            <div className="mt-4 grid grid-cols-3 gap-1.5 rounded bg-slate-100 p-1 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setAddStudentTab("EXISTING")}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
+                className={`flex items-center justify-center gap-1.5 rounded py-1.5 transition-all ${
                   addStudentTab === "EXISTING"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
@@ -1077,7 +1077,7 @@ export default function CoachClassesPage() {
               <button
                 type="button"
                 onClick={() => setAddStudentTab("NEW")}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
+                className={`flex items-center justify-center gap-1.5 rounded py-1.5 transition-all ${
                   addStudentTab === "NEW"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
@@ -1111,7 +1111,7 @@ export default function CoachClassesPage() {
                       value={existingSearch}
                       onChange={(e) => setExistingSearch(e.target.value)}
                       placeholder="Tìm theo tên học sinh, mã HS, SĐT phụ huynh..."
-                      className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs focus:border-brand-primary focus:outline-none bg-slate-50 focus:bg-white"
+                      className="w-full rounded border border-slate-200 pl-9 pr-3 py-2 text-xs focus:border-brand-primary focus:outline-none bg-slate-50 focus:bg-white"
                     />
                   </div>
                   <p className="mt-1 text-[11px] text-slate-500">
@@ -1136,13 +1136,13 @@ export default function CoachClassesPage() {
                       return (
                         <div
                           key={std.id}
-                          className="pt-2 flex items-center justify-between gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors"
+                          className="pt-2 flex items-center justify-between gap-2.5 p-2 rounded hover:bg-slate-50 transition-colors"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <img
                               src={getStudentAvatarUrl(std.avatar, std.fullName, idx)}
                               alt={std.fullName}
-                              className="h-9 w-9 rounded-xl object-cover ring-1 ring-slate-200 flex-shrink-0"
+                              className="h-9 w-9 rounded object-cover ring-1 ring-slate-200 flex-shrink-0"
                             />
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1167,7 +1167,7 @@ export default function CoachClassesPage() {
                             <button
                               type="button"
                               onClick={() => handleEnrollExisting(std.id)}
-                              className="flex-shrink-0 flex items-center gap-1 rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover active:scale-95 shadow-sm transition-all"
+                              className="flex-shrink-0 flex items-center gap-1 rounded bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover active:scale-95 shadow-xs transition-all"
                             >
                               <Plus className="h-3.5 w-3.5" />
                               <span>Thêm Vào Lớp</span>
@@ -1203,7 +1203,7 @@ export default function CoachClassesPage() {
                         setIsAddStudentOpen(false);
                         setSessionAddedCount(0);
                       }}
-                      className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+                      className="rounded bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition-all shadow-sm"
                     >
                       Hoàn Tất & Đóng Bảng
                     </button>
@@ -1211,108 +1211,108 @@ export default function CoachClassesPage() {
                 </div>
               ) : (
                 /* TAB 2: Tạo học viên mới tinh */
-                <form onSubmit={handleCreateStudent} className="mt-4 space-y-3.5 text-xs">
+                <form onSubmit={handleCreateStudent} className="mt-4 space-y-3 text-xs">
                   <div>
-                    <label className="font-bold text-slate-700">Họ và tên học viên mới *</label>
+                    <label className="font-semibold text-slate-700">Họ và tên học viên mới *</label>
                     <input
                       type="text"
                       required
                       value={newStudentName}
                       onChange={(e) => setNewStudentName(e.target.value)}
                       placeholder="VD: Nguyễn Tuấn Anh"
-                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                      className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700">Năm sinh</label>
+                    <label className="font-semibold text-slate-700">Năm sinh</label>
                     <input
                       type="number"
                       value={newStudentBirthYear}
                       onChange={(e) => setNewStudentBirthYear(e.target.value)}
                       placeholder="Để trống"
-                      className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                      className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700">Số điện thoại phụ huynh (Không bắt buộc)</label>
-                  <input
-                    type="tel"
-                    value={newParentPhone}
-                    onChange={(e) => setNewParentPhone(e.target.value)}
-                    placeholder="VD: 0912.345.678 (không bắt buộc)"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
-                  />
-                  {newParentPhone.trim().length >= 8 &&
-                    dataStore.students.some((s) => s.parentPhone.includes(newParentPhone.trim())) && (
-                      <div className="mt-1.5 rounded-lg bg-amber-50 p-2 text-[11px] text-amber-800 border border-amber-200 flex items-center justify-between">
-                        <span>
-                          ℹ️ Phát hiện SĐT này đã có học viên trong CLB.
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExistingSearch(newParentPhone.trim());
-                            setAddStudentTab("EXISTING");
-                          }}
-                          className="font-bold text-brand-primary underline ml-1"
-                        >
-                          Chọn học viên sẵn có
-                        </button>
-                      </div>
-                    )}
-                </div>
+                    <label className="font-semibold text-slate-700">Số điện thoại phụ huynh (Không bắt buộc)</label>
+                    <input
+                      type="tel"
+                      value={newParentPhone}
+                      onChange={(e) => setNewParentPhone(e.target.value)}
+                      placeholder="VD: 0912.345.678 (không bắt buộc)"
+                      className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
+                    />
+                    {newParentPhone.trim().length >= 8 &&
+                      dataStore.students.some((s) => s.parentPhone.includes(newParentPhone.trim())) && (
+                        <div className="mt-1.5 rounded bg-amber-50 p-2 text-[11px] text-amber-800 border border-amber-200 flex items-center justify-between">
+                          <span>
+                            ℹ️ Phát hiện SĐT này đã có học viên trong CLB.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExistingSearch(newParentPhone.trim());
+                              setAddStudentTab("EXISTING");
+                            }}
+                            className="font-semibold text-brand-primary underline ml-1"
+                          >
+                            Chọn học viên sẵn có
+                          </button>
+                        </div>
+                      )}
+                  </div>
 
-                <div>
-                  <label className="font-bold text-slate-700">
-                    Đơn giá học phí riêng (để trống nếu dùng giá lớp)
-                  </label>
-                  <input
-                    type="number"
-                    value={newCustomFee}
-                    onChange={(e) => setNewCustomFee(e.target.value)}
-                    placeholder={`Mặc định: ${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi`}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold"
-                  />
-                </div>
+                  <div>
+                    <label className="font-semibold text-slate-700">
+                      Đơn giá học phí riêng (để trống nếu dùng giá lớp)
+                    </label>
+                    <input
+                      type="number"
+                      value={newCustomFee}
+                      onChange={(e) => setNewCustomFee(e.target.value)}
+                      placeholder={`Mặc định: ${formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi`}
+                      className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-bold"
+                    />
+                  </div>
 
-                <div>
-                  <label className="font-bold text-slate-700">Ghi chú của HLV</label>
-                  <input
-                    type="text"
-                    value={newStudentNotes}
-                    onChange={(e) => setNewStudentNotes(e.target.value)}
-                    placeholder="VD: Mới vào học, rất hào hứng..."
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
-                  />
-                </div>
+                  <div>
+                    <label className="font-semibold text-slate-700">Ghi chú của HLV</label>
+                    <input
+                      type="text"
+                      value={newStudentNotes}
+                      onChange={(e) => setNewStudentNotes(e.target.value)}
+                      placeholder="VD: Mới vào học, rất hào hứng..."
+                      className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
+                    />
+                  </div>
 
-                <div className="mt-5 flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddStudentOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-brand-primary px-5 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                  >
-                    Tạo & Thêm Vào Lớp
-                  </button>
-                </div>
-              </form>
-            )}
+                  <div className="mt-4 flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddStudentOpen(false)}
+                      className="rounded border border-slate-200 px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      className="rounded bg-brand-primary px-4 py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
+                    >
+                      Tạo & Thêm Vào Lớp
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Modal: Tạo Lớp Mới */}
       {isCreateClassOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Tạo Lớp Học Mới</h3>
               <button
@@ -1323,26 +1323,26 @@ export default function CoachClassesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateClass} className="mt-4 space-y-3.5 text-xs">
+            <form onSubmit={handleCreateClass} className="mt-4 space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700">Tên lớp học *</label>
+                <label className="font-semibold text-slate-700">Tên lớp học *</label>
                 <input
                   type="text"
                   required
                   value={newClassName}
                   onChange={(e) => setNewClassName(e.target.value)}
                   placeholder="VD: Cờ vua Cơ Bản - K09"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Trình độ</label>
+                  <label className="font-semibold text-slate-700">Trình độ</label>
                   <select
                     value={newClassLevel}
                     onChange={(e) => setNewClassLevel(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   >
                     <option value="Nhập môn">Nhập môn</option>
                     <option value="Cơ bản">Cơ bản</option>
@@ -1352,11 +1352,11 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Cơ sở đào tạo</label>
+                  <label className="font-semibold text-slate-700">Cơ sở đào tạo</label>
                   <select
                     value={newClassBranch}
                     onChange={(e) => setNewClassBranch(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   >
                     {dataStore.branches.map((b) => (
                       <option key={b.id} value={b.id}>
@@ -1369,45 +1369,45 @@ export default function CoachClassesPage() {
 
               {newClassLevel === "Tùy chỉnh" && (
                 <div>
-                  <label className="font-bold text-slate-700">Nhập tên trình độ tùy chỉnh *</label>
+                  <label className="font-semibold text-slate-700">Nhập tên trình độ tùy chỉnh *</label>
                   <input
                     type="text"
                     required
                     value={newClassCustomLevel}
                     onChange={(e) => setNewClassCustomLevel(e.target.value)}
                     placeholder="VD: Thi đấu cấp quận, Master U10..."
-                    className="mt-1 w-full rounded-xl border border-brand-primary p-2.5 focus:outline-none text-xs"
+                    className="mt-1 w-full rounded border border-brand-primary p-2 focus:outline-none text-xs"
                   />
                 </div>
               )}
 
               <div>
-                <label className="font-bold text-slate-700">Lịch học</label>
+                <label className="font-semibold text-slate-700">Lịch học</label>
                 <input
                   type="text"
                   required
                   value={newClassSchedule}
                   onChange={(e) => setNewClassSchedule(e.target.value)}
                   placeholder="VD: Thứ 4 & Thứ 7 (18:00 - 19:30)"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Đơn giá học phí / 1 buổi (VNĐ)</label>
+                <label className="font-semibold text-slate-700">Đơn giá học phí / 1 buổi (VNĐ)</label>
                 <input
                   type="number"
                   step="10000"
                   required
                   value={newClassFee}
                   onChange={(e) => setNewClassFee(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
                 />
               </div>
 
               {/* Share with Admin Checkbox */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+              <div className="rounded border border-slate-100 bg-slate-50 p-2.5">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
                   <input
                     type="checkbox"
                     checked={newClassShareWithAdmin}
@@ -1423,17 +1423,17 @@ export default function CoachClassesPage() {
                 </p>
               </div>
 
-              <div className="mt-5 flex justify-end gap-2 pt-2">
+              <div className="mt-4 flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsCreateClassOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
+                  className="rounded border border-slate-200 px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-brand-primary px-5 py-2 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  className="rounded bg-brand-primary px-4 py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                 >
                   Tạo Lớp
                 </button>
@@ -1445,8 +1445,8 @@ export default function CoachClassesPage() {
 
       {/* Modal: Sửa Thông Tin Lớp */}
       {isEditClassOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Sửa Thông Tin Lớp Học</h3>
               <button
@@ -1457,25 +1457,25 @@ export default function CoachClassesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateClass} className="mt-4 space-y-3.5 text-xs">
+            <form onSubmit={handleUpdateClass} className="mt-4 space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700">Tên lớp học *</label>
+                <label className="font-semibold text-slate-700">Tên lớp học *</label>
                 <input
                   type="text"
                   required
                   value={editClassName}
                   onChange={(e) => setEditClassName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Trình độ</label>
+                  <label className="font-semibold text-slate-700">Trình độ</label>
                   <select
                     value={editClassLevel}
                     onChange={(e) => setEditClassLevel(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   >
                     <option value="Nhập môn">Nhập môn</option>
                     <option value="Cơ bản">Cơ bản</option>
@@ -1485,11 +1485,11 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Cơ sở đào tạo</label>
+                  <label className="font-semibold text-slate-700">Cơ sở đào tạo</label>
                   <select
                     value={editClassBranch}
                     onChange={(e) => setEditClassBranch(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   >
                     {dataStore.branches.map((b) => (
                       <option key={b.id} value={b.id}>
@@ -1502,45 +1502,45 @@ export default function CoachClassesPage() {
 
               {editClassLevel === "Tùy chỉnh" && (
                 <div>
-                  <label className="font-bold text-slate-700">Nhập tên trình độ tùy chỉnh *</label>
+                  <label className="font-semibold text-slate-700">Nhập tên trình độ tùy chỉnh *</label>
                   <input
                     type="text"
                     required
                     value={editClassCustomLevel}
                     onChange={(e) => setEditClassCustomLevel(e.target.value)}
                     placeholder="VD: Thi đấu cấp quận, Master U10..."
-                    className="mt-1 w-full rounded-xl border border-brand-primary p-2.5 focus:outline-none text-xs"
+                    className="mt-1 w-full rounded border border-brand-primary p-2 focus:outline-none text-xs"
                   />
                 </div>
               )}
 
               <div>
-                <label className="font-bold text-slate-700">Lịch học</label>
+                <label className="font-semibold text-slate-700">Lịch học</label>
                 <input
                   type="text"
                   required
                   value={editClassSchedule}
                   onChange={(e) => setEditClassSchedule(e.target.value)}
                   placeholder="VD: Thứ 3 & Thứ 6 (18:00 - 19:30)"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Đơn giá học phí / 1 buổi (VNĐ)</label>
+                <label className="font-semibold text-slate-700">Đơn giá học phí / 1 buổi (VNĐ)</label>
                 <input
                   type="number"
                   step="10000"
                   required
                   value={editClassFee}
                   onChange={(e) => setEditClassFee(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-bold text-brand-primary"
                 />
               </div>
 
               {/* Share with Admin Checkbox */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+              <div className="rounded border border-slate-100 bg-slate-50 p-2.5">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
                   <input
                     type="checkbox"
                     checked={editClassShareWithAdmin}
@@ -1556,26 +1556,26 @@ export default function CoachClassesPage() {
                 </p>
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              <div className="mt-4 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={handleDeleteClass}
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
+                  className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   <span>Xóa Lớp Này</span>
                 </button>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setIsEditClassOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                    className="rounded border border-slate-200 px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                    className="rounded bg-brand-primary px-4 py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                   >
                     Lưu Thay Đổi
                   </button>

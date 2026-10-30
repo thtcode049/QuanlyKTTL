@@ -592,7 +592,7 @@ function InvoicesContent() {
           {/* Nút Cài Đặt QR & Zalo cho HLV */}
           <Link
             href="/coach/settings"
-            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-800 shadow-sm transition-all"
+            className="flex items-center gap-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-xs transition-colors"
             title="Cài đặt tài khoản ngân hàng nhận học phí VietQR và mẫu tin nhắn Zalo"
           >
             <Settings className="h-4 w-4 text-emerald-600" />
@@ -602,7 +602,7 @@ function InvoicesContent() {
           {/* Nút Xuất Hàng Loạt Ảnh Thẻ PNG */}
           <button
             onClick={() => setBatchExportModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/50 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 text-xs font-black text-emerald-800 shadow-sm transition-all active:scale-95"
+            className="flex items-center gap-1.5 rounded border border-emerald-500/50 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs transition-colors active:scale-95"
             title="Xuất hàng loạt ảnh thẻ học phí định dạng PNG thành file nén .ZIP hoặc từng ảnh"
           >
             <FileImage className="h-4 w-4 text-emerald-600" />
@@ -610,11 +610,11 @@ function InvoicesContent() {
           </button>
 
           {/* Nút tải trực tiếp Tool EXE & ZIP */}
-          <div className="inline-flex rounded-xl shadow-md">
+          <div className="inline-flex rounded shadow-xs">
             <a
               href="/api/tool/download"
               download="Zalo_Bulk_Sender.exe"
-              className="flex items-center gap-1.5 rounded-l-xl border border-amber-400/60 bg-amber-500 hover:bg-amber-600 px-3.5 py-2.5 text-xs font-black text-slate-950 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 rounded-l border border-amber-400/60 bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-xs font-semibold text-slate-950 active:scale-95 transition-colors"
               title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
             >
               <Download className="h-4 w-4" />
@@ -623,7 +623,7 @@ function InvoicesContent() {
             <a
               href="/api/tool/download?format=zip"
               download="Zalo_Bulk_Sender.zip"
-              className="flex items-center rounded-r-xl border-y border-r border-amber-400/60 bg-amber-600 hover:bg-amber-500 px-2.5 py-2.5 text-[11px] font-black text-slate-950 active:scale-95 transition-all"
+              className="flex items-center rounded-r border-y border-r border-amber-400/60 bg-amber-600 hover:bg-amber-500 px-2 py-1.5 text-[11px] font-semibold text-slate-950 active:scale-95 transition-colors"
               title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
             >
               <span>.ZIP</span>
@@ -636,7 +636,7 @@ function InvoicesContent() {
               setSelectedStudentForParentModal(undefined);
               setZaloParentModalOpen(true);
             }}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
+            className="flex items-center gap-2 rounded bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors active:scale-95"
             title="Mở hướng dẫn & nạp dữ liệu vào phần mềm Zalo Bulk Sender"
           >
             <Send className="h-4 w-4" />
@@ -645,7 +645,7 @@ function InvoicesContent() {
 
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 rounded-xl bg-brand-secondary px-3.5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-secondary/20 hover:bg-brand-secondary-hover transition-all"
+            className="flex items-center gap-2 rounded bg-brand-secondary px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-secondary-hover transition-colors"
           >
             <Download className="h-4 w-4" />
             <span>Xuất Excel (.xlsx)</span>
@@ -654,19 +654,19 @@ function InvoicesContent() {
       </div>
 
       {classes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
-            <DollarSign className="h-8 w-8" />
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded bg-emerald-50 text-brand-primary">
+            <DollarSign className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-black text-slate-900">
+          <h2 className="mt-3 text-base font-bold text-slate-900">
             Bạn chưa có lớp học nào để tổng kết học phí
           </h2>
-          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+          <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500">
             Hệ thống không hiển thị hóa đơn học phí mẫu đối với tài khoản thật của bạn. Vui lòng tạo lớp học và điểm danh học sinh để sinh hóa đơn theo nguyên tắc Thực học - Thực trả.
           </p>
           <a
             href="/coach/classes"
-            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+            className="mt-5 flex items-center gap-2 rounded bg-brand-primary px-4 py-2 text-xs font-semibold text-white hover:bg-brand-primary-hover active:scale-95 transition-colors"
           >
             <GraduationCap className="h-4 w-4" />
             <span>Đến Quản Lý Lớp Học</span>
@@ -675,14 +675,14 @@ function InvoicesContent() {
       ) : (
         <>
           {/* Filter and Class selector */}
-          <div className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3.5 rounded bg-white p-3.5 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:grid-cols-4">
             {/* Lớp */}
             <div className="sm:col-span-2">
-              <label className="text-xs font-bold text-slate-700">Lớp học</label>
+              <label className="text-xs font-semibold text-slate-700">Lớp học</label>
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                className="mt-1 w-full rounded border border-slate-200 bg-white p-2 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none cursor-pointer"
               >
                 <option value="all">
                   🌟 Tất cả các lớp ({classes.length} lớp học)
@@ -697,11 +697,11 @@ function InvoicesContent() {
 
         {/* Tháng */}
         <div>
-          <label className="text-xs font-bold text-slate-700">Tháng tổng kết</label>
+          <label className="text-xs font-semibold text-slate-700">Tháng tổng kết</label>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-200 bg-white p-2 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none cursor-pointer"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
               <option key={m} value={m}>
@@ -713,11 +713,11 @@ function InvoicesContent() {
 
         {/* Năm */}
         <div>
-          <label className="text-xs font-bold text-slate-700">Năm</label>
+          <label className="text-xs font-semibold text-slate-700">Năm</label>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-200 bg-white p-2 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none cursor-pointer"
           >
             <option value={2026}>Năm 2026</option>
             <option value={2025}>Năm 2025</option>
@@ -727,11 +727,11 @@ function InvoicesContent() {
 
       {/* Tùy chọn gộp phiếu thu cho học viên học nhiều lớp khi xem riêng từng lớp */}
       {!isAllClasses && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 p-3 sm:px-4 text-xs shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded bg-emerald-50/60 border border-emerald-100 p-2.5 sm:px-3 text-xs">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-emerald-700 shrink-0" />
             <div>
-              <span className="text-slate-900 font-bold">
+              <span className="text-slate-900 font-semibold">
                 Học viên học nhiều lớp:
               </span>{" "}
               <span className="text-slate-600 text-[11.5px]">
@@ -741,13 +741,13 @@ function InvoicesContent() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-emerald-200 shadow-xs self-start sm:self-center">
+          <div className="flex items-center gap-1 bg-white p-0.5 rounded border border-emerald-200 self-start sm:self-center">
             <button
               type="button"
               onClick={() => setPreferConsolidatedCards(true)}
-              className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+              className={`px-2.5 py-0.5 rounded font-semibold text-xs transition-colors ${
                 preferConsolidatedCards
-                  ? "bg-emerald-600 text-white shadow-xs"
+                  ? "bg-emerald-600 text-white"
                   : "text-slate-600 hover:text-slate-900"
               }`}
               title="Khi bấm tải ảnh hoặc xem QR, tự động gộp cả các lớp khác của học sinh đó"
@@ -757,9 +757,9 @@ function InvoicesContent() {
             <button
               type="button"
               onClick={() => setPreferConsolidatedCards(false)}
-              className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+              className={`px-2.5 py-0.5 rounded font-semibold text-xs transition-colors ${
                 !preferConsolidatedCards
-                  ? "bg-slate-700 text-white shadow-xs"
+                  ? "bg-slate-700 text-white"
                   : "text-slate-600 hover:text-slate-900"
               }`}
               title="Chỉ xuất phiếu thu riêng của lớp này"
@@ -771,10 +771,10 @@ function InvoicesContent() {
       )}
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-          <p className="text-xs font-semibold text-slate-500">Tổng Học Phí Phải Thu (Thực học)</p>
-          <p className="mt-1.5 text-2xl font-black text-slate-900">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+        <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+          <p className="text-xs font-medium text-slate-500">Tổng Học Phí Phải Thu (Thực học)</p>
+          <p className="mt-1.5 text-2xl font-bold text-slate-900 tracking-tight">
             {formatCurrencyVND(totalDue)}
           </p>
           <p className="mt-1 text-[11px] text-slate-400">
@@ -784,9 +784,9 @@ function InvoicesContent() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-          <p className="text-xs font-semibold text-slate-500">Đã Thanh Toán</p>
-          <p className="mt-1.5 text-2xl font-black text-brand-primary">
+        <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+          <p className="text-xs font-medium text-slate-500">Đã Thanh Toán</p>
+          <p className="mt-1.5 text-2xl font-bold text-brand-primary tracking-tight">
             {formatCurrencyVND(totalPaid)}
           </p>
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-600 font-semibold">
@@ -799,9 +799,9 @@ function InvoicesContent() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-          <p className="text-xs font-semibold text-slate-500">Chưa Thanh Toán (Còn nợ)</p>
-          <p className="mt-1.5 text-2xl font-black text-brand-secondary">
+        <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+          <p className="text-xs font-medium text-slate-500">Chưa Thanh Toán (Còn nợ)</p>
+          <p className="mt-1.5 text-2xl font-bold text-brand-secondary tracking-tight">
             {formatCurrencyVND(totalPending)}
           </p>
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-600 font-semibold">
@@ -816,7 +816,7 @@ function InvoicesContent() {
       </div>
 
       {/* Invoices Table */}
-      <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80">
+      <div className="rounded bg-white border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
@@ -830,13 +830,13 @@ function InvoicesContent() {
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm theo tên học viên, SĐT..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs focus:border-brand-primary focus:bg-white focus:outline-none"
+              className="w-full rounded border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs focus:border-brand-primary focus:outline-none"
             />
           </div>
         </div>
@@ -908,14 +908,14 @@ function InvoicesContent() {
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
                     <button
                       onClick={() => handleOpenAggregatedVietQr(agg)}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
+                      className="flex items-center justify-center gap-1 rounded bg-emerald-50 py-1.5 text-[11px] font-semibold text-brand-primary border border-emerald-200 active:bg-emerald-100"
                     >
                       <QrCode className="h-3.5 w-3.5" />
                       <span>Mã QR</span>
                     </button>
                     <button
                       onClick={() => downloadInvoiceCardPng(buildAggregatedInvoiceCardData(agg))}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 text-[11px] font-bold text-slate-700 border border-slate-200 active:bg-slate-200"
+                      className="flex items-center justify-center gap-1 rounded bg-slate-100 py-1.5 text-[11px] font-semibold text-slate-700 border border-slate-200 active:bg-slate-200"
                       title="Tải ảnh PNG thẻ học phí gộp"
                     >
                       <FileImage className="h-3.5 w-3.5 text-emerald-600" />
@@ -926,7 +926,7 @@ function InvoicesContent() {
                         setSelectedStudentForParentModal(agg.studentId);
                         setZaloParentModalOpen(true);
                       }}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
+                      className="flex items-center justify-center gap-1 rounded bg-emerald-50 py-1.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
                     >
                       <Send className="h-3.5 w-3.5 text-emerald-600" />
                       <span>Tool Zalo</span>
@@ -1002,14 +1002,14 @@ function InvoicesContent() {
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
                     <button
                       onClick={() => student && handleOpenVietQr(inv, student)}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-brand-primary border border-emerald-200 active:bg-emerald-100"
+                      className="flex items-center justify-center gap-1 rounded bg-emerald-50 py-1.5 text-[11px] font-semibold text-brand-primary border border-emerald-200 active:bg-emerald-100"
                     >
                       <QrCode className="h-3.5 w-3.5" />
                       <span>Mã QR</span>
                     </button>
                     <button
                       onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 text-[11px] font-bold text-slate-700 border border-slate-200 active:bg-slate-200"
+                      className="flex items-center justify-center gap-1 rounded bg-slate-100 py-1.5 text-[11px] font-semibold text-slate-700 border border-slate-200 active:bg-slate-200"
                       title="Tải ảnh PNG thẻ học phí"
                     >
                       <FileImage className="h-3.5 w-3.5 text-emerald-600" />
@@ -1022,7 +1022,7 @@ function InvoicesContent() {
                           setZaloParentModalOpen(true);
                         }
                       }}
-                      className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 py-2 text-[11px] font-bold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
+                      className="flex items-center justify-center gap-1 rounded bg-emerald-50 py-1.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200 active:bg-emerald-100"
                     >
                       <Send className="h-3.5 w-3.5 text-emerald-600" />
                       <span>Tool Zalo</span>
@@ -1417,10 +1417,10 @@ function InvoicesContent() {
       {/* Modal Điều Chỉnh Học Phí Riêng Học Viên */}
       {editingStudentFee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 border border-slate-100 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary">
+                <div className="flex h-7 w-7 items-center justify-center rounded bg-emerald-50 text-brand-primary">
                   <DollarSign className="h-4 w-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">
@@ -1431,22 +1431,22 @@ function InvoicesContent() {
                 onClick={() => setEditingStudentFee(null)}
                 className="text-slate-400 hover:text-slate-600"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="mt-4 space-y-3.5 text-xs">
-              <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                <p className="font-bold text-slate-900 text-sm">
+            <div className="mt-3.5 space-y-3 text-xs">
+              <div className="rounded bg-slate-50 p-2.5 border border-slate-100">
+                <p className="font-semibold text-slate-900 text-sm">
                   {editingStudentFee.student.fullName} ({editingStudentFee.student.code})
                 </p>
-                <p className="mt-1 text-slate-500">
+                <p className="mt-0.5 text-slate-500">
                   Lớp: <strong className="text-slate-800">{selectedClass?.name}</strong> • Đơn giá chuẩn của lớp: <strong className="text-brand-primary">{formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi</strong>
                 </p>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">
+                <label className="font-semibold text-slate-700">
                   Đơn giá học phí áp dụng cho học viên này (VNĐ / buổi)
                 </label>
                 <div className="relative mt-1">
@@ -1455,9 +1455,9 @@ function InvoicesContent() {
                     step="10000"
                     value={customFeeInput}
                     onChange={(e) => setCustomFeeInput(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 pr-8 text-sm font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                    className="w-full rounded border border-slate-200 p-2 pr-7 text-sm font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
                   />
-                  <span className="pointer-events-none absolute right-3 top-2.5 font-bold text-slate-400">
+                  <span className="pointer-events-none absolute right-2.5 top-2 font-bold text-slate-400">
                     đ
                   </span>
                 </div>
@@ -1466,18 +1466,18 @@ function InvoicesContent() {
                 </p>
               </div>
 
-              <div className="mt-5 flex flex-col gap-2 pt-2">
+              <div className="mt-4 flex flex-col gap-2 pt-1 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => handleSaveCustomFee(false)}
-                  className="w-full rounded-xl bg-brand-primary py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95"
+                  className="w-full rounded bg-brand-primary py-2 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                 >
                   Lưu Đơn Giá Riêng Cho Học Viên
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSaveCustomFee(true)}
-                  className="w-full rounded-xl border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  className="w-full rounded border border-slate-200 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Đặt Lại Theo Giá Chung Của Lớp ({formatCurrencyVND(selectedClass?.feePerSession || 150000)})
                 </button>

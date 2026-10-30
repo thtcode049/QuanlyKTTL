@@ -834,10 +834,10 @@ function AttendanceContent() {
       {/* Top Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
             Điểm Danh Buổi Học
           </h1>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-slate-500">
             Học viên Có mặt tính phí, Vắng mặt không tính phí. Hỗ trợ học sinh học bù và quản lý học viên trực tiếp.
           </p>
         </div>
@@ -845,14 +845,14 @@ function AttendanceContent() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition-all"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition-all"
           >
             <UserPlus className="h-4 w-4 text-brand-primary" />
             <span>Thêm Học Viên / Học Bù</span>
           </button>
           <button
             onClick={handleSaveAttendance}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 text-center transition-all"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded bg-brand-primary px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-brand-primary-hover active:scale-95 text-center transition-all"
           >
             <Save className="h-4 w-4" />
             <span>Lưu Điểm Danh</span>
@@ -862,9 +862,9 @@ function AttendanceContent() {
 
       {/* Floating Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl border border-emerald-500/40 animate-fade-in">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-primary text-white flex-shrink-0">
-            <Check className="h-4 w-4" />
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-md bg-slate-900 px-4 py-2.5 text-xs font-medium text-white shadow-xl border border-slate-800 animate-fade-in">
+          <div className="flex h-5 w-5 items-center justify-center rounded bg-brand-primary text-white flex-shrink-0">
+            <Check className="h-3.5 w-3.5" />
           </div>
           <span>{toastMsg}</span>
         </div>
@@ -872,9 +872,9 @@ function AttendanceContent() {
 
       {/* Success notification */}
       {saveSuccess && (
-        <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800 border border-emerald-200 animate-fade-in shadow-sm">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-primary text-white">
-            <Check className="h-4 w-4" />
+        <div className="flex items-center gap-2.5 rounded border border-emerald-200 bg-emerald-50/80 p-3 text-xs font-medium text-emerald-800 animate-fade-in shadow-xs">
+          <div className="flex h-5 w-5 items-center justify-center rounded bg-brand-primary text-white flex-shrink-0">
+            <Check className="h-3.5 w-3.5" />
           </div>
           <span>
             Đã lưu kết quả điểm danh thành công! Hệ thống đã tự động tính học phí theo nguyên tắc Thực học - Thực trả.
@@ -883,19 +883,19 @@ function AttendanceContent() {
       )}
 
       {classes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-soft">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-brand-primary shadow-sm">
-            <CheckSquare className="h-8 w-8" />
+        <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-emerald-50 text-brand-primary">
+            <CheckSquare className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-black text-slate-900">
+          <h2 className="mt-3 text-base font-bold text-slate-900">
             Bạn chưa có lớp học nào để điểm danh
           </h2>
-          <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+          <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500">
             Tài khoản của bạn chưa phụ trách lớp học nào. Vui lòng tạo lớp học đầu tiên và thêm học viên để bắt đầu điểm danh.
           </p>
           <a
             href="/coach/classes"
-            className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-primary px-6 py-3 text-xs font-bold text-white shadow-lg shadow-brand-primary/25 hover:bg-brand-primary-hover active:scale-95 transition-all"
+            className="mt-5 flex items-center gap-1.5 rounded bg-brand-primary px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-brand-primary-hover active:scale-95 transition-all"
           >
             <BookOpen className="h-4 w-4" />
             <span>Tạo Lớp Học Mới</span>
@@ -904,17 +904,17 @@ function AttendanceContent() {
       ) : (
         <>
           {/* Smart Schedule Status Indicator Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-md">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-md bg-slate-900 p-3.5 text-white shadow-xs border border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-brand-primary">
-                <Clock className="h-5 w-5" />
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-white/10 text-brand-primary flex-shrink-0">
+                <Clock className="h-4 w-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  <span className="text-xs font-semibold text-slate-300">
                     Lịch học cố định của lớp:
                   </span>
-                  <span className="rounded-lg bg-emerald-500/20 px-2.5 py-0.5 text-xs font-extrabold text-emerald-400 border border-emerald-500/30">
+                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-500/30">
                     {selectedClass?.schedule}
                   </span>
                 </div>
@@ -929,22 +929,22 @@ function AttendanceContent() {
 
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               {scheduleStatus.status === "HAPPENING" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-black text-white shadow-sm animate-pulse">
+                <span className="inline-flex items-center gap-1.5 rounded bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white shadow-xs">
                   <span className="h-2 w-2 rounded-full bg-white animate-ping" />
                   {scheduleStatus.message}
                 </span>
               ) : scheduleStatus.status === "UPCOMING" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/20 border border-blue-400/30 px-3 py-1.5 text-xs font-bold text-blue-300">
+                <span className="inline-flex items-center gap-1.5 rounded bg-blue-500/20 border border-blue-400/30 px-2.5 py-1 text-xs font-medium text-blue-300">
                   <Clock className="h-3.5 w-3.5" />
                   {scheduleStatus.message}
                 </span>
               ) : scheduleStatus.status === "PAST" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300">
+                <span className="inline-flex items-center gap-1.5 rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">
                   <Check className="h-3.5 w-3.5 text-emerald-400" />
                   {scheduleStatus.message}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-300">
+                <span className="inline-flex items-center gap-1.5 rounded bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-300">
                   <Calendar className="h-3.5 w-3.5 text-amber-400" />
                   {scheduleStatus.message}
                 </span>
@@ -955,7 +955,7 @@ function AttendanceContent() {
                 <button
                   type="button"
                   onClick={() => setSessionDate(todayStr)}
-                  className="rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-primary-hover shadow-sm transition-all"
+                  className="rounded bg-brand-primary px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-primary-hover shadow-xs transition-all"
                 >
                   Về Ca Hôm Nay
                 </button>
@@ -965,7 +965,7 @@ function AttendanceContent() {
 
           {/* Quick Schedule Session Picker (Các buổi học chuẩn theo lịch trong tháng) */}
           {monthlyDates.length > 0 && (
-            <div className="rounded-2xl bg-white p-3.5 shadow-soft border border-slate-200/80">
+            <div className="rounded-md bg-white p-3 shadow-xs border border-slate-200/80">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 text-brand-primary" />
@@ -976,7 +976,7 @@ function AttendanceContent() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
                 {monthlyDates.map((item) => {
                   const isSelected = item.dateStr === sessionDate;
                   const hasData = dataStore.sessions.some(
@@ -988,12 +988,12 @@ function AttendanceContent() {
                       key={item.dateStr}
                       type="button"
                       onClick={() => setSessionDate(item.dateStr)}
-                      className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all shadow-sm ${
+                      className={`flex-shrink-0 flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition-all shadow-xs ${
                         isSelected
-                          ? "bg-brand-primary text-white shadow-brand-primary/25 scale-[1.02]"
+                          ? "bg-brand-primary text-white shadow-brand-primary/20"
                           : hasData
                           ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60"
                       }`}
                     >
                       {hasData && (
@@ -1002,7 +1002,7 @@ function AttendanceContent() {
                       <span>{item.label}</span>
                       {item.isToday && (
                         <span
-                          className={`rounded px-1 py-0.2 text-[9px] font-black uppercase ${
+                          className={`rounded px-1 py-0.2 text-[9px] font-bold uppercase ${
                             isSelected ? "bg-white text-brand-primary" : "bg-emerald-600 text-white"
                           }`}
                         >
@@ -1017,15 +1017,15 @@ function AttendanceContent() {
           )}
 
           {/* Session Configuration Card */}
-          <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-md bg-white p-4 shadow-xs border border-slate-200/80">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {/* Chọn Lớp */}
               <div>
-                <label className="text-xs font-bold text-slate-700">Lớp học cần điểm danh</label>
+                <label className="text-xs font-semibold text-slate-700">Lớp học cần điểm danh</label>
                 <select
                   value={selectedClassId}
                   onChange={(e) => handleSelectClass(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs font-medium text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                 >
                   {classes.map((cls) => (
                     <option key={cls.id} value={cls.id}>
@@ -1037,54 +1037,54 @@ function AttendanceContent() {
 
               {/* Chọn Ngày */}
               <div>
-                <label className="text-xs font-bold text-slate-700">Ngày diễn ra buổi học</label>
-                <div className="relative mt-1.5">
+                <label className="text-xs font-semibold text-slate-700">Ngày diễn ra buổi học</label>
+                <div className="relative mt-1">
                   <input
                     type="date"
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                    className="w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs font-medium text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Chủ đề bài học cờ vua */}
               <div>
-                <label className="text-xs font-bold text-slate-700">Chủ đề bài học cờ vua</label>
+                <label className="text-xs font-semibold text-slate-700">Chủ đề bài học cờ vua</label>
                 <input
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="VD: Khai cuộc Italia, Đòn Ghim, Tàn cuộc Xe..."
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                 />
               </div>
             </div>
 
             {/* Quick summary bar */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
+            <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="font-semibold text-slate-600">
+                <span className="font-medium text-slate-600">
                   Sĩ số buổi này: <strong className="text-slate-900">{sessionStudents.length} học viên</strong>
                   {makeupStudents.length > 0 && (
-                    <span className="ml-1 text-purple-700 font-bold">
+                    <span className="ml-1 text-purple-700 font-semibold">
                       ({classStudents.length} chính thức + {makeupStudents.length} học bù)
                     </span>
                   )}
                 </span>
-                <span className="inline-flex items-center gap-1 font-bold text-brand-primary">
-                  <span className="h-2 w-2 rounded-full bg-brand-primary" />
+                <span className="inline-flex items-center gap-1 font-semibold text-brand-primary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-primary" />
                   Có mặt: {presentCount}
                 </span>
-                <span className="inline-flex items-center gap-1 font-bold text-brand-secondary">
-                  <span className="h-2 w-2 rounded-full bg-brand-secondary" />
+                <span className="inline-flex items-center gap-1 font-semibold text-brand-secondary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
                   Vắng: {absentCount}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 font-bold text-amber-800">
-                  <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                  <BookOpen className="h-3 w-3 text-amber-600" />
                   Phát sách: {totalBooksInSession} cuốn ({totalBookPriceInSession.toLocaleString("vi-VN")} đ)
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-extrabold text-emerald-800">
+                <span className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800">
                   Thu nhập sách HLV (+30%): +{coachBookCommissionInSession.toLocaleString("vi-VN")} đ
                 </span>
               </div>
@@ -1095,13 +1095,13 @@ function AttendanceContent() {
           </div>
 
           {/* 1-Click Interactive Attendance List */}
-          <div className="rounded-2xl bg-white shadow-soft border border-slate-200/80 overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 p-4 gap-2 bg-slate-50/50">
+          <div className="rounded-md bg-white shadow-xs border border-slate-200/80 overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 p-3.5 gap-2 bg-slate-50/50">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span>Danh Sách Điểm Danh Buổi Học ({sessionStudents.length} Học Viên)</span>
                   {makeupStudents.length > 0 && (
-                    <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-extrabold text-purple-800 border border-purple-200">
+                    <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800 border border-purple-200">
                       {makeupStudents.length} học bù
                     </span>
                   )}
@@ -1114,7 +1114,7 @@ function AttendanceContent() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-brand-primary/40 bg-brand-primary/10 px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary/20 transition-all active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded border border-brand-primary/40 bg-brand-primary/10 px-2.5 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary/20 transition-all active:scale-95"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                   <span>+ Thêm Học Viên / Học Bù</span>
@@ -1122,7 +1122,7 @@ function AttendanceContent() {
                 <button
                   type="button"
                   onClick={toggleAllAttendance}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95 shadow-xs ${
+                  className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 shadow-xs ${
                     isAllPresent
                       ? "border-rose-300 bg-rose-50/80 text-rose-700 hover:bg-rose-100"
                       : "border-emerald-300 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100"
@@ -1162,7 +1162,7 @@ function AttendanceContent() {
                   return (
                     <div
                       key={std.id}
-                      className={`flex flex-col gap-3 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between ${
+                      className={`flex flex-col gap-3 p-3.5 transition-colors sm:flex-row sm:items-center sm:justify-between ${
                         isMakeup
                           ? "bg-purple-50/30 hover:bg-purple-50/50 border-l-4 border-l-purple-500"
                           : isPresent
@@ -1176,23 +1176,23 @@ function AttendanceContent() {
                           <img
                             src={getStudentAvatarUrl(std.avatar, std.fullName, index)}
                             alt={std.fullName}
-                            className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200 flex-shrink-0 shadow-sm"
+                            className="h-9 w-9 rounded object-cover ring-1 ring-slate-200 flex-shrink-0 shadow-xs"
                           />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-slate-900 truncate">
+                              <span className="text-xs font-bold text-slate-900 truncate">
                                 {std.fullName}
                               </span>
                               <span className="font-mono text-[11px] font-semibold text-slate-400">
                                 ({std.code})
                               </span>
                               {isMakeup && (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-purple-100 border border-purple-300 px-2 py-0.5 text-[10px] font-extrabold text-purple-800">
+                                <span className="inline-flex items-center gap-1 rounded bg-purple-100 border border-purple-300 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
                                   ✨ Học bù (1 buổi)
                                 </span>
                               )}
                               {std.customFeePerSession && (
-                                <span className="rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                                   {std.customFeePerSession.toLocaleString("vi-VN")} đ/buổi
                                 </span>
                               )}
@@ -1209,30 +1209,30 @@ function AttendanceContent() {
                           <button
                             type="button"
                             onClick={() => openEditModal(std)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:text-brand-primary hover:bg-slate-100 transition-colors"
+                            className="rounded p-1 text-slate-400 hover:text-brand-primary hover:bg-slate-100 transition-colors"
                             title="Sửa thông tin học viên trực tiếp"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteStudent(std)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            className="rounded p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title={isMakeup ? "Xóa khỏi buổi học này" : "Xóa khỏi danh sách lớp"}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </div>
 
                       {/* Book & Note & Status Toggle */}
-                      <div className="flex flex-1 flex-col gap-2.5 sm:items-end">
+                      <div className="flex flex-1 flex-col gap-2 sm:items-end">
                         {/* Cột Phát Sách */}
                         <div className="flex flex-wrap items-center gap-2">
                           <label
-                            className={`flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                            className={`flex cursor-pointer select-none items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium transition-all ${
                               records[std.id]?.hasBook
-                                ? "border-amber-400 bg-amber-50 text-amber-900 shadow-sm"
+                                ? "border-amber-400 bg-amber-50 text-amber-900 shadow-xs"
                                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                             }`}
                           >
@@ -1253,7 +1253,7 @@ function AttendanceContent() {
                                 value={records[std.id]?.bookTitle || ""}
                                 onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
                                 placeholder="Tên sách (VD: Sách Cờ vua Bài tập)..."
-                                className="flex-1 min-w-[150px] sm:w-48 rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
+                                className="flex-1 min-w-[150px] sm:w-48 rounded border border-amber-300 bg-amber-50/40 px-2 py-1 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
                               />
                               <div className="relative flex-1 min-w-[100px] sm:w-28">
                                 <input
@@ -1262,9 +1262,9 @@ function AttendanceContent() {
                                   value={records[std.id]?.bookPrice || 0}
                                   onChange={(e) => handleBookPriceChange(std.id, Number(e.target.value))}
                                   placeholder="Giá sách"
-                                  className="w-full rounded-xl border border-amber-300 bg-amber-50/40 py-1.5 pl-2.5 pr-6 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                                  className="w-full rounded border border-amber-300 bg-amber-50/40 py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                                 />
-                                <span className="pointer-events-none absolute right-2 top-1.5 text-[10px] font-bold text-slate-400">
+                                <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
                                   đ
                                 </span>
                               </div>
@@ -1282,27 +1282,27 @@ function AttendanceContent() {
                             value={currentNote}
                             onChange={(e) => handleNoteChange(std.id, e.target.value)}
                             placeholder="Nhận xét buổi học (tùy chọn)..."
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
+                            className="w-full rounded border border-slate-200 bg-slate-50/50 px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
                           />
 
                           {/* 1-Click Big Button */}
                           <button
                             type="button"
                             onClick={() => toggleStatus(std.id)}
-                            className={`flex min-w-[105px] items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-150 active:scale-95 ${
+                            className={`flex min-w-[95px] items-center justify-center gap-1 rounded px-3 py-1 text-xs font-semibold transition-all duration-150 active:scale-95 shadow-xs ${
                               isPresent
-                                ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/20 hover:bg-brand-primary-hover"
-                                : "bg-brand-secondary text-white shadow-sm shadow-brand-secondary/20 hover:bg-brand-secondary-hover"
+                                ? "bg-brand-primary text-white hover:bg-brand-primary-hover"
+                                : "bg-brand-secondary text-white hover:bg-brand-secondary-hover"
                             }`}
                           >
                             {isPresent ? (
                               <>
-                                <Check className="h-4 w-4" />
+                                <Check className="h-3.5 w-3.5" />
                                 <span>Có mặt</span>
                               </>
                             ) : (
                               <>
-                                <X className="h-4 w-4" />
+                                <X className="h-3.5 w-3.5" />
                                 <span>Vắng mặt</span>
                               </>
                             )}
@@ -1316,7 +1316,7 @@ function AttendanceContent() {
             </div>
 
             {/* Bottom Save Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50 p-4 gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50/50 p-3.5 gap-3">
               <span className="text-xs text-slate-500">
                 Tổng cộng: <strong className="text-brand-primary">{presentCount} Có mặt</strong> • <strong className="text-brand-secondary">{absentCount} Vắng mặt</strong>
               </span>
@@ -1324,7 +1324,7 @@ function AttendanceContent() {
                 <button
                   type="button"
                   onClick={toggleAllAttendance}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all active:scale-95 shadow-xs ${
+                  className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 shadow-xs ${
                     isAllPresent
                       ? "border-rose-300 bg-rose-50/80 text-rose-700 hover:bg-rose-100"
                       : "border-emerald-300 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100"
@@ -1344,7 +1344,7 @@ function AttendanceContent() {
                 </button>
                 <button
                   onClick={handleSaveAttendance}
-                  className="flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 rounded bg-brand-primary px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-primary-hover active:scale-95 transition-all"
                 >
                   <Save className="h-4 w-4" />
                   <span>Lưu Điểm Danh</span>
@@ -1354,15 +1354,15 @@ function AttendanceContent() {
           </div>
 
           {/* Past Sessions History in Month */}
-          <div className="rounded-2xl bg-white p-5 shadow-soft border border-slate-200/80">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <div className="rounded-md bg-white p-4 shadow-xs border border-slate-200/80">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
               <History className="h-4 w-4 text-brand-primary" />
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Lịch Sử Các Buổi Đã Điểm Danh ({selectedClass?.name})
               </h3>
             </div>
 
-            <div className="mt-3 divide-y divide-slate-100">
+            <div className="mt-2 divide-y divide-slate-100">
               {pastSessions.length === 0 ? (
                 <div className="py-4 text-center text-xs text-slate-400">Chưa có buổi học nào được lưu cho lớp này.</div>
               ) : (
@@ -1375,13 +1375,13 @@ function AttendanceContent() {
                     <div
                       key={sess.id}
                       onClick={() => setSessionDate(sess.date)}
-                      className={`flex cursor-pointer items-center justify-between py-3 transition-colors hover:bg-slate-50 ${
-                        isCurrentDate ? "bg-emerald-50/40 font-semibold px-2 rounded-lg" : ""
+                      className={`flex cursor-pointer items-center justify-between py-2.5 px-2 transition-colors hover:bg-slate-50 ${
+                        isCurrentDate ? "bg-emerald-50/60 font-semibold rounded text-emerald-950" : "rounded"
                       }`}
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900">
+                          <span className="text-xs font-semibold text-slate-900">
                             {new Date(sess.date).toLocaleDateString("vi-VN", {
                               weekday: "short",
                               day: "2-digit",
@@ -1389,16 +1389,16 @@ function AttendanceContent() {
                               year: "numeric",
                             })}
                           </span>
-                          <span className="text-xs text-slate-600">— {sess.topic}</span>
+                          <span className="text-xs text-slate-500">— {sess.topic}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3 text-xs">
-                        <span className="text-brand-primary font-bold">
+                        <span className="text-brand-primary font-semibold">
                           {pCount} Có mặt
                         </span>
                         <span className="text-slate-300">|</span>
-                        <span className="text-brand-secondary font-bold">
+                        <span className="text-brand-secondary font-semibold">
                           {aCount} Vắng
                         </span>
                       </div>
@@ -1415,12 +1415,12 @@ function AttendanceContent() {
       {/* MODAL THÊM HỌC VIÊN / HỌC BÙ TRỰC TIẾP                        */}
       {/* ============================================================= */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-lg rounded-lg bg-white shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 p-5 bg-slate-50/50">
+            <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-slate-50/50">
               <div>
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-sm font-bold text-slate-900">
                   Thêm Học Viên Vào Buổi Học
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -1430,42 +1430,42 @@ function AttendanceContent() {
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Tab: HỌC BÙ vs HỌC VIÊN CHÍNH THỨC */}
-            <div className="grid grid-cols-2 p-3 gap-2 bg-slate-100 border-b border-slate-200 text-xs font-bold">
+            <div className="grid grid-cols-2 p-2.5 gap-2 bg-slate-100 border-b border-slate-200 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setAddTab("MAKEUP")}
-                className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-1.5 px-3 rounded transition-all flex items-center justify-center gap-1.5 ${
                   addTab === "MAKEUP"
-                    ? "bg-purple-600 text-white shadow-sm"
+                    ? "bg-purple-600 text-white shadow-xs"
                     : "text-slate-600 hover:bg-white/60"
                 }`}
               >
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-3.5 w-3.5" />
                 <span>Học Bù (Chỉ Buổi Này)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setAddTab("OFFICIAL")}
-                className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-1.5 px-3 rounded transition-all flex items-center justify-center gap-1.5 ${
                   addTab === "OFFICIAL"
-                    ? "bg-brand-primary text-white shadow-sm"
+                    ? "bg-brand-primary text-white shadow-xs"
                     : "text-slate-600 hover:bg-white/60"
                 }`}
               >
-                <Users className="h-4 w-4" />
+                <Users className="h-3.5 w-3.5" />
                 <span>Vào Lớp Chính Thức</span>
               </button>
             </div>
 
             {/* Note banner explaining the choice */}
-            <div className={`p-3 text-xs border-b ${
+            <div className={`p-2.5 text-xs border-b ${
               addTab === "MAKEUP"
                 ? "bg-purple-50 text-purple-900 border-purple-200"
                 : "bg-emerald-50 text-emerald-900 border-emerald-200"
@@ -1482,7 +1482,7 @@ function AttendanceContent() {
             </div>
 
             {/* Mode: Chọn có sẵn vs Tạo mới */}
-            <div className="flex items-center gap-4 px-5 pt-4 text-xs font-bold text-slate-700">
+            <div className="flex items-center gap-4 px-4 pt-3 text-xs font-medium text-slate-700">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
@@ -1505,21 +1505,21 @@ function AttendanceContent() {
               </label>
             </div>
 
-            <div className="p-5 overflow-y-auto flex-1">
+            <div className="p-4 overflow-y-auto flex-1">
               {addMode === "SELECT" ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                     <input
                       type="text"
                       value={studentSearchKeyword}
                       onChange={(e) => setStudentSearchKeyword(e.target.value)}
                       placeholder="Tìm kiếm theo Tên, Số điện thoại phụ huynh hoặc Mã..."
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                      className="w-full rounded border border-slate-200 bg-slate-50/50 py-1.5 pl-8 pr-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                     />
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-200">
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 rounded border border-slate-200">
                     {candidateStudents.length === 0 ? (
                       <div className="p-4 text-center text-xs text-slate-400">
                         Không tìm thấy học sinh phù hợp nào để thêm.
@@ -1528,7 +1528,7 @@ function AttendanceContent() {
                       candidateStudents.slice(0, 30).map((std) => (
                         <div
                           key={std.id}
-                          className="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
+                          className="flex items-center justify-between p-2.5 hover:bg-slate-50 transition-colors"
                         >
                           <div>
                             <div className="flex items-center gap-2">
@@ -1542,7 +1542,7 @@ function AttendanceContent() {
                           <button
                             type="button"
                             onClick={() => handleAddExistingStudent(std)}
-                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                            className={`rounded px-2.5 py-1 text-xs font-semibold transition-all ${
                               addTab === "MAKEUP"
                                 ? "bg-purple-600 text-white hover:bg-purple-700"
                                 : "bg-brand-primary text-white hover:bg-brand-primary-hover"
@@ -1558,87 +1558,87 @@ function AttendanceContent() {
               ) : (
                 <form onSubmit={handleCreateStudent} className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-700">Họ và tên học sinh *</label>
+                    <label className="text-xs font-semibold text-slate-700">Họ và tên học sinh *</label>
                     <input
                       type="text"
                       required
                       value={newStudentForm.fullName}
                       onChange={(e) => setNewStudentForm({ ...newStudentForm, fullName: e.target.value })}
                       placeholder="VD: Nguyễn Tuấn Minh"
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                      className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Năm sinh</label>
+                      <label className="text-xs font-semibold text-slate-700">Năm sinh</label>
                       <input
                         type="number"
                         min="2010"
                         max="2025"
                         value={newStudentForm.birthYear}
                         onChange={(e) => setNewStudentForm({ ...newStudentForm, birthYear: Number(e.target.value) })}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                        className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700">SĐT phụ huynh</label>
+                      <label className="text-xs font-semibold text-slate-700">SĐT phụ huynh</label>
                       <input
                         type="tel"
                         value={newStudentForm.parentPhone}
                         onChange={(e) => setNewStudentForm({ ...newStudentForm, parentPhone: e.target.value })}
                         placeholder="0912... (không bắt buộc)"
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                        className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Tên phụ huynh</label>
+                      <label className="text-xs font-semibold text-slate-700">Tên phụ huynh</label>
                       <input
                         type="text"
                         value={newStudentForm.parentName}
                         onChange={(e) => setNewStudentForm({ ...newStudentForm, parentName: e.target.value })}
                         placeholder="VD: Anh Nam"
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                        className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Đơn giá riêng (nếu có)</label>
+                      <label className="text-xs font-semibold text-slate-700">Đơn giá riêng (nếu có)</label>
                       <input
                         type="number"
                         step="10000"
                         value={newStudentForm.customFee}
                         onChange={(e) => setNewStudentForm({ ...newStudentForm, customFee: e.target.value })}
                         placeholder={`Mặc định: ${selectedClass?.feePerSession.toLocaleString("vi-VN")} đ`}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                        className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700">Ghi chú</label>
+                    <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
                     <input
                       type="text"
                       value={newStudentForm.notes}
                       onChange={(e) => setNewStudentForm({ ...newStudentForm, notes: e.target.value })}
                       placeholder="VD: Đổi lịch từ thứ 3 sang học bù..."
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                      className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                     />
                   </div>
 
-                  <div className="pt-2 flex justify-end gap-2">
+                  <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={() => setIsAddModalOpen(false)}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                      className="rounded border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                     >
                       Hủy
                     </button>
                     <button
                       type="submit"
-                      className={`rounded-xl px-5 py-2 text-xs font-bold text-white shadow-md ${
+                      className={`rounded px-4 py-1.5 text-xs font-semibold text-white shadow-xs ${
                         addTab === "MAKEUP"
                           ? "bg-purple-600 hover:bg-purple-700"
                           : "bg-brand-primary hover:bg-brand-primary-hover"
@@ -1658,11 +1658,11 @@ function AttendanceContent() {
       {/* MODAL SỬA HỌC VIÊN TRỰC TIẾP                                  */}
       {/* ============================================================= */}
       {isEditModalOpen && editingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 p-5 bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-lg bg-white shadow-xl border border-slate-200 overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-slate-50/50">
               <div>
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-sm font-bold text-slate-900">
                   Sửa Thông Tin Học Viên
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -1675,95 +1675,95 @@ function AttendanceContent() {
                   setIsEditModalOpen(false);
                   setEditingStudent(null);
                 }}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateStudent} className="p-5 space-y-3">
+            <form onSubmit={handleUpdateStudent} className="p-4 space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-700">Họ và tên học sinh *</label>
+                <label className="text-xs font-semibold text-slate-700">Họ và tên học sinh *</label>
                 <input
                   type="text"
                   required
                   value={editForm.fullName}
                   onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Năm sinh</label>
+                  <label className="text-xs font-semibold text-slate-700">Năm sinh</label>
                   <input
                     type="number"
                     min="2010"
                     max="2025"
                     value={editForm.birthYear}
                     onChange={(e) => setEditForm({ ...editForm, birthYear: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">SĐT phụ huynh</label>
+                  <label className="text-xs font-semibold text-slate-700">SĐT phụ huynh</label>
                   <input
                     type="tel"
                     value={editForm.parentPhone}
                     onChange={(e) => setEditForm({ ...editForm, parentPhone: e.target.value })}
                     placeholder="0912... (không bắt buộc)"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Tên phụ huynh</label>
+                  <label className="text-xs font-semibold text-slate-700">Tên phụ huynh</label>
                   <input
                     type="text"
                     value={editForm.parentName}
                     onChange={(e) => setEditForm({ ...editForm, parentName: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Đơn giá riêng (VNĐ/buổi)</label>
+                  <label className="text-xs font-semibold text-slate-700">Đơn giá riêng (VNĐ/buổi)</label>
                   <input
                     type="number"
                     step="10000"
                     value={editForm.customFee}
                     onChange={(e) => setEditForm({ ...editForm, customFee: e.target.value })}
                     placeholder="Để trống nếu theo lớp"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700">Ghi chú</label>
+                <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
                 <input
                   type="text"
                   value={editForm.notes}
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                 />
               </div>
 
-              <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
                     setIsEditModalOpen(false);
                     setEditingStudent(null);
                   }}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                  className="rounded border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-brand-primary px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-brand-primary-hover"
+                  className="rounded bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-primary-hover"
                 >
                   Cập Nhật Học Viên
                 </button>

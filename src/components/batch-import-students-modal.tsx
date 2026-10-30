@@ -631,22 +631,22 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in overflow-hidden"
       onPaste={handleContainerPaste}
     >
-      <div className="relative w-full max-w-[96vw] xl:max-w-7xl rounded-3xl bg-white shadow-2xl border border-slate-200 ring-1 ring-slate-900/10 flex flex-col max-h-[95vh] overflow-hidden">
+      <div className="relative w-full max-w-[96vw] xl:max-w-7xl rounded-lg bg-white shadow-xl border border-slate-200 flex flex-col max-h-[95vh] overflow-hidden">
         {/* Header Modal */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-50/70 via-white to-slate-50/70 px-5 sm:px-6 py-3.5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
-              <FileSpreadsheet className="h-5 w-5 sm:h-6 sm:w-6" />
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 sm:px-6 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded bg-brand-primary text-white shadow-xs">
+              <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-slate-900 sm:text-lg">
+                <h3 className="text-base font-bold text-slate-900">
                   Nhập Bảng Học Viên Hàng Loạt
                 </h3>
-                <span className="hidden sm:inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800">
+                <span className="hidden sm:inline-flex rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                   Dán từng cột hoặc cả bảng linh hoạt
                 </span>
               </div>
@@ -662,16 +662,16 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
         {/* Toast Message Notification */}
         {toastMessage && (
-          <div className="bg-emerald-600 px-4 py-2 text-white text-xs font-bold flex items-center justify-between animate-fade-in shadow-inner">
+          <div className="bg-emerald-600 px-4 py-1.5 text-white text-xs font-semibold flex items-center justify-between animate-fade-in shadow-inner">
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4" />
               <span>{toastMessage}</span>
@@ -686,21 +686,21 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
         )}
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-5 space-y-3">
+        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-5 space-y-2.5">
           {step === "TABLE" && (
             <>
               {/* Quick Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50/90 rounded-2xl p-3 border border-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/90 rounded p-2.5 border border-slate-200">
                 {/* Lựa chọn lớp ghi danh nhanh */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                     <Users className="h-4 w-4 text-emerald-600" />
                     <span>Lớp ghi danh mặc định:</span>
                   </div>
                   <select
                     value={targetClassId}
                     onChange={(e) => setTargetClassId(e.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 focus:border-emerald-600 focus:outline-none shadow-sm"
+                    className="rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-800 focus:border-emerald-600 focus:outline-none shadow-xs"
                   >
                     <option value="AUTO">✨ Tự động theo cột lớp / Giữ nguyên</option>
                     <option value="NONE">📁 Chưa xếp lớp (Chỉ lưu hồ sơ)</option>
@@ -719,7 +719,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                         type="button"
                         onClick={() => handleApplyClassToUnsetRows(targetClassId)}
                         title="Áp dụng lớp này cho tất cả các dòng hiện đang để 'Chưa xếp lớp'"
-                        className="rounded-lg bg-white border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors shadow-2xs"
+                        className="rounded bg-white border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors shadow-2xs"
                       >
                         Gán cho dòng chưa có lớp
                       </button>
@@ -727,7 +727,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                         type="button"
                         onClick={() => handleApplyClassToAllRows(targetClassId)}
                         title="Gán lớp này cho tất cả mọi dòng trong bảng"
-                        className="rounded-lg bg-white border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-2xs"
+                        className="rounded bg-white border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-2xs"
                       >
                         Gán cho tất cả dòng
                       </button>
@@ -736,14 +736,14 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 </div>
 
                 {/* Các nút hành động chính */}
-                <div className="flex flex-wrap items-center gap-2 ml-auto">
+                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
                   {/* Nút Dán Clipboard */}
                   <button
                     type="button"
                     onClick={handlePasteButtonClick}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all"
                   >
-                    <ClipboardPaste className="h-4 w-4" />
+                    <ClipboardPaste className="h-3.5 w-3.5" />
                     <span>Dán toàn bảng (Ctrl + V)</span>
                   </button>
 
@@ -751,7 +751,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   <button
                     type="button"
                     onClick={() => handleAddRow(1)}
-                    className="inline-flex items-center gap-1 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+                    className="inline-flex items-center gap-1 rounded bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
                   >
                     <Plus className="h-3.5 w-3.5 text-emerald-600" />
                     <span>+1 dòng</span>
@@ -761,7 +761,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   <button
                     type="button"
                     onClick={() => handleAddRow(5)}
-                    className="inline-flex items-center gap-1 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+                    className="inline-flex items-center gap-1 rounded bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
                   >
                     <Plus className="h-3.5 w-3.5 text-emerald-600" />
                     <span>+5 dòng</span>
@@ -770,7 +770,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   {/* Nhập từ file Excel */}
                   <label
                     htmlFor={fileInputId}
-                    className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+                    className="cursor-pointer inline-flex items-center gap-1.5 rounded bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
                     title="Mở file Excel để tự động điền danh sách vào bảng"
                   >
                     <Upload className="h-3.5 w-3.5 text-slate-500" />
@@ -789,7 +789,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   <button
                     type="button"
                     onClick={() => downloadStudentImportTemplate(availableClasses)}
-                    className="inline-flex items-center gap-1 rounded-xl bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
+                    className="inline-flex items-center gap-1 rounded bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
                     title="Tải file Excel mẫu chuẩn"
                   >
                     <Download className="h-3.5 w-3.5 text-slate-400" />
@@ -800,7 +800,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   <button
                     type="button"
                     onClick={handleClearTable}
-                    className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
                     title="Xóa toàn bộ các dòng và bắt đầu lại"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
@@ -810,9 +810,9 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               </div>
 
               {/* Tips Banner */}
-              <div className="flex items-center justify-between rounded-xl bg-amber-50/80 px-3.5 py-2 border border-amber-200 text-[11px] text-amber-900">
+              <div className="flex items-center justify-between rounded bg-amber-50/80 px-3 py-1.5 border border-amber-200 text-[11px] text-amber-900">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                   <span>
                     <strong>Dán linh hoạt theo từng cột:</strong> Bạn có thể copy riêng cột Họ tên
                     trong Excel rồi bấm nút{" "}
@@ -832,7 +832,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               {/* Spreadsheet Grid Table */}
               <div
                 ref={tableContainerRef}
-                className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white shadow-inner max-h-[56vh]"
+                className="flex-1 overflow-auto rounded border border-slate-200 bg-white shadow-inner max-h-[56vh]"
               >
                 <table className="w-full border-collapse text-left text-xs min-w-[1100px]">
                   <thead className="sticky top-0 z-20 bg-slate-100 font-extrabold text-slate-700 uppercase text-[10px] tracking-wider border-b border-slate-300">
@@ -1073,13 +1073,13 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100">
                 {/* Status counts */}
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 px-3 py-1 font-extrabold text-emerald-800">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Hợp lệ: {validRowsCount} học viên</span>
                   </span>
 
                   {issueRowsCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-xl bg-rose-100 px-2.5 py-1 font-bold text-rose-700">
+                    <span className="inline-flex items-center gap-1 rounded bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">
                       <AlertCircle className="h-3.5 w-3.5" />
                       <span>{issueRowsCount} dòng thiếu Tên/SĐT</span>
                     </span>
@@ -1093,11 +1093,11 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="rounded border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     Đóng
                   </button>
@@ -1106,16 +1106,16 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                     type="button"
                     disabled={isSubmitting || validRowsCount === 0}
                     onClick={handleSaveStudents}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 rounded bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         <span>Đang lưu vào hệ thống...</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="h-4 w-4" />
+                        <CheckCircle2 className="h-3.5 w-3.5" />
                         <span>Lưu {validRowsCount} Học Viên Vào Hệ Thống</span>
                       </>
                     )}
@@ -1127,15 +1127,15 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
 
           {/* STEP: DUPLICATES CONFIRMATION */}
           {step === "DUPLICATES" && (
-            <div className="flex-1 overflow-hidden flex flex-col space-y-4 animate-fade-in">
+            <div className="flex-1 overflow-hidden flex flex-col space-y-3 animate-fade-in">
               {/* Banner cảnh báo trùng */}
-              <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
-                    <AlertTriangle className="h-5 w-5" />
+              <div className="rounded bg-amber-50 border border-amber-200 p-3.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-amber-500 text-white shadow-xs">
+                    <AlertTriangle className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-extrabold text-amber-900">
+                    <h4 className="text-xs font-bold text-amber-900">
                       Phát hiện {duplicateResolutions.length} học viên có thông tin trùng khớp với hệ thống
                     </h4>
                     <p className="mt-0.5 text-xs text-amber-800 leading-relaxed">
@@ -1144,7 +1144,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                     </p>
 
                     {/* Quick batch toggle buttons */}
-                    <div className="mt-3 flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/60">
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/60">
                       <span className="text-[11px] font-bold text-amber-900">Chọn nhanh cho tất cả:</span>
                       <button
                         type="button"
@@ -1153,9 +1153,9 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                             prev.map((item) => ({ ...item, action: "USE_EXISTING" }))
                           );
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-0.5 text-[11px] font-semibold shadow-xs transition-colors cursor-pointer"
                       >
-                        <UserCheck className="h-3.5 w-3.5" />
+                        <UserCheck className="h-3 w-3" />
                         <span>Tất cả: Lấy từ danh sách cũ</span>
                       </button>
                       <button
@@ -1165,9 +1165,9 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                             prev.map((item) => ({ ...item, action: "CREATE_NEW" }))
                           );
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 text-[11px] font-semibold shadow-xs transition-colors cursor-pointer"
                       >
-                        <UserPlus className="h-3.5 w-3.5" />
+                        <UserPlus className="h-3 w-3" />
                         <span>Tất cả: Thêm học viên mới</span>
                       </button>
                     </div>
@@ -1176,7 +1176,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               </div>
 
               {/* Scrollable List of Duplicate Cards */}
-              <div className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-3 space-y-3 max-h-[50vh]">
+              <div className="flex-1 overflow-auto rounded border border-slate-200 bg-slate-50/50 p-2.5 space-y-2.5 max-h-[50vh]">
                 {duplicateResolutions.map((item, idx) => {
                   const targetClsId =
                     item.row.classId && item.row.classId !== "NONE" && item.row.classId !== "AUTO"
@@ -1193,14 +1193,14 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   return (
                     <div
                       key={item.rowIndex}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 transition-all space-y-3"
+                      className="rounded border border-slate-200 bg-white p-3 shadow-xs hover:border-slate-300 transition-all space-y-2.5"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
                         <div className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-700">
+                          <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs font-bold text-slate-700">
                             {idx + 1}
                           </span>
-                          <span className="font-extrabold text-slate-900 text-sm">
+                          <span className="font-bold text-slate-900 text-xs">
                             {item.row.fullName}
                           </span>
                         </div>
@@ -1208,15 +1208,15 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                         {/* Match Reason Badge */}
                         <div>
                           {item.matchType === "BOTH" ? (
-                            <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-800">
+                            <span className="rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
                               ⚠️ Trùng cả Họ tên & Số điện thoại
                             </span>
                           ) : item.matchType === "NAME" ? (
-                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800">
+                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                               👤 Trùng Họ và tên
                             </span>
                           ) : (
-                            <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-black text-purple-800">
+                            <span className="rounded bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-800">
                               📞 Trùng Số điện thoại phụ huynh
                             </span>
                           )}
@@ -1224,14 +1224,14 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                       </div>
 
                       {/* Side by side comparison */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
                         {/* Cột 1: Thông tin nhập từ sheet */}
-                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 space-y-1.5">
-                          <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                        <div className="rounded border border-emerald-100 bg-emerald-50/40 p-2.5 space-y-1">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
                             <FileSpreadsheet className="h-3 w-3" />
                             <span>Thông tin nhập từ Sheet:</span>
                           </div>
-                          <div className="font-bold text-slate-800 text-sm">{item.row.fullName}</div>
+                          <div className="font-bold text-slate-800 text-xs">{item.row.fullName}</div>
                           <div className="text-slate-600">
                             SĐT phụ huynh:{" "}
                             <span className="font-mono font-semibold text-slate-800">
@@ -1255,14 +1255,14 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                         </div>
 
                         {/* Cột 2: Học viên trùng khớp có sẵn trong hệ thống */}
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5">
-                          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1">
+                        <div className="rounded border border-slate-200 bg-slate-50 p-2.5 space-y-1">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             <span>Học viên trùng trong hệ thống:</span>
                           </div>
-                          <div className="font-bold text-slate-900 text-sm">
+                          <div className="font-bold text-slate-900 text-xs">
                             {item.matchedStudent.fullName}{" "}
-                            <span className="font-mono text-xs font-normal text-slate-500">
+                            <span className="font-mono text-[10px] font-normal text-slate-500">
                               ({item.matchedStudent.code})
                             </span>
                           </div>
@@ -1292,7 +1292,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                       </div>
 
                       {/* Action selector */}
-                      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="pt-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -1302,27 +1302,27 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               )
                             );
                           }}
-                          className={`flex-1 rounded-xl p-2.5 text-left transition-all border cursor-pointer ${
+                          className={`flex-1 rounded p-2 text-left transition-all border cursor-pointer ${
                             item.action === "USE_EXISTING"
-                              ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 shadow-xs"
+                              ? "border-emerald-600 bg-emerald-50 text-emerald-900 shadow-xs"
                               : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
                           }`}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <div
-                              className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                              className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center ${
                                 item.action === "USE_EXISTING"
                                   ? "border-emerald-600 bg-emerald-600 text-white"
                                   : "border-slate-300"
                               }`}
                             >
-                              {item.action === "USE_EXISTING" && <Check className="h-3 w-3" />}
+                              {item.action === "USE_EXISTING" && <Check className="h-2.5 w-2.5" />}
                             </div>
                             <span className="font-bold text-xs">
                               Lấy từ danh sách cũ (Gán vào lớp này)
                             </span>
                           </div>
-                          <p className="mt-1 ml-6 text-[11px] text-slate-500 leading-tight">
+                          <p className="mt-0.5 ml-5 text-[11px] text-slate-500 leading-tight">
                             Giữ nguyên mã {item.matchedStudent.code}, bổ sung học viên vào lớp mới và kế thừa toàn bộ lịch sử điểm danh.
                           </p>
                         </button>
@@ -1336,27 +1336,27 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                               )
                             );
                           }}
-                          className={`flex-1 rounded-xl p-2.5 text-left transition-all border cursor-pointer ${
+                          className={`flex-1 rounded p-2 text-left transition-all border cursor-pointer ${
                             item.action === "CREATE_NEW"
-                              ? "border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-600/20 shadow-xs"
+                              ? "border-blue-600 bg-blue-50 text-blue-900 shadow-xs"
                               : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
                           }`}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <div
-                              className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                              className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center ${
                                 item.action === "CREATE_NEW"
                                   ? "border-blue-600 bg-blue-600 text-white"
                                   : "border-slate-300"
                               }`}
                             >
-                              {item.action === "CREATE_NEW" && <Check className="h-3 w-3" />}
+                              {item.action === "CREATE_NEW" && <Check className="h-2.5 w-2.5" />}
                             </div>
                             <span className="font-bold text-xs">
                               Thêm học viên mới (Tạo hồ sơ mới)
                             </span>
                           </div>
-                          <p className="mt-1 ml-6 text-[11px] text-slate-500 leading-tight">
+                          <p className="mt-0.5 ml-5 text-[11px] text-slate-500 leading-tight">
                             Tạo một hồ sơ học viên độc lập hoàn toàn với mã học sinh mới.
                           </p>
                         </button>
@@ -1367,11 +1367,11 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+              <div className="flex items-center justify-between border-t border-slate-200 pt-2.5">
                 <button
                   type="button"
                   onClick={() => setStep("TABLE")}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   <span>Quay lại chỉnh sửa bảng</span>
@@ -1381,16 +1381,16 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => executeSave(pendingValidRows, duplicateResolutions)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-600/25 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       <span>Đang lưu học viên...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                       <span>Xác Nhận & Hoàn Tất Lưu ({pendingValidRows.length} Học Viên)</span>
                     </>
                   )}
@@ -1401,13 +1401,13 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
 
           {/* STEP: RESULT SUCCESS */}
           {step === "RESULT" && (
-            <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in space-y-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-700 shadow-lg shadow-emerald-600/10">
-                <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+            <div className="flex flex-col items-center justify-center py-10 text-center animate-fade-in space-y-3">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 shadow-xs">
+                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
               </div>
 
               <div>
-                <h3 className="text-xl font-extrabold text-slate-900">
+                <h3 className="text-lg font-bold text-slate-900">
                   Nhập Học Viên Thành Công!
                 </h3>
                 <p className="mt-1 text-xs text-slate-500 max-w-md">
@@ -1416,11 +1416,11 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 pt-4">
+              <div className="flex items-center gap-2 pt-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
+                  className="rounded bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
                 >
                   Hoàn Tất & Xem Danh Sách
                 </button>
@@ -1430,7 +1430,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                     setStep("TABLE");
                     setRows(initDefaultRows(targetClassId));
                   }}
-                  className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="rounded border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Tiếp Tục Nhập Bảng Khác
                 </button>
@@ -1443,9 +1443,9 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
       {/* Manual Paste Dialog Fallback */}
       {showPasteModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-fade-in">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-3">
+          <div className="w-full max-w-lg rounded-lg bg-white p-4 shadow-xl border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-2 font-bold text-slate-800 text-sm">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
                 <ClipboardPaste className="h-4 w-4 text-emerald-600" />
                 <span>
                   {manualPasteTargetField === "fullName"
@@ -1487,14 +1487,14 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                   ? "0912345678\n0987654321\n0901234567"
                   : "Nguyễn Gia Huy\t0912345678\t2017\tNam\nTrần Phương Linh\t0987654321\t2018\tNữ"
               }
-              className="w-full rounded-xl border border-slate-200 p-3 text-xs font-mono focus:border-emerald-600 focus:outline-none"
+              className="w-full rounded border border-slate-200 p-2 text-xs font-mono focus:border-emerald-600 focus:outline-none"
               autoFocus
             />
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowPasteModal(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="rounded border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Hủy
               </button>
@@ -1502,7 +1502,7 @@ export const BatchImportStudentsModal: React.FC<BatchImportStudentsModalProps> =
                 type="button"
                 disabled={!manualPasteText.trim()}
                 onClick={handleApplyManualPaste}
-                className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                className="rounded bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
               >
                 Nhập Vào Bảng
               </button>

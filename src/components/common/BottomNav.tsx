@@ -57,7 +57,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ userRole }) => {
             }`}
           >
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
+              className={`flex h-8 w-8 items-center justify-center rounded transition-all ${
                 isActive
                   ? "bg-emerald-50 text-brand-primary shadow-sm ring-1 ring-brand-primary/20"
                   : "text-slate-500"

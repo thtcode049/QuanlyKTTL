@@ -178,7 +178,7 @@ export default function AdminBranchesAndClassesPage() {
           {!isBranchManager && (
             <button
               onClick={() => setIsBranchModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 text-center cursor-pointer"
+              className="flex items-center justify-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 text-center cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Thêm Cơ Sở</span>
@@ -205,29 +205,29 @@ export default function AdminBranchesAndClassesPage() {
           {!isBranchManager && (
             <div
               onClick={() => setSelectedBranchId("all")}
-              className={`min-w-[190px] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink cursor-pointer rounded-2xl p-4 transition-all duration-200 border text-left ${
+              className={`min-w-[190px] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink cursor-pointer rounded p-3.5 transition-all duration-200 border text-left ${
                 selectedBranchId === "all"
-                  ? "bg-brand-primary text-white shadow-card ring-2 ring-brand-primary border-brand-primary"
-                  : "bg-white text-slate-800 shadow-soft hover:border-brand-primary/50 border-slate-200/80"
+                  ? "bg-brand-primary text-white ring-1 ring-brand-primary border-brand-primary"
+                  : "bg-white text-slate-800 hover:border-slate-300 border-slate-100"
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-black text-lg ${
+                <span className={`flex h-9 w-9 items-center justify-center rounded font-bold text-base ${
                   selectedBranchId === "all" ? "bg-white/20 text-white" : "bg-brand-primary/10 text-brand-primary"
                 }`}>
-                  <Layers className="h-5 w-5" />
+                  <Layers className="h-4 w-4" />
                 </span>
                 {selectedBranchId === "all" && (
-                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold">
+                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
                     Đang xem
                   </span>
                 )}
               </div>
-              <h3 className="mt-3 text-sm font-bold line-clamp-1">Tất Cả Cơ Sở</h3>
+              <h3 className="mt-2.5 text-xs font-bold line-clamp-1">Tất Cả Cơ Sở</h3>
               <p className={`mt-0.5 text-[11px] ${selectedBranchId === "all" ? "text-emerald-100" : "text-slate-400"}`}>
                 Toàn hệ thống CLB
               </p>
-              <div className={`mt-3 pt-2 border-t flex justify-between text-xs font-semibold ${
+              <div className={`mt-2.5 pt-2 border-t flex justify-between text-[11px] font-semibold ${
                 selectedBranchId === "all" ? "border-white/20 text-emerald-100" : "border-slate-100 text-slate-600"
               }`}>
                 <span>{classes.length} lớp học</span>
@@ -250,52 +250,52 @@ export default function AdminBranchesAndClassesPage() {
               <div
                 key={b.id}
                 onClick={() => setSelectedBranchId(b.id)}
-                className={`min-w-[210px] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink group cursor-pointer rounded-2xl p-4 transition-all duration-200 border text-left relative ${
+                className={`min-w-[210px] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink group cursor-pointer rounded p-3.5 transition-all duration-200 border text-left relative ${
                   isSelected
-                    ? "bg-white shadow-card ring-2 ring-brand-primary border-brand-primary"
-                    : "bg-white shadow-soft hover:shadow-md hover:border-slate-300 border-slate-200/80"
+                    ? "bg-white ring-1 ring-brand-primary border-brand-primary"
+                    : "bg-white hover:border-slate-300 border-slate-100"
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-black text-lg ${
+                  <span className={`flex h-9 w-9 items-center justify-center rounded font-bold text-base ${
                     isSelected ? "bg-brand-primary text-white" : "bg-slate-100 text-slate-700 group-hover:bg-brand-primary/10 group-hover:text-brand-primary"
                   }`}>
-                    <Building2 className="h-5 w-5" />
+                    <Building2 className="h-4 w-4" />
                   </span>
 
                   <div className="flex items-center gap-1">
                     <button
                       onClick={(e) => openEditBranchModal(b, e)}
                       title="Sửa cơ sở"
-                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                     >
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={(e) => handleDeleteBranch(b.id, b.name, e)}
                       title="Xóa cơ sở"
-                      className="rounded-lg p-1 text-rose-400 hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded p-1 text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
 
-                <div className="mt-2.5">
-                  <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{b.name}</h3>
+                <div className="mt-2">
+                  <h3 className="text-xs font-bold text-slate-900 line-clamp-1">{b.name}</h3>
                   <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-1 flex items-center gap-1">
                     <MapPin className="h-3 w-3 flex-shrink-0 text-slate-400" />
                     <span>{b.address}</span>
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
-                  <span className="font-bold text-slate-800">{branchClasses.length} lớp</span>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                  <span className="font-semibold text-slate-800">{branchClasses.length} lớp</span>
                   <span className="text-brand-primary font-bold">{studentCount} HS</span>
                 </div>
 
                 {isSelected && (
-                  <div className="mt-2 text-center text-[10px] font-bold text-brand-primary bg-emerald-50 rounded-md py-0.5">
+                  <div className="mt-2 text-center text-[10px] font-bold text-brand-primary bg-emerald-50 rounded py-0.5">
                     ✓ Đang chọn cơ sở này
                   </div>
                 )}
@@ -307,16 +307,16 @@ export default function AdminBranchesAndClassesPage() {
 
       {/* SECTION 2: DANH SÁCH TOÀN BỘ LỚP TẠI CƠ SỞ ĐƯỢC CHỌN */}
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-200/80 pt-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 pt-5">
           <div>
-            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-brand-primary" />
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-brand-primary" />
               <span>
                 {selectedBranchId === "all"
                   ? "Tất Cả Lớp Học Trong Toàn Hệ Thống"
                   : `Danh Sách Lớp Tại: ${activeBranch?.name}`}
               </span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+              <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
                 {filteredClasses.length} lớp
               </span>
             </h2>
@@ -328,38 +328,38 @@ export default function AdminBranchesAndClassesPage() {
           </div>
 
           {/* Ô Tìm Kiếm Lớp */}
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm tên lớp, cấp độ, lịch học..."
-              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs focus:border-brand-primary focus:outline-none shadow-sm"
+              className="w-full rounded border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs focus:border-brand-primary focus:outline-none"
             />
           </div>
         </div>
 
         {/* Lưới Thẻ Lớp Học */}
         {filteredClasses.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-            <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
-            <p className="mt-2 text-sm font-bold text-slate-700">Chưa có lớp học nào phù hợp</p>
+          <div className="rounded border border-dashed border-slate-200 bg-white p-10 text-center">
+            <BookOpen className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-2 text-sm font-semibold text-slate-700">Chưa có lớp học nào phù hợp</p>
             <p className="mt-1 text-xs text-slate-400">
               Cơ sở này hiện chưa có lớp nào hoặc không khớp từ khóa tìm kiếm.
             </p>
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-slate-500">
               Lớp học do từng Huấn luyện viên trực tiếp khởi tạo và quản lý tại giao diện HLV của mình.
             </p>
             <Link
               href="/coach/classes"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-primary-hover transition-all"
+              className="mt-3 inline-flex items-center gap-1.5 rounded bg-brand-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-all"
             >
               <span>Chuyển sang giao diện HLV để tạo lớp</span>
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {filteredClasses.map((cls) => {
               const branch = branches.find((b) => b.id === cls.branchId);
               const coach = dataStore.users.find(
@@ -373,14 +373,14 @@ export default function AdminBranchesAndClassesPage() {
               return (
                 <div
                   key={cls.id}
-                  className="rounded-2xl bg-white p-6 shadow-soft border border-slate-200/80 transition-all hover:shadow-card flex flex-col justify-between"
+                  className="rounded bg-white p-4 border border-slate-100 transition-all hover:border-slate-300 flex flex-col justify-between space-y-3"
                 >
                   <div>
                     {/* Header Thẻ Lớp */}
                     <div className="flex items-start justify-between">
                       <div>
                         <span
-                          className={`inline-block rounded-md px-2.5 py-0.5 text-[11px] font-bold ${
+                          className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold ${
                             cls.level === "Đội tuyển"
                               ? "bg-purple-100 text-purple-800"
                               : cls.level === "Nâng cao"
@@ -390,32 +390,32 @@ export default function AdminBranchesAndClassesPage() {
                         >
                           {cls.level}
                         </span>
-                        <h3 className="mt-2 text-lg font-black text-slate-900">{cls.name}</h3>
+                        <h3 className="mt-1 text-base font-bold text-slate-900">{cls.name}</h3>
                       </div>
 
-                      <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                      <span className="flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
                         <Users className="h-3.5 w-3.5 text-slate-500" />
                         <span>{students.length} học viên</span>
                       </span>
                     </div>
 
                     {/* Chi Tiết Lớp Học */}
-                    <div className="mt-4 space-y-2 text-xs text-slate-600">
+                    <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                         <span className="font-semibold text-slate-800">{branch?.name}</span>
                         <span className="text-slate-400 truncate">({branch?.address})</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                         <span>{cls.schedule}</span>
                       </div>
-                      <div className="flex items-center gap-2 font-bold text-brand-primary">
-                        <DollarSign className="h-4 w-4 text-brand-primary flex-shrink-0" />
+                      <div className="flex items-center gap-2 font-semibold text-brand-primary">
+                        <DollarSign className="h-3.5 w-3.5 text-brand-primary flex-shrink-0" />
                         <span>Học phí: {formatCurrencyVND(cls.feePerSession)} / buổi</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
                         <span>
                           HLV Phụ Trách: <strong className="text-slate-900">{coach?.name || "Chưa phân công"}</strong>
                         </span>
@@ -423,7 +423,7 @@ export default function AdminBranchesAndClassesPage() {
                     </div>
 
                     {/* Số Buổi Đã Diễn Ra */}
-                    <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600 border border-slate-100 flex items-center justify-between">
+                    <div className="mt-4 rounded bg-slate-50 p-2.5 text-xs text-slate-600 border border-slate-100 flex items-center justify-between">
                       <span>
                         Số buổi đã diễn ra tháng 10: <strong>{sessions.length} buổi</strong>
                       </span>
@@ -462,7 +462,7 @@ export default function AdminBranchesAndClassesPage() {
       {/* MODAL SỬA CƠ SỞ */}
       {editingBranch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Sửa Cơ Sở Đào Tạo</h3>
               <button
@@ -481,7 +481,7 @@ export default function AdminBranchesAndClassesPage() {
                   required
                   value={editBranchName}
                   onChange={(e) => setEditBranchName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
@@ -492,40 +492,40 @@ export default function AdminBranchesAndClassesPage() {
                   required
                   value={editBranchAddress}
                   onChange={(e) => setEditBranchAddress(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Số điện thoại hotline</label>
+                <label className="font-semibold text-slate-700">Số điện thoại hotline</label>
                 <input
                   type="tel"
                   value={editBranchPhone}
                   onChange={(e) => setEditBranchPhone(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                 />
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              <div className="mt-4 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => handleDeleteBranch(editingBranch.id, editingBranch.name)}
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
+                  className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   <span>Xóa Cơ Sở Này</span>
                 </button>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setEditingBranch(null)}
-                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                    className="rounded border border-slate-200 px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                    className="rounded bg-brand-primary px-4 py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                   >
                     Lưu Thay Đổi
                   </button>
@@ -538,8 +538,8 @@ export default function AdminBranchesAndClassesPage() {
 
       {/* MODAL THÊM CƠ SỞ */}
       {isBranchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-900/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl border border-slate-100">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Thêm Cơ Sở Đào Tạo</h3>
               <button
@@ -550,53 +550,53 @@ export default function AdminBranchesAndClassesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateBranch} className="mt-4 space-y-3.5 text-xs">
+            <form onSubmit={handleCreateBranch} className="mt-4 space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700">Tên cơ sở *</label>
+                <label className="font-semibold text-slate-700">Tên cơ sở *</label>
                 <input
                   type="text"
                   required
                   value={branchName}
                   onChange={(e) => setBranchName(e.target.value)}
                   placeholder="VD: Cơ sở Hà Đông, Cơ sở Cầu Giấy..."
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Địa chỉ cụ thể *</label>
+                <label className="font-semibold text-slate-700">Địa chỉ cụ thể *</label>
                 <input
                   type="text"
                   required
                   value={branchAddress}
                   onChange={(e) => setBranchAddress(e.target.value)}
                   placeholder="VD: Số 12 Nguyễn Trãi, Hà Đông, Hà Nội"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Số điện thoại hotline</label>
+                <label className="font-semibold text-slate-700">Số điện thoại hotline</label>
                 <input
                   type="tel"
                   value={branchPhone}
                   onChange={(e) => setBranchPhone(e.target.value)}
                   placeholder="0988.123.456"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                 />
               </div>
 
-              <div className="mt-5 flex gap-2 pt-2">
+              <div className="mt-4 flex gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsBranchModalOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  className="flex-1 rounded border border-slate-200 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-brand-primary py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  className="flex-1 rounded bg-brand-primary py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                 >
                   Tạo Cơ Sở
                 </button>

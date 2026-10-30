@@ -97,15 +97,15 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
     <div
       ref={menuRef}
       style={{ left: `${left}px`, top: `${top}px` }}
-      className="fixed z-50 w-56 rounded-2xl bg-white/95 p-1.5 shadow-2xl ring-1 ring-black/10 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-50 w-56 rounded bg-white p-1 shadow-lg ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100"
     >
       {/* Menu Header with Student Name */}
-      <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary text-xs font-bold">
+      <div className="flex items-center gap-2 border-b border-slate-100 px-2.5 py-1.5">
+        <div className="flex h-6 w-6 items-center justify-center rounded bg-brand-primary/10 text-brand-primary text-xs font-bold">
           ♞
         </div>
         <div className="overflow-hidden">
-          <p className="truncate text-xs font-extrabold text-slate-900">{student.fullName}</p>
+          <p className="truncate text-xs font-bold text-slate-900">{student.fullName}</p>
           <p className="text-[10px] font-mono text-slate-500">{student.code} • {student.parentPhone}</p>
         </div>
       </div>
@@ -117,9 +117,9 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
             onViewProfile(student);
             onClose();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-slate-700 hover:bg-emerald-50 hover:text-brand-primary transition-colors text-left"
+          className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 hover:text-brand-primary transition-colors text-left"
         >
-          <User className="h-4 w-4 text-brand-primary" />
+          <User className="h-3.5 w-3.5 text-brand-primary" />
           <span className="font-semibold">Xem hồ sơ học viên</span>
         </button>
 
@@ -129,10 +129,10 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
             onStartInlineEdit(student);
             onClose();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-left"
+          className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 transition-colors text-left"
         >
-          <Edit2 className="h-4 w-4 text-blue-500" />
-          <span className="font-semibold">Sửa thông tin nhanh</span>
+          <Edit2 className="h-3.5 w-3.5 text-blue-500" />
+          <span>Sửa thông tin nhanh</span>
         </button>
 
         {/* 3. Đổi ảnh đại diện */}
@@ -141,10 +141,10 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
             onChangeAvatar(student);
             onClose();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-left"
+          className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 transition-colors text-left"
         >
-          <Camera className="h-4 w-4 text-purple-500" />
-          <span className="font-semibold">Đổi ảnh đại diện</span>
+          <Camera className="h-3.5 w-3.5 text-purple-500" />
+          <span>Đổi ảnh đại diện</span>
         </button>
 
         {/* 4. Đặt học phí riêng */}
@@ -153,10 +153,10 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
             onSetCustomFee(student);
             onClose();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-left"
+          className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 transition-colors text-left"
         >
-          <DollarSign className="h-4 w-4 text-amber-500" />
-          <span className="font-semibold">Cài đặt học phí riêng</span>
+          <DollarSign className="h-3.5 w-3.5 text-amber-500" />
+          <span>Cài đặt học phí riêng</span>
         </button>
 
         <div className="my-1 border-t border-slate-100" />
@@ -166,20 +166,20 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
           <a
             href={`tel:${student.parentPhone}`}
             onClick={onClose}
-            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-left"
+            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors text-left"
           >
-            <Phone className="h-4 w-4 text-emerald-600" />
-            <span className="font-semibold">Gọi: {student.parentPhone}</span>
+            <Phone className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Gọi: {student.parentPhone}</span>
           </a>
         )}
 
         {/* 6. Sao chép số điện thoại */}
         <button
           onClick={handleCopyPhone}
-          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-left"
+          className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 transition-colors text-left"
         >
-          <Copy className="h-4 w-4 text-slate-400" />
-          <span className="font-semibold">Sao chép số điện thoại</span>
+          <Copy className="h-3.5 w-3.5 text-slate-400" />
+          <span>Sao chép số điện thoại</span>
         </button>
 
         <div className="my-1 border-t border-slate-100" />
@@ -190,10 +190,10 @@ export const StudentContextMenu: React.FC<StudentContextMenuProps> = ({
             onRemoveFromClass(student);
             onClose();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-rose-600 hover:bg-rose-50 transition-colors text-left"
+          className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 transition-colors text-left"
         >
-          <Trash2 className="h-4 w-4 text-rose-500" />
-          <span className="font-bold">Xóa học viên khỏi lớp</span>
+          <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+          <span className="font-semibold">Xóa học viên khỏi lớp</span>
         </button>
       </div>
     </div>

@@ -301,7 +301,7 @@ export default function AdminCoachesPage() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover w-full sm:w-auto cursor-pointer"
+          className="flex items-center justify-center gap-1.5 rounded bg-brand-primary px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-primary-hover w-full sm:w-auto cursor-pointer transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Thêm HLV Mới</span>
@@ -309,7 +309,7 @@ export default function AdminCoachesPage() {
       </div>
 
       {/* Coaches Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {coaches.map((coach) => {
           const branch = dataStore.branches.find((b) => b.id === coach.branchId);
           const coachClasses = getCoachClasses(coach.id, coach.email);
@@ -323,31 +323,31 @@ export default function AdminCoachesPage() {
           return (
             <div
               key={coach.id}
-              className="rounded-2xl bg-white p-4 sm:p-6 shadow-soft border border-slate-200/80 transition-all hover:shadow-card space-y-4"
+              className="rounded bg-white p-4 border border-slate-100 space-y-3 hover:border-slate-200 transition-all"
             >
               {/* Header card */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-brand-primary font-black text-xl flex-shrink-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded bg-emerald-500/10 text-brand-primary font-bold text-lg flex-shrink-0">
                     ♞
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <h3 className="text-base font-bold text-slate-900">{coach.name}</h3>
+                      <h3 className="text-sm font-bold text-slate-900">{coach.name}</h3>
 
                       {/* Role Badges */}
                       {coach.systemRole === "CHUNHIEM" && (
-                        <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black text-purple-800 border border-purple-200">
+                        <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700">
                           👑 Chủ nhiệm CLB
                         </span>
                       )}
                       {coach.systemRole === "PHOCHUNHIEM" && (
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-800 border border-blue-200">
+                        <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
                           🛡️ Phó chủ nhiệm
                         </span>
                       )}
                       {coach.systemRole === "CHUCOSO" && (
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-800 border border-blue-200">
+                        <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
                           🏢 Chủ nhiệm: {
                             (coach.managedBranchIds && coach.managedBranchIds.length > 0
                               ? dataStore.branches.filter((b) => coach.managedBranchIds?.includes(b.id))
@@ -365,7 +365,7 @@ export default function AdminCoachesPage() {
                 <div className="flex flex-wrap items-center gap-1.5 pt-1 sm:pt-0">
                   <button
                     onClick={() => openEditModal(coach)}
-                    className="flex items-center gap-1 rounded-xl bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-primary hover:text-white transition-all shadow-sm cursor-pointer"
+                    className="flex items-center gap-1 rounded bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
                     title="Chỉnh sửa lương & phân quyền"
                   >
                     <Settings className="h-3.5 w-3.5" />
@@ -374,10 +374,10 @@ export default function AdminCoachesPage() {
 
                   <button
                     onClick={() => handleToggleAdminAccess(coach)}
-                    className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all shadow-sm ${
+                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-all ${
                       coach.hasAdminAccess
-                        ? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
-                        : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                        ? "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                        : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                     }`}
                     title={coach.hasAdminAccess ? "Thu hồi quyền Admin" : "Cấp quyền Admin"}
                   >
@@ -388,7 +388,7 @@ export default function AdminCoachesPage() {
                   <button
                     onClick={() => handleDeleteCoach(coach.id, coach.name)}
                     title="Xóa Huấn luyện viên"
-                    className="flex items-center justify-center rounded-xl bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                    className="flex items-center justify-center rounded bg-rose-50 p-1 text-rose-600 hover:bg-rose-100 transition-all"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -396,17 +396,17 @@ export default function AdminCoachesPage() {
               </div>
 
               {/* Commission rates highlight banner */}
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 flex items-center justify-between text-xs">
+              <div className="rounded bg-emerald-50/60 p-2 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-emerald-700" />
-                  <span className="font-bold text-emerald-950">Mức lương HLV:</span>
+                  <Wallet className="h-3.5 w-3.5 text-emerald-700" />
+                  <span className="font-semibold text-emerald-950">Mức lương HLV:</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-brand-primary">
+                  <span className="font-semibold text-brand-primary">
                     <b>{tuitionPct}%</b> Học phí
                   </span>
                   <span className="text-slate-300">•</span>
-                  <span className="font-bold text-amber-700">
+                  <span className="font-semibold text-amber-700">
                     <b>{bookPct}%</b> Tiền sách
                   </span>
                 </div>
@@ -436,7 +436,7 @@ export default function AdminCoachesPage() {
               </div>
 
               {/* Stats Footer */}
-              <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100 text-xs">
+              <div className="grid grid-cols-2 gap-3 rounded bg-slate-50 p-2.5 text-center border border-slate-100 text-xs">
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400">Lớp Đang Phụ Trách</p>
                   <p className="mt-0.5 text-sm font-black text-slate-800">
@@ -458,10 +458,10 @@ export default function AdminCoachesPage() {
       {/* Modal Sửa Toàn Bộ Thông Tin HLV, Phân Quyền & Cấu Hình Lương */}
       {editingCoach && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+          <div className="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-base font-bold text-slate-900">
                   Cài Đặt Lương & Phân Quyền HLV
                 </h3>
                 <p className="text-xs font-semibold text-brand-primary mt-0.5">{editingCoach.name}</p>
@@ -475,23 +475,23 @@ export default function AdminCoachesPage() {
               {/* Họ tên & Danh hiệu */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Họ và tên HLV *</label>
+                  <label className="font-semibold text-slate-700">Họ và tên HLV *</label>
                   <input
                     type="text"
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-semibold text-slate-900 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 font-semibold text-slate-900 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Danh hiệu chuyên môn *</label>
+                  <label className="font-semibold text-slate-700">Danh hiệu chuyên môn *</label>
                   <input
                     type="text"
                     required
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-semibold text-slate-900 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 font-semibold text-slate-900 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
               </div>
@@ -499,30 +499,30 @@ export default function AdminCoachesPage() {
               {/* Email & Phone */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Email đăng nhập *</label>
+                  <label className="font-semibold text-slate-700">Email đăng nhập *</label>
                   <input
                     type="email"
                     required
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Số điện thoại *</label>
+                  <label className="font-semibold text-slate-700">Số điện thoại *</label>
                   <input
                     type="tel"
                     required
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
               {/* Section 1: Phân Quyền Vai Trò */}
-              <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-3.5 space-y-2">
-                <label className="font-black text-purple-900 uppercase text-[11px] flex items-center gap-1.5">
+              <div className="rounded border border-purple-100 bg-purple-50/40 p-3 space-y-2">
+                <label className="font-bold text-purple-900 uppercase text-[11px] flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-purple-700" />
                   <span>Phân Quyền Vai Trò Trong CLB</span>
                 </label>
@@ -530,7 +530,7 @@ export default function AdminCoachesPage() {
                 <select
                   value={editSystemRole}
                   onChange={(e) => setEditSystemRole(e.target.value as any)}
-                  className="w-full rounded-xl border border-purple-200 bg-white p-2.5 font-bold text-slate-900 focus:border-purple-600 focus:outline-none"
+                  className="w-full rounded border border-purple-200 bg-white p-2 font-semibold text-slate-900 focus:border-purple-600 focus:outline-none"
                 >
                   <option value="CHUNHIEM">👑 Chủ nhiệm CLB (Toàn quyền quản trị toàn bộ 8 cơ sở)</option>
                   <option value="PHOCHUNHIEM">🛡️ Phó chủ nhiệm CLB (Quản lý toàn bộ thông tin CLB)</option>
@@ -548,13 +548,13 @@ export default function AdminCoachesPage() {
 
               {/* Cơ sở */}
               {editSystemRole === "CHUCOSO" ? (
-                <div className="rounded-xl border border-blue-300 bg-blue-50/70 p-3 space-y-2">
-                  <label className="font-bold text-blue-950 flex items-center justify-between">
+                <div className="rounded border border-blue-200 bg-blue-50/50 p-2.5 space-y-2">
+                  <label className="font-semibold text-blue-950 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Building2 className="h-4 w-4 text-blue-600" />
                       <span>Cơ sở làm Chủ nhiệm (Có thể chọn nhiều cơ sở) *</span>
                     </span>
-                    <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
                       Đã chọn {editManagedBranchIds.length} cơ sở
                     </span>
                   </label>
@@ -564,7 +564,7 @@ export default function AdminCoachesPage() {
                       return (
                         <label
                           key={b.id}
-                          className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                          className={`flex items-center gap-2 p-1.5 rounded border text-[11px] font-semibold cursor-pointer transition-all ${
                             isChecked
                               ? "bg-blue-600 text-white border-blue-700 shadow-sm"
                               : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
@@ -594,13 +594,13 @@ export default function AdminCoachesPage() {
               ) : null}
 
               {/* Danh sách cơ sở giảng dạy */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                <label className="font-bold text-slate-800 flex items-center justify-between">
+              <div className="rounded border border-slate-100 bg-slate-50 p-2.5 space-y-2">
+                <label className="font-semibold text-slate-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <Building2 className="h-4 w-4 text-brand-primary" />
                     <span>Các cơ sở tham gia giảng dạy (Có thể chọn nhiều cơ sở)</span>
                   </span>
-                  <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-semibold text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded">
                     Đã chọn {editBranchIds.length} cơ sở
                   </span>
                 </label>
@@ -610,9 +610,9 @@ export default function AdminCoachesPage() {
                     return (
                       <label
                         key={b.id}
-                        className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 p-1.5 rounded border text-[11px] font-semibold cursor-pointer transition-all ${
                           isChecked
-                            ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                            ? "bg-brand-primary text-white border-brand-primary"
                             : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                         }`}
                       >
@@ -636,8 +636,8 @@ export default function AdminCoachesPage() {
               </div>
 
               {/* Section 2: Cấu Hình Mức Lương % Học Phí & Tiền Sách */}
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-3">
-                <label className="font-black text-emerald-950 uppercase text-[11px] flex items-center gap-1.5">
+              <div className="rounded bg-emerald-50/60 p-3 space-y-2.5">
+                <label className="font-bold text-emerald-950 uppercase text-[11px] flex items-center gap-1.5">
                   <Wallet className="h-4 w-4 text-brand-primary" />
                   <span>Cấu Hình Mức Lương % Học Phí & Tiền Sách</span>
                 </label>
@@ -645,8 +645,8 @@ export default function AdminCoachesPage() {
                 {/* % Học phí */}
                 <div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700">% Chia Sẻ Học Phí:</span>
-                    <span className="font-black text-brand-primary text-sm">{editTuitionRate}%</span>
+                    <span className="font-semibold text-slate-700">% Chia Sẻ Học Phí:</span>
+                    <span className="font-bold text-brand-primary text-sm">{editTuitionRate}%</span>
                   </div>
                   <input
                     type="range"
@@ -667,8 +667,8 @@ export default function AdminCoachesPage() {
                 {/* % Tiền sách */}
                 <div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700">% Chia Sẻ Tiền Sách:</span>
-                    <span className="font-black text-amber-700 text-sm">{editBookRate}%</span>
+                    <span className="font-semibold text-slate-700">% Chia Sẻ Tiền Sách:</span>
+                    <span className="font-bold text-amber-700 text-sm">{editBookRate}%</span>
                   </div>
                   <input
                     type="range"
@@ -687,26 +687,26 @@ export default function AdminCoachesPage() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              <div className="mt-4 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => handleDeleteCoach(editingCoach.id, editingCoach.name)}
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 font-bold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
+                  className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-600 hover:bg-rose-100 flex items-center gap-1.5 transition-colors"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   <span>Xóa HLV</span>
                 </button>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setEditingCoach(null)}
-                    className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                    className="rounded border border-slate-200 px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                    className="rounded bg-brand-primary px-4 py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                   >
                     Lưu Thay Đổi
                   </button>
@@ -720,70 +720,70 @@ export default function AdminCoachesPage() {
       {/* Modal Thêm HLV Mới */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+          <div className="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-black text-slate-900">Thêm Huấn Luyện Viên Mới</h3>
+              <h3 className="text-base font-bold text-slate-900">Thêm Huấn Luyện Viên Mới</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateCoach} className="mt-4 space-y-3.5 text-xs">
+            <form onSubmit={handleCreateCoach} className="mt-4 space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Họ và tên HLV *</label>
+                  <label className="font-semibold text-slate-700">Họ và tên HLV *</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="VD: HLV Nguyễn Văn A"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Danh hiệu / Chức danh</label>
+                  <label className="font-semibold text-slate-700">Danh hiệu / Chức danh</label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="VD: HLV Quốc gia"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700">Email đăng nhập *</label>
+                  <label className="font-semibold text-slate-700">Email đăng nhập *</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="hlv@kttll.vn"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Số điện thoại *</label>
+                  <label className="font-semibold text-slate-700">Số điện thoại *</label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0912.345.678"
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-mono"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Vai trò phân quyền</label>
+                <label className="font-semibold text-slate-700">Vai trò phân quyền</label>
                 <select
                   value={systemRole}
                   onChange={(e) => setSystemRole(e.target.value as any)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-primary focus:outline-none font-semibold"
+                  className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-semibold"
                 >
                   <option value="COACH">Huấn luyện viên tiêu chuẩn</option>
                   <option value="CHUCOSO">Chủ cơ sở (Quản lý 1 hoặc nhiều cơ sở)</option>
@@ -794,13 +794,13 @@ export default function AdminCoachesPage() {
 
               {/* Nếu là Chủ cơ sở: chọn nhiều cơ sở quản lý */}
               {systemRole === "CHUCOSO" ? (
-                <div className="rounded-xl border border-blue-300 bg-blue-50/70 p-3 space-y-2">
-                  <label className="font-bold text-blue-950 flex items-center justify-between">
+                <div className="rounded border border-blue-200 bg-blue-50/50 p-2.5 space-y-2">
+                  <label className="font-semibold text-blue-950 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Building2 className="h-4 w-4 text-blue-600" />
                       <span>Cơ sở làm Chủ nhiệm (Có thể chọn nhiều cơ sở) *</span>
                     </span>
-                    <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
                       {managedBranchIds.length} cơ sở
                     </span>
                   </label>
@@ -810,7 +810,7 @@ export default function AdminCoachesPage() {
                       return (
                         <label
                           key={b.id}
-                          className={`flex items-center gap-2 p-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                          className={`flex items-center gap-2 p-1.5 rounded border text-[11px] font-semibold cursor-pointer transition-all ${
                             isChecked
                               ? "bg-blue-600 text-white border-blue-700 shadow-sm"
                               : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
@@ -837,13 +837,13 @@ export default function AdminCoachesPage() {
               ) : null}
 
               {/* Các cơ sở tham gia giảng dạy */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                <label className="font-bold text-slate-800 flex items-center justify-between">
+              <div className="rounded border border-slate-100 bg-slate-50 p-2.5 space-y-2">
+                <label className="font-semibold text-slate-800 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <Building2 className="h-4 w-4 text-brand-primary" />
                     <span>Các cơ sở tham gia giảng dạy (Có thể chọn nhiều cơ sở)</span>
                   </span>
-                  <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-semibold text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded">
                     {branchIds.length} cơ sở
                   </span>
                 </label>
@@ -853,9 +853,9 @@ export default function AdminCoachesPage() {
                     return (
                       <label
                         key={b.id}
-                        className={`flex items-center gap-2 p-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 p-1.5 rounded border text-[11px] font-semibold cursor-pointer transition-all ${
                           isChecked
-                            ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                            ? "bg-brand-primary text-white border-brand-primary"
                             : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                         }`}
                       >
@@ -879,9 +879,9 @@ export default function AdminCoachesPage() {
               </div>
 
               {/* % Lương & Sách */}
-              <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div className="grid grid-cols-2 gap-3 rounded bg-slate-50 p-2.5 border border-slate-100">
                 <div>
-                  <label className="font-bold text-slate-700">% Học phí HLV nhận</label>
+                  <label className="font-semibold text-slate-700">% Học phí HLV nhận</label>
                   <input
                     type="number"
                     min="0"
@@ -889,11 +889,11 @@ export default function AdminCoachesPage() {
                     step="5"
                     value={tuitionRate}
                     onChange={(e) => setTuitionRate(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-slate-200 p-2 font-bold text-brand-primary"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 font-bold text-brand-primary"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">% Tiền sách HLV nhận</label>
+                  <label className="font-semibold text-slate-700">% Tiền sách HLV nhận</label>
                   <input
                     type="number"
                     min="0"
@@ -901,22 +901,22 @@ export default function AdminCoachesPage() {
                     step="5"
                     value={bookRate}
                     onChange={(e) => setBookRate(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-slate-200 p-2 font-bold text-amber-700"
+                    className="mt-1 w-full rounded border border-slate-200 p-2 font-bold text-amber-700"
                   />
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="mt-4 flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+                  className="rounded border border-slate-200 px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-brand-primary px-5 py-2.5 font-bold text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-hover"
+                  className="rounded bg-brand-primary px-4 py-1.5 font-semibold text-white hover:bg-brand-primary-hover transition-colors"
                 >
                   Tạo Tài Khoản HLV
                 </button>
