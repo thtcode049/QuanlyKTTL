@@ -390,23 +390,58 @@ function InvoicesContent() {
   };
 
   // Toggle trạng thái Đã thanh toán / Chờ thanh toán cho 1 hóa đơn lẻ
-  const togglePaymentStatus = (invoiceId: string) => {
+  const togglePaymentStatus = async (invoiceId: string) => {
     const inv = dataStore.invoices.find((i) => i.id === invoiceId);
     if (inv) {
-      inv.status = inv.status === "PAID" ? "PENDING" : "PAID";
+      const nextStatus = inv.status === "PAID" ? "PENDING" : "PAID";
+      dataStore.updateInvoiceStatus(invoiceId, nextStatus);
       reloadInvoices();
+      try {
+        await fetch("/api/invoices", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            invoiceId: inv.id,
+            classId: inv.classId,
+            studentId: inv.studentId,
+            month: inv.month,
+            year: inv.year,
+            status: nextStatus,
+          }),
+        });
+      } catch (err) {
+        console.warn("Lỗi lưu trạng thái thanh toán:", err);
+      }
     }
   };
 
   // Toggle trạng thái Đã thanh toán cho toàn bộ hóa đơn của học sinh gộp
-  const toggleAggregatedPaymentStatus = (agg: AggregatedStudentInvoice) => {
+  const toggleAggregatedPaymentStatus = async (agg: AggregatedStudentInvoice) => {
     const nextStatus = agg.status === "PAID" ? "PENDING" : "PAID";
-    agg.invoiceIds.forEach((id) => {
-      const inv = dataStore.invoices.find((i) => i.id === id);
-      if (inv) inv.status = nextStatus;
-    });
-    dataStore.saveToLocalStorage();
+    dataStore.updateInvoicesStatus(agg.invoiceIds, nextStatus);
     reloadInvoices();
+    try {
+      await Promise.all(
+        agg.invoiceIds.map(async (id) => {
+          const inv = dataStore.invoices.find((i) => i.id === id);
+          if (!inv) return;
+          return fetch("/api/invoices", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              invoiceId: inv.id,
+              classId: inv.classId,
+              studentId: inv.studentId,
+              month: inv.month,
+              year: inv.year,
+              status: nextStatus,
+            }),
+          });
+        })
+      );
+    } catch (err) {
+      console.warn("Lỗi lưu trạng thái thanh toán gộp:", err);
+    }
   };
 
   // Mở VietQR Modal cho hóa đơn đơn lẻ

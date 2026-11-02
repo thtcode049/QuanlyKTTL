@@ -346,9 +346,11 @@ class InMemoryDataStore {
   public tasks: TaskData[] = [...initialTasks];
   public notifications: NotificationData[] = [...initialNotifications];
   public invoices: MonthlyInvoiceData[] = [];
+  public cachedInvoiceStatuses: Record<string, "PENDING" | "PAID"> = {};
 
   constructor() {
     this.normalizeCoachData();
+    this.loadCachedInvoiceStatuses();
     this.recalculateAllInvoices(10, 2026);
     this.loadFromLocalStorage();
   }
@@ -358,10 +360,19 @@ class InMemoryDataStore {
     if (typeof window === "undefined") return;
     try {
       const zaloSentMap: Record<string, string> = {};
+      const invoiceStatusMap: Record<string, "PENDING" | "PAID"> = { ...this.cachedInvoiceStatuses };
       this.invoices.forEach((inv) => {
         if (inv.zaloSentAt) {
           zaloSentMap[inv.id] = inv.zaloSentAt;
           zaloSentMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`] = inv.zaloSentAt;
+        }
+        if (inv.status) {
+          invoiceStatusMap[inv.id] = inv.status;
+          invoiceStatusMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`] = inv.status;
+          invoiceStatusMap[`${inv.studentId}_${inv.month}_${inv.year}`] = inv.status;
+          this.cachedInvoiceStatuses[inv.id] = inv.status;
+          this.cachedInvoiceStatuses[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`] = inv.status;
+          this.cachedInvoiceStatuses[`${inv.studentId}_${inv.month}_${inv.year}`] = inv.status;
         }
       });
 
@@ -377,11 +388,33 @@ class InMemoryDataStore {
         coachBankConfigs: this.coachBankConfigs,
         zaloConfig: this.zaloConfig,
         zaloSentMap,
+        invoiceStatusMap,
       };
       localStorage.setItem("kttll_datastore", JSON.stringify(payload));
+      localStorage.setItem("kttll_invoice_statuses", JSON.stringify(invoiceStatusMap));
       localStorage.setItem("kttll_deleted_coaches", JSON.stringify(this.deletedCoachIds));
     } catch (e) {
       console.warn("Không thể lưu kttll_datastore vào localStorage", e);
+    }
+  }
+
+  // Tải trước cache trạng thái đóng học phí từ localStorage
+  public loadCachedInvoiceStatuses() {
+    if (typeof window === "undefined") return;
+    try {
+      const rawStatuses = localStorage.getItem("kttll_invoice_statuses");
+      if (rawStatuses) {
+        this.cachedInvoiceStatuses = { ...this.cachedInvoiceStatuses, ...JSON.parse(rawStatuses) };
+      }
+      const rawStore = localStorage.getItem("kttll_datastore");
+      if (rawStore) {
+        const parsed = JSON.parse(rawStore);
+        if (parsed.invoiceStatusMap && typeof parsed.invoiceStatusMap === "object") {
+          this.cachedInvoiceStatuses = { ...this.cachedInvoiceStatuses, ...parsed.invoiceStatusMap };
+        }
+      }
+    } catch (e) {
+      console.warn("Lỗi đọc kttll_invoice_statuses từ localStorage:", e);
     }
   }
 
@@ -449,6 +482,7 @@ class InMemoryDataStore {
       if (data.zaloConfig) {
         this.zaloConfig = { ...this.zaloConfig, ...data.zaloConfig };
       }
+      this.loadCachedInvoiceStatuses();
       this.recalculateAllInvoices(10, 2026);
 
       // Phục hồi trạng thái đã gửi Zalo
@@ -458,6 +492,18 @@ class InMemoryDataStore {
           const composite = data.zaloSentMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`];
           if (direct) inv.zaloSentAt = direct;
           else if (composite) inv.zaloSentAt = composite;
+        });
+      }
+
+      // Phục hồi trạng thái thanh toán học phí (đã đóng / chờ đóng)
+      if (data.invoiceStatusMap && typeof data.invoiceStatusMap === "object") {
+        this.cachedInvoiceStatuses = { ...this.cachedInvoiceStatuses, ...data.invoiceStatusMap };
+        this.invoices.forEach((inv) => {
+          const direct = data.invoiceStatusMap[inv.id];
+          const composite = data.invoiceStatusMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`];
+          const studentMonth = data.invoiceStatusMap[`${inv.studentId}_${inv.month}_${inv.year}`];
+          const s = direct || composite || studentMonth;
+          if (s) inv.status = s;
         });
       }
     } catch (e) {
@@ -648,6 +694,17 @@ class InMemoryDataStore {
           this.students = [...students, ...pendingStudents];
         }
         if (Array.isArray(sessions)) this.sessions = sessions;
+        if (Array.isArray(json.data.invoices)) {
+          json.data.invoices.forEach((inv: any) => {
+            const composite = `${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`;
+            const studentMonth = `${inv.studentId}_${inv.month}_${inv.year}`;
+            if (inv.status) {
+              this.cachedInvoiceStatuses[composite] = inv.status;
+              this.cachedInvoiceStatuses[inv.id] = inv.status;
+              this.cachedInvoiceStatuses[studentMonth] = inv.status;
+            }
+          });
+        }
         this.recalculateAllInvoices(10, 2026);
         this.saveToLocalStorage();
         return true;
@@ -1030,10 +1087,17 @@ class InMemoryDataStore {
         const paddedMonth = month.toString().padStart(2, "0");
         const invoiceCode = `HP-${year}${paddedMonth}-${student.code}`;
 
-        // Kiểm tra xem đã có hóa đơn cũ chưa để giữ trạng thái thanh toán
-        const existing = this.invoices.find(
-          (inv) => inv.classId === cls.id && inv.studentId === student.id && inv.month === month && inv.year === year
-        );
+        // Kiểm tra xem đã có hóa đơn cũ hoặc trạng thái đã lưu để giữ trạng thái thanh toán
+        const compositeKey = `${cls.id}_${student.id}_${month}_${year}`;
+        const studentMonthKey = `${student.id}_${month}_${year}`;
+        const savedStatus =
+          existing?.status ||
+          this.cachedInvoiceStatuses[compositeKey] ||
+          (existing?.id ? this.cachedInvoiceStatuses[existing.id] : undefined) ||
+          this.cachedInvoiceStatuses[studentMonthKey];
+
+        // Mặc định ban đầu luôn là "PENDING" (chưa đóng) theo đúng yêu cầu
+        const status: "PENDING" | "PAID" = savedStatus || "PENDING";
 
         newInvoices.push({
           id: existing?.id || `inv-${cls.id}-${student.id}-${month}-${year}`,
@@ -1045,7 +1109,7 @@ class InMemoryDataStore {
           presentCount,
           feePerSession,
           totalAmount,
-          status: existing ? existing.status : (Math.random() > 0.5 ? "PAID" : "PENDING"),
+          status,
           zaloSentAt: existing?.zaloSentAt,
           vietQrUrl: existing?.vietQrUrl,
           createdAt: existing?.createdAt || new Date().toISOString(),
@@ -1054,6 +1118,36 @@ class InMemoryDataStore {
     }
 
     this.invoices = newInvoices;
+  }
+
+  // Cập nhật trạng thái đóng học phí (đã đóng / chưa đóng) và lưu bền vững vào localStorage
+  public updateInvoiceStatus(invoiceId: string, status: "PENDING" | "PAID") {
+    const inv = this.invoices.find((i) => i.id === invoiceId);
+    if (inv) {
+      inv.status = status;
+      const key = `${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`;
+      const studentMonthKey = `${inv.studentId}_${inv.month}_${inv.year}`;
+      this.cachedInvoiceStatuses[key] = status;
+      this.cachedInvoiceStatuses[inv.id] = status;
+      this.cachedInvoiceStatuses[studentMonthKey] = status;
+      this.saveToLocalStorage();
+    }
+  }
+
+  // Cập nhật trạng thái đóng học phí cho nhiều hóa đơn (học viên học nhiều lớp)
+  public updateInvoicesStatus(invoiceIds: string[], status: "PENDING" | "PAID") {
+    invoiceIds.forEach((id) => {
+      const inv = this.invoices.find((i) => i.id === id);
+      if (inv) {
+        inv.status = status;
+        const key = `${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`;
+        const studentMonthKey = `${inv.studentId}_${inv.month}_${inv.year}`;
+        this.cachedInvoiceStatuses[key] = status;
+        this.cachedInvoiceStatuses[inv.id] = status;
+        this.cachedInvoiceStatuses[studentMonthKey] = status;
+      }
+    });
+    this.saveToLocalStorage();
   }
 
   // Đánh dấu hóa đơn đã gửi Zalo thành công

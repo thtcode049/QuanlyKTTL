@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dataStore } from "@/lib/data-store";
+import prisma from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -23,15 +24,77 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { invoiceId, status } = body;
+    const { invoiceId, classId, studentId, month, year, status } = body;
 
-    const inv = dataStore.invoices.find((i) => i.id === invoiceId);
-    if (!inv) {
-      return NextResponse.json({ success: false, error: "Không tìm thấy hóa đơn" }, { status: 404 });
+    // 1. Cập nhật trong in-memory dataStore
+    let inv = dataStore.invoices.find((i) => i.id === invoiceId);
+    if (!inv && classId && studentId && month && year) {
+      inv = dataStore.invoices.find(
+        (i) => i.classId === classId && i.studentId === studentId && i.month === Number(month) && i.year === Number(year)
+      );
     }
 
-    inv.status = status;
-    return NextResponse.json({ success: true, data: inv });
+    if (inv) {
+      dataStore.updateInvoiceStatus(inv.id, status);
+    } else if (invoiceId) {
+      dataStore.updateInvoiceStatus(invoiceId, status);
+    }
+
+    // 2. Lưu bền vững vào CSDL PostgreSQL (Prisma)
+    try {
+      const cId = classId || inv?.classId;
+      const sId = studentId || inv?.studentId;
+      const m = Number(month || inv?.month || 10);
+      const y = Number(year || inv?.year || 2026);
+
+      if (cId && sId) {
+        const [clsExists, stdExists] = await Promise.all([
+          prisma.classroom.findUnique({ where: { id: cId } }),
+          prisma.student.findUnique({ where: { id: sId } }),
+        ]);
+
+        if (clsExists && stdExists) {
+          const existingDb = await prisma.monthlyInvoice.findFirst({
+            where: {
+              classId: cId,
+              studentId: sId,
+              month: m,
+              year: y,
+            },
+          });
+
+          if (existingDb) {
+            await prisma.monthlyInvoice.update({
+              where: { id: existingDb.id },
+              data: { status: status as any },
+            });
+          } else {
+            const paddedMonth = m.toString().padStart(2, "0");
+            const invoiceCode = `HP-${y}${paddedMonth}-${stdExists.code || sId.slice(0, 4)}`;
+            await prisma.monthlyInvoice.create({
+              data: {
+                invoiceCode,
+                classId: cId,
+                studentId: sId,
+                month: m,
+                year: y,
+                presentCount: inv?.presentCount || 0,
+                feePerSession: inv?.feePerSession || clsExists.feePerSession,
+                totalAmount: inv?.totalAmount || 0,
+                status: status as any,
+              },
+            });
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Lỗi lưu hóa đơn vào Prisma DB:", dbErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: inv || { id: invoiceId, status },
+    });
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
   }

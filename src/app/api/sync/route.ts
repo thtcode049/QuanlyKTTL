@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(request: Request) {
   try {
-    const [branches, users, classes, students, sessions] = await Promise.all([
+    const [branches, users, classes, students, sessions, invoices] = await Promise.all([
       prisma.branch.findMany({ orderBy: { createdAt: "asc" } }),
       prisma.user.findMany({
         select: {
@@ -47,6 +47,17 @@ export async function GET(request: Request) {
           records: true,
         },
         orderBy: { date: "desc" },
+      }),
+      prisma.monthlyInvoice.findMany({
+        select: {
+          id: true,
+          classId: true,
+          studentId: true,
+          month: true,
+          year: true,
+          status: true,
+          zaloSentAt: true,
+        },
       }),
     ]);
 
@@ -105,6 +116,7 @@ export async function GET(request: Request) {
         classes: formattedClasses,
         students: formattedStudents,
         sessions: formattedSessions,
+        invoices,
       },
     });
   } catch (error: any) {

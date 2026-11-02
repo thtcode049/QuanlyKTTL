@@ -201,9 +201,19 @@ export function generateVietQrUrl(options: VietQrOptions): string {
   const memoEncoded = encodeURIComponent(cleanMemo);
   const accNameEncoded = encodeURIComponent(removeVietnameseAccents(accountName).toUpperCase());
 
-  // Lưu ý: Nếu amount <= 0 thì không truyền amount để tránh lỗi hạn mức tối thiểu ở một số app ngân hàng
-  const amountQuery = amount > 0 ? `amount=${amount}&` : "";
+  // Luôn truyền amount (kể cả 0đ) để VietQR hiển thị đầy đủ thông tin số tiền như mẫu chuẩn
+  const amountQuery = amount >= 0 ? `amount=${amount}&` : "";
   return `https://img.vietqr.io/image/${bank.id}-${accountNo}-${template}.png?${amountQuery}addInfo=${memoEncoded}&accountName=${accNameEncoded}`;
+}
+
+/**
+ * Trả về URL proxy nội bộ an toàn để nạp ảnh VietQR mà không bao giờ bị CORS
+ */
+export function getVietQrProxyUrl(originalUrl: string): string {
+  if (!originalUrl || originalUrl.startsWith("data:") || originalUrl.startsWith("/api/")) {
+    return originalUrl;
+  }
+  return `/api/vietqr-proxy?url=${encodeURIComponent(originalUrl)}`;
 }
 
 export function formatCurrencyVND(amount: number): string {

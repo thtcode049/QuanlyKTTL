@@ -22,7 +22,7 @@ import {
   downloadInvoiceCardPng,
   copyInvoiceCardToClipboard,
 } from "@/lib/invoice-card-generator";
-import { formatCurrencyVND, generateVietQrDataUrl } from "@/lib/vietqr";
+import { formatCurrencyVND, generateVietQrUrl, generateVietQrDataUrl } from "@/lib/vietqr";
 
 interface InvoiceReceiptModalProps {
   isOpen: boolean;
@@ -51,16 +51,17 @@ export default function InvoiceReceiptModal({
       setLocalQrSrc(data.vietQrUrl);
       return;
     }
-    // Fallback nếu không có URL QR từ trước: tự sinh Data URL VietQR chuẩn Napas 24/7
-    generateVietQrDataUrl({
+    // Ưu tiên sinh VietQR URL chuẩn Napas 24/7 (compact2) có khung viền đầy đủ
+    const fallbackUrl = generateVietQrUrl({
       bankId: data.bankName,
+      bankName: data.bankName,
       accountNo: data.bankAccount,
       accountName: data.accountHolder,
       amount: data.totalAmount,
       description: data.transferContent,
-    })
-      .then((url) => setLocalQrSrc(url))
-      .catch(() => setLocalQrSrc(""));
+      template: "compact2",
+    });
+    setLocalQrSrc(fallbackUrl);
   }, [data]);
 
   if (!isOpen || !data) return null;
@@ -228,39 +229,39 @@ export default function InvoiceReceiptModal({
                 </div>
               </div>
 
-              {/* Thông tin học viên (đã bỏ mã HS theo yêu cầu) */}
-              <div className="rounded-xl bg-slate-50/80 p-4 text-sm border border-slate-100 space-y-2.5">
+              {/* Thông tin học viên (Cỡ chữ to hơn, rõ ràng, dễ đọc) */}
+              <div className="rounded-xl bg-slate-50/80 p-4 text-base border border-slate-100 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium text-sm">Học viên:</span>
-                  <strong className="text-slate-900 font-bold text-sm sm:text-base text-right">
+                  <span className="text-slate-600 font-semibold text-sm sm:text-base">Học viên:</span>
+                  <strong className="text-slate-900 font-bold text-base sm:text-lg text-right">
                     {data.studentName}
                   </strong>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium text-sm">Lớp học:</span>
+                  <span className="text-slate-600 font-semibold text-sm sm:text-base">Lớp học:</span>
                   <strong className="text-slate-800 font-semibold text-sm sm:text-base text-right">{data.className}</strong>
                 </div>
                 {data.branchName && (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium text-sm">Cơ sở đào tạo:</span>
+                    <span className="text-slate-600 font-semibold text-sm sm:text-base">Cơ sở đào tạo:</span>
                     <strong className="text-slate-800 font-medium text-sm sm:text-base text-right">{data.branchName}</strong>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium text-sm">Số buổi thực học:</span>
-                  <strong className="text-emerald-700 font-bold text-sm sm:text-base text-right">{data.presentCount} buổi</strong>
+                  <span className="text-slate-600 font-semibold text-sm sm:text-base">Số buổi thực học:</span>
+                  <strong className="text-emerald-700 font-extrabold text-base sm:text-lg text-right">{data.presentCount} buổi</strong>
                 </div>
                 {!hasMultipleClasses && (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-medium text-sm">Các ngày có mặt:</span>
-                      <strong className="text-slate-800 font-mono text-xs sm:text-sm text-right">
+                      <span className="text-slate-600 font-semibold text-sm sm:text-base">Các ngày có mặt:</span>
+                      <strong className="text-slate-800 font-mono text-sm sm:text-base text-right">
                         {data.presentDates && data.presentDates.length > 0 ? data.presentDates.join(", ") : "Chưa có buổi học"}
                       </strong>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-medium text-sm">Đơn giá:</span>
-                      <strong className="text-slate-700 font-semibold text-sm sm:text-base text-right">
+                      <span className="text-slate-600 font-semibold text-sm sm:text-base">Đơn giá:</span>
+                      <strong className="text-slate-800 font-bold text-sm sm:text-base text-right">
                         {formatCurrencyVND(data.feePerSession)}/buổi
                       </strong>
                     </div>
@@ -306,7 +307,7 @@ export default function InvoiceReceiptModal({
               {/* Hộp Tổng Học Phí */}
               <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 p-4">
                 <div>
-                  <span className="text-xs sm:text-sm font-bold text-emerald-800 uppercase tracking-wide">
+                  <span className="text-sm sm:text-base font-bold text-emerald-800 uppercase tracking-wide">
                     Tổng Học Phí Phải Nộp:
                   </span>
                   <p className="text-xs text-emerald-600 mt-0.5">
@@ -322,36 +323,43 @@ export default function InvoiceReceiptModal({
 
               {/* Khung VietQR Động & Cú Pháp Chuyển Khoản */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 flex flex-col md:flex-row items-center gap-5">
-                {/* Ảnh QR Động */}
+                {/* Ảnh QR Động chuẩn Napas 24/7 */}
                 <div className="flex flex-col items-center justify-center shrink-0">
                   <div className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
                     <img
                       src={data.vietQrUrl || localQrSrc}
                       alt="Mã VietQR Chuyển Khoản"
-                      className="w-48 h-56 object-contain rounded-lg"
+                      className="w-52 h-64 object-contain rounded-lg"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const currentSrc = data.vietQrUrl || localQrSrc;
+                        if (currentSrc && !currentSrc.startsWith("/api/vietqr-proxy")) {
+                          target.src = `/api/vietqr-proxy?url=${encodeURIComponent(currentSrc)}`;
+                        }
+                      }}
                     />
                   </div>
                   <span className="mt-1.5 text-xs font-bold text-emerald-700 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> Mã VietQR thanh toán Napas 247
+                    <Sparkles className="h-3.5 w-3.5" /> Mã VietQR thanh toán Napas 247
                   </span>
                 </div>
 
                 {/* Thông tin chuyển khoản & Cú pháp */}
-                <div className="w-full space-y-3 text-sm">
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
-                    <span className="text-slate-500 font-medium text-sm">Ngân hàng:</span>
+                <div className="w-full space-y-3.5 text-base">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <span className="text-slate-600 font-semibold text-sm sm:text-base">Ngân hàng:</span>
                     <strong className="text-slate-900 font-bold text-sm sm:text-base text-right">{data.bankName} – {data.bankAccount}</strong>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
-                    <span className="text-slate-500 font-medium text-sm">Chủ tài khoản:</span>
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <span className="text-slate-600 font-semibold text-sm sm:text-base">Chủ tài khoản:</span>
                     <strong className="text-slate-800 font-bold text-sm sm:text-base uppercase text-right">{data.accountHolder}</strong>
                   </div>
 
                   {/* Cú pháp chuyển khoản nổi bật */}
                   <div className="rounded-lg bg-amber-50/80 border border-amber-200 p-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-amber-900 uppercase">
+                      <span className="text-xs sm:text-sm font-bold text-amber-900 uppercase">
                         Cú pháp CK:
                       </span>
                       <button
@@ -373,7 +381,7 @@ export default function InvoiceReceiptModal({
                         )}
                       </button>
                     </div>
-                    <p className="mt-1.5 font-mono text-right text-sm sm:text-base font-extrabold text-orange-600 tracking-wide select-all bg-white py-1 px-2.5 rounded border border-amber-200">
+                    <p className="mt-1.5 font-mono text-right text-base sm:text-lg font-black text-orange-600 tracking-wide select-all bg-white py-1 px-2.5 rounded border border-amber-200">
                       {data.transferContent}
                     </p>
                   </div>
