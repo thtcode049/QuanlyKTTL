@@ -1088,6 +1088,9 @@ class InMemoryDataStore {
         const invoiceCode = `HP-${year}${paddedMonth}-${student.code}`;
 
         // Kiểm tra xem đã có hóa đơn cũ hoặc trạng thái đã lưu để giữ trạng thái thanh toán
+        const existing = this.invoices.find(
+          (inv) => inv.classId === cls.id && inv.studentId === student.id && inv.month === month && inv.year === year
+        );
         const compositeKey = `${cls.id}_${student.id}_${month}_${year}`;
         const studentMonthKey = `${student.id}_${month}_${year}`;
         const savedStatus =
