@@ -187,6 +187,7 @@ function InvoicesContent() {
 
       const vietQrUrl = generateVietQrUrl({
         bankId: bank.bankId,
+        bankName: bank.bankName,
         accountNo: bank.bankAccount,
         accountName: bank.accountHolder,
         template: "qr_only",
@@ -216,6 +217,7 @@ function InvoicesContent() {
 
     const vietQrUrl = generateVietQrUrl({
       bankId: bank.bankId,
+      bankName: bank.bankName,
       accountNo: bank.bankAccount,
       accountName: bank.accountHolder,
       template: "qr_only",
@@ -488,6 +490,7 @@ function InvoicesContent() {
       const coachBank = dataStore.getCoachBankConfig(cls?.coachId || currentCoachId);
       item.vietQrUrl = generateVietQrUrl({
         bankId: coachBank.bankId,
+        bankName: coachBank.bankName,
         accountNo: coachBank.bankAccount,
         accountName: coachBank.accountHolder,
         template: "qr_only",

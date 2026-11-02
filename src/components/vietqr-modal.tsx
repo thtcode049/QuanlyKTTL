@@ -16,7 +16,7 @@ import {
   Save,
   ImageIcon,
 } from "lucide-react";
-import { formatCurrencyVND, generateVietQrUrl, SUPPORTED_BANKS, formatTuitionTransferContent } from "@/lib/vietqr";
+import { formatCurrencyVND, generateVietQrUrl, SUPPORTED_BANKS, resolveBank, formatTuitionTransferContent } from "@/lib/vietqr";
 import { dataStore } from "@/lib/data-store";
 
 interface VietQrModalProps {
@@ -68,9 +68,10 @@ export const VietQrModal: React.FC<VietQrModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       const cfg = dataStore.bankConfig;
-      setBankId(cfg.bankId || "MB");
+      const b = resolveBank(cfg.bankId, initialBankName || cfg.bankName);
+      setBankId(b.id);
       setBankAccount(initialBankAccount || cfg.bankAccount || "0987654321");
-      setBankName(initialBankName || cfg.bankName || "Ngân hàng TMCP Quân Đội (MBBank)");
+      setBankName(initialBankName || cfg.bankName || `${b.name} (${b.shortName})`);
       setAccountHolder(initialAccountHolder || cfg.accountHolder || "CLB CO VUA KIEN TUONG TUONG LAI");
       setAmount(initialAmount);
       setTransferContent(initialTransferContent || formatTuitionTransferContent(studentName, month));
@@ -87,6 +88,7 @@ export const VietQrModal: React.FC<VietQrModalProps> = ({
   // Generate dynamic QR code based on current editable parameters
   const dynamicQrUrl = generateVietQrUrl({
     bankId,
+    bankName,
     accountNo: bankAccount,
     accountName: accountHolder,
     amount,

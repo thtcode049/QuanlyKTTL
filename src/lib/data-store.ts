@@ -4,6 +4,8 @@
  * đồng thời giữ trạng thái điểm danh, tạo lớp, gửi học phí trong phiên làm việc.
  */
 
+import { resolveBank } from "./vietqr";
+
 export interface BranchData {
   id: string;
   name: string;
@@ -30,6 +32,7 @@ export interface UserData {
   bio?: string; // Giới thiệu / triết lý dạy
   bankAccount?: string; // STK nhận thù lao
   bankName?: string; // Tên ngân hàng
+  bankId?: string; // Mã ngân hàng (VCB, MB, ...)
   accountHolder?: string; // Chủ tài khoản
   elo?: number; // Hệ số Elo cờ vua của HLV
   fideId?: string; // FIDE ID
@@ -522,6 +525,19 @@ class InMemoryDataStore {
     const coach = this.users.find((u) => u.id === coachId);
     if (coach) {
       Object.assign(coach, data);
+      if (data.bankName || data.bankAccount || data.accountHolder || data.bankId) {
+        const resolved = resolveBank(data.bankId || coach.bankId, data.bankName || coach.bankName);
+        coach.bankId = resolved.id;
+        this.coachBankConfigs[coachId] = {
+          bankId: resolved.id,
+          bankAccount: coach.bankAccount || this.bankConfig.bankAccount,
+          bankName: coach.bankName || resolved.name,
+          accountHolder: (coach.accountHolder || coach.name || "").trim().toUpperCase(),
+          qrTemplate: this.bankConfig.qrTemplate || "compact2",
+          customQrImage: this.coachBankConfigs[coachId]?.customQrImage,
+          useCustomQr: this.coachBankConfigs[coachId]?.useCustomQr,
+        };
+      }
       this.saveToLocalStorage();
       return coach;
     }
@@ -1497,23 +1513,30 @@ class InMemoryDataStore {
 
   // Cập nhật cấu hình ngân hàng thụ hưởng & mã VietQR chung
   public updateBankConfig(data: Partial<BankConfig>) {
-    Object.assign(this.bankConfig, data);
+    const resolved = resolveBank(data.bankId || this.bankConfig.bankId, data.bankName || this.bankConfig.bankName);
+    Object.assign(this.bankConfig, {
+      ...data,
+      bankId: resolved.id,
+      bankName: data.bankName || resolved.name,
+    });
     this.saveToLocalStorage();
     return this.bankConfig;
   }
 
   // Lấy cấu hình tài khoản ngân hàng của HLV cụ thể hoặc fallback về bankConfig chung
   public getCoachBankConfig(coachId?: string): BankConfig {
+    let cfg: BankConfig | undefined;
     if (coachId && this.coachBankConfigs[coachId]) {
-      return this.coachBankConfigs[coachId];
+      cfg = { ...this.coachBankConfigs[coachId] };
     }
-    if (coachId) {
+    if (!cfg && coachId) {
       const u = this.users.find((user) => user.id === coachId || user.email === coachId);
-      if (u && (u.bankAccount || u.accountHolder)) {
-        return {
-          bankId: "MB",
+      if (u && (u.bankAccount || u.accountHolder || u.bankName)) {
+        const b = resolveBank(u.bankId, u.bankName);
+        cfg = {
+          bankId: b.id,
           bankAccount: u.bankAccount || this.bankConfig.bankAccount,
-          bankName: u.bankName || this.bankConfig.bankName,
+          bankName: u.bankName || b.name,
           accountHolder: (u.accountHolder || u.name || "").trim().toUpperCase(),
           qrTemplate: this.bankConfig.qrTemplate || "compact2",
           customQrImage: this.bankConfig.customQrImage,
@@ -1521,16 +1544,25 @@ class InMemoryDataStore {
         };
       }
     }
-    return this.bankConfig;
+    if (!cfg) {
+      cfg = { ...this.bankConfig };
+    }
+    // Luôn bảo đảm bankId đồng bộ chính xác với bankName (tránh trường hợp bankName là Vietcombank nhưng bankId là MB)
+    const resolved = resolveBank(cfg.bankId, cfg.bankName);
+    cfg.bankId = resolved.id;
+    return cfg;
   }
 
   // Cập nhật cấu hình ngân hàng riêng cho 1 HLV
   public updateCoachBankConfig(coachId: string, data: Partial<BankConfig>) {
     if (!coachId) return this.updateBankConfig(data);
     const existing = this.getCoachBankConfig(coachId);
+    const resolved = resolveBank(data.bankId || existing.bankId, data.bankName || existing.bankName);
     this.coachBankConfigs[coachId] = {
       ...existing,
       ...data,
+      bankId: resolved.id,
+      bankName: data.bankName || existing.bankName || resolved.name,
     };
     // Đồng bộ vào thông tin user để hiển thị nhất quán trong danh sách HLV
     const uIdx = this.users.findIndex((u) => u.id === coachId || u.email === coachId);
@@ -1538,6 +1570,7 @@ class InMemoryDataStore {
       if (data.bankAccount) this.users[uIdx].bankAccount = data.bankAccount;
       if (data.bankName) this.users[uIdx].bankName = data.bankName;
       if (data.accountHolder) this.users[uIdx].accountHolder = data.accountHolder;
+      this.users[uIdx].bankId = resolved.id;
     }
     this.saveToLocalStorage();
     return this.coachBankConfigs[coachId];

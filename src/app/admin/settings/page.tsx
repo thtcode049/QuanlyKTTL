@@ -19,7 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
-import { generateVietQrUrl, SUPPORTED_BANKS } from "@/lib/vietqr";
+import { generateVietQrUrl, SUPPORTED_BANKS, resolveBank } from "@/lib/vietqr";
 import VietQrModal from "@/components/vietqr-modal";
 import ZaloSimulatorModal from "@/components/zalo-simulator";
 import confetti from "canvas-confetti";
@@ -27,10 +27,12 @@ import confetti from "canvas-confetti";
 export default function AdminSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const initBank = resolveBank(dataStore.bankConfig.bankId, dataStore.bankConfig.bankName);
+
   // Bank config state
-  const [bankId, setBankId] = useState(dataStore.bankConfig.bankId || "MB");
+  const [bankId, setBankId] = useState(initBank.id);
   const [bankAccount, setBankAccount] = useState(dataStore.bankConfig.bankAccount || "0987654321");
-  const [bankName, setBankName] = useState(dataStore.bankConfig.bankName || "Ngân hàng TMCP Quân Đội (MBBank)");
+  const [bankName, setBankName] = useState(dataStore.bankConfig.bankName || `${initBank.name} (${initBank.shortName})`);
   const [accountHolder, setAccountHolder] = useState(dataStore.bankConfig.accountHolder || "CLB CO VUA KIEN TUONG TUONG LAI");
   const [qrTemplate, setQrTemplate] = useState<"compact2" | "compact" | "qr_only">(
     (dataStore.bankConfig.qrTemplate as any) || "compact2"

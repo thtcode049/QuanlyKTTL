@@ -21,7 +21,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
-import { generateVietQrUrl, SUPPORTED_BANKS, formatCurrencyVND, formatTuitionTransferContent } from "@/lib/vietqr";
+import { generateVietQrUrl, SUPPORTED_BANKS, resolveBank, formatCurrencyVND, formatTuitionTransferContent } from "@/lib/vietqr";
 import confetti from "canvas-confetti";
 
 export default function CoachSettingsPage() {
@@ -63,9 +63,10 @@ export default function CoachSettingsPage() {
     setCurrentCoachName(coachName);
 
     const cfg = dataStore.getCoachBankConfig(coachId);
-    if (cfg.bankId) setBankId(cfg.bankId);
+    const resolved = resolveBank(cfg.bankId, cfg.bankName);
+    setBankId(resolved.id);
+    setBankName(cfg.bankName || `${resolved.name} (${resolved.shortName})`);
     if (cfg.bankAccount) setBankAccount(cfg.bankAccount);
-    if (cfg.bankName) setBankName(cfg.bankName);
     if (cfg.accountHolder) setAccountHolder(cfg.accountHolder);
     else if (coachName) setAccountHolder(coachName.toUpperCase());
     if (cfg.qrTemplate) setQrTemplate(cfg.qrTemplate);

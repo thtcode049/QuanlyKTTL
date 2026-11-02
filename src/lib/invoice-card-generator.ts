@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { formatCurrencyVND } from "./vietqr";
+import { formatCurrencyVND, generateVietQrDataUrl, resolveBank } from "./vietqr";
 
 export interface InvoiceClassItem {
   className: string;
@@ -253,20 +253,24 @@ export async function generateInvoiceCardCanvas(
     isBoldVal: boolean = false,
     valColor: string = "#0F172A"
   ) => {
+    // 1. Nhãn căn lề trái
     ctx.font = "500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.fillStyle = "#64748B";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(label, padLeft, curY + rowH / 2);
 
-    const labelW = ctx.measureText(label).width;
-    const valX = padLeft + labelW + 8; // Đặt ngay sát sau dấu : không căn lề phải
-    const maxValW = cardX + cardW - 24 - valX;
+    // 2. Thông tin căn giữa trong phần còn lại của hàng
+    const labelColW = 145;
+    const valAreaLeft = padLeft + labelColW;
+    const valAreaRight = cardX + cardW - 24;
+    const valCenterX = valAreaLeft + (valAreaRight - valAreaLeft) / 2;
+    const maxValW = valAreaRight - valAreaLeft - 10;
 
     ctx.font = `${isBoldVal ? "700" : "600"} 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
     ctx.fillStyle = valColor;
-    ctx.textAlign = "left";
-    ctx.fillText(truncateText(ctx, value, maxValW), valX, curY + rowH / 2);
+    ctx.textAlign = "center";
+    ctx.fillText(truncateText(ctx, value, maxValW), valCenterX, curY + rowH / 2);
 
     curY += rowH;
   };
@@ -399,9 +403,23 @@ export async function generateInvoiceCardCanvas(
   roundRect(ctx, qrImgX, qrImgY, qrImgSize, qrImgSize, 12);
   ctx.stroke();
 
-  // Tải và vẽ ảnh VietQR lên Canvas
+  // Tải và vẽ ảnh VietQR lên Canvas (Tự động sinh trực tiếp data URL chuẩn Napas 24/7 không phụ thuộc mạng)
   try {
-    const qrImg = await loadQrImage(data.vietQrUrl);
+    let qrSrc = data.vietQrUrl;
+    if (!qrSrc || !qrSrc.startsWith("data:")) {
+      try {
+        qrSrc = await generateVietQrDataUrl({
+          bankName: data.bankName,
+          accountNo: data.bankAccount,
+          accountName: data.accountHolder,
+          amount: data.totalAmount,
+          description: data.transferContent,
+        });
+      } catch (err) {
+        console.warn("Lỗi sinh VietQR data URL trực tiếp, thử tải từ URL:", err);
+      }
+    }
+    const qrImg = await loadQrImage(qrSrc);
     ctx.drawImage(qrImg, qrImgX + 6, qrImgY + 6, qrImgSize - 12, qrImgSize - 12);
   } catch (err) {
     console.error("Lỗi vẽ VietQR lên Canvas:", err);

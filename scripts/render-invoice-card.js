@@ -97,9 +97,7 @@ function buildInvoiceHtml(data) {
     }
     .row {
       display: flex;
-      justify-content: flex-start;
-      align-items: baseline;
-      gap: 8px;
+      align-items: center;
       padding: 9px 0;
       border-bottom: 1px solid #f8fafc;
       font-size: 12.5px;
@@ -110,15 +108,20 @@ function buildInvoiceHtml(data) {
     .label {
       color: #64748b;
       font-weight: 500;
+      width: 145px;
       flex-shrink: 0;
+      text-align: left;
     }
     .value {
       color: #0f172a;
       font-weight: 700;
-      text-align: left;
+      flex: 1;
+      text-align: center;
       line-height: 1.4;
     }
     .row-highlight {
+      display: flex;
+      justify-content: space-between;
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       border-radius: 12px;
@@ -128,6 +131,16 @@ function buildInvoiceHtml(data) {
     }
     .row-highlight .label {
       color: #047857;
+      font-weight: 800;
+      width: auto;
+    }
+    .row-highlight .value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #059669;
+      flex: none;
+      text-align: right;
+    }
       font-weight: 700;
       font-size: 13px;
     }

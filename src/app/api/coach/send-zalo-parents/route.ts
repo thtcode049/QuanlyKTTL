@@ -139,6 +139,7 @@ export async function GET(req: NextRequest) {
                   ? coachBank.customQrImage
                   : generateVietQrUrl({
                       bankId: coachBank.bankId,
+                      bankName: coachBank.bankName,
                       accountNo: coachBank.bankAccount,
                       accountName: coachBank.accountHolder,
                       template: "compact2",
@@ -181,6 +182,7 @@ export async function GET(req: NextRequest) {
                   ? coachBank.customQrImage
                   : generateVietQrUrl({
                       bankId: coachBank.bankId,
+                      bankName: coachBank.bankName,
                       accountNo: coachBank.bankAccount,
                       accountName: coachBank.accountHolder,
                       template: "compact2",
@@ -405,6 +407,7 @@ export async function GET(req: NextRequest) {
           ? coachBank.customQrImage
           : generateVietQrUrl({
               bankId: coachBank.bankId,
+              bankName: coachBank.bankName,
               accountNo: coachBank.bankAccount,
               accountName: coachBank.accountHolder,
               template: "compact2",
@@ -446,6 +449,7 @@ export async function GET(req: NextRequest) {
         ? coachBank.customQrImage
         : generateVietQrUrl({
             bankId: coachBank.bankId,
+            bankName: coachBank.bankName,
             accountNo: coachBank.bankAccount,
             accountName: coachBank.accountHolder,
             template: "compact2",

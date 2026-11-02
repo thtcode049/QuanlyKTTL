@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Printer,
@@ -21,7 +21,7 @@ import {
   downloadInvoiceCardPng,
   copyInvoiceCardToClipboard,
 } from "@/lib/invoice-card-generator";
-import { formatCurrencyVND } from "@/lib/vietqr";
+import { formatCurrencyVND, generateVietQrDataUrl } from "@/lib/vietqr";
 
 interface InvoiceReceiptModalProps {
   isOpen: boolean;
@@ -39,6 +39,25 @@ export default function InvoiceReceiptModal({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [copyImageSuccess, setCopyImageSuccess] = useState(false);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
+  const [localQrSrc, setLocalQrSrc] = useState<string>("");
+
+  useEffect(() => {
+    if (!data) return;
+    if (data.vietQrUrl && data.vietQrUrl.startsWith("data:")) {
+      setLocalQrSrc(data.vietQrUrl);
+      return;
+    }
+    // Tự sinh data URL VietQR chuẩn Napas 24/7 trực tiếp
+    generateVietQrDataUrl({
+      bankId: data.bankName,
+      accountNo: data.bankAccount,
+      accountName: data.accountHolder,
+      amount: data.totalAmount,
+      description: data.transferContent,
+    })
+      .then((url) => setLocalQrSrc(url))
+      .catch(() => setLocalQrSrc(data.vietQrUrl));
+  }, [data]);
 
   if (!isOpen || !data) return null;
 
@@ -163,29 +182,45 @@ export default function InvoiceReceiptModal({
               </div>
 
               {/* Thông tin học viên */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl bg-slate-50/80 p-3.5 text-xs border border-slate-100">
-                <div>
-                  <span className="text-slate-500">Học viên:</span>{" "}
-                  <strong className="text-slate-900 font-bold text-sm ml-1">{data.studentName}</strong>
+              <div className="rounded-xl bg-slate-50/80 p-3.5 text-xs border border-slate-100 space-y-2">
+                <div className="flex items-center">
+                  <span className="w-36 text-slate-500 shrink-0 text-left">Học viên:</span>
+                  <strong className="flex-1 text-center text-slate-900 font-bold text-sm">{data.studentName}</strong>
                 </div>
-                <div>
-                  <span className="text-slate-500">Lớp học:</span>{" "}
-                  <strong className="text-slate-800 font-medium ml-1">{data.className}</strong>
+                <div className="flex items-center">
+                  <span className="w-36 text-slate-500 shrink-0 text-left">Lớp học:</span>
+                  <strong className="flex-1 text-center text-slate-800 font-medium">{data.className}</strong>
                 </div>
                 {data.branchName && (
-                  <div>
-                    <span className="text-slate-500">Cơ sở đào tạo:</span>{" "}
-                    <strong className="text-slate-800 font-medium ml-1">{data.branchName}</strong>
+                  <div className="flex items-center">
+                    <span className="w-36 text-slate-500 shrink-0 text-left">Cơ sở đào tạo:</span>
+                    <strong className="flex-1 text-center text-slate-800 font-medium">{data.branchName}</strong>
                   </div>
                 )}
-                <div>
-                  <span className="text-slate-500">Tổng số buổi thực học:</span>{" "}
-                  <strong className="text-emerald-700 font-bold ml-1">{data.presentCount} buổi</strong>
+                <div className="flex items-center">
+                  <span className="w-36 text-slate-500 shrink-0 text-left">Tổng số buổi thực học:</span>
+                  <strong className="flex-1 text-center text-emerald-700 font-bold">{data.presentCount} buổi</strong>
                 </div>
+                {!hasMultipleClasses && (
+                  <>
+                    <div className="flex items-center">
+                      <span className="w-36 text-slate-500 shrink-0 text-left">Các ngày có mặt:</span>
+                      <strong className="flex-1 text-center text-slate-800 font-mono text-[11px]">
+                        {data.presentDates && data.presentDates.length > 0 ? data.presentDates.join(", ") : "Chưa có buổi học"}
+                      </strong>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-36 text-slate-500 shrink-0 text-left">Đơn giá học phí:</span>
+                      <strong className="flex-1 text-center text-slate-700">
+                        {formatCurrencyVND(data.feePerSession)} / buổi
+                      </strong>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Chi tiết từng lớp (nếu học nhiều lớp) hoặc chi tiết buổi học */}
-              {hasMultipleClasses ? (
+              {/* Chi tiết từng lớp (nếu học nhiều lớp) */}
+              {hasMultipleClasses && (
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Chi tiết các lớp tham gia ({data.classList!.length} lớp):
@@ -217,19 +252,6 @@ export default function InvoiceReceiptModal({
                     </table>
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-lg border border-slate-100 bg-slate-50/40 p-3 text-xs space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Các ngày học sinh có mặt:</span>
-                    <strong className="text-slate-800 font-mono">
-                      {data.presentDates && data.presentDates.length > 0 ? data.presentDates.join(", ") : "Chưa có buổi học"}
-                    </strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Đơn giá học phí:</span>
-                    <strong className="text-slate-700">{formatCurrencyVND(data.feePerSession)} / buổi</strong>
-                  </div>
-                </div>
               )}
 
               {/* Hộp Tổng Học Phí */}
@@ -255,7 +277,7 @@ export default function InvoiceReceiptModal({
                 <div className="flex flex-col items-center justify-center shrink-0">
                   <div className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
                     <img
-                      src={data.vietQrUrl}
+                      src={localQrSrc || data.vietQrUrl}
                       alt="Mã VietQR Chuyển Khoản"
                       className="w-44 h-44 object-contain rounded-lg"
                     />
@@ -267,14 +289,14 @@ export default function InvoiceReceiptModal({
 
                 {/* Thông tin chuyển khoản & Cú pháp */}
                 <div className="w-full space-y-2.5 text-xs">
-                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-1.5">
-                    <span className="text-slate-500">Ngân hàng:</span>
-                    <strong className="text-slate-900 font-bold">{data.bankName}</strong>
+                  <div className="flex items-center border-b border-slate-200/80 pb-1.5">
+                    <span className="w-32 text-slate-500 shrink-0 text-left">Ngân hàng:</span>
+                    <strong className="flex-1 text-center text-slate-900 font-bold">{data.bankName}</strong>
                   </div>
 
-                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-1.5">
-                    <span className="text-slate-500">Số tài khoản:</span>
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center border-b border-slate-200/80 pb-1.5">
+                    <span className="w-32 text-slate-500 shrink-0 text-left">Số tài khoản:</span>
+                    <div className="flex-1 flex items-center justify-center gap-1.5">
                       <strong className="font-mono text-sm font-black text-slate-900">{data.bankAccount}</strong>
                       <button
                         type="button"
@@ -291,9 +313,9 @@ export default function InvoiceReceiptModal({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-1.5">
-                    <span className="text-slate-500">Chủ tài khoản:</span>
-                    <strong className="text-slate-800 font-bold uppercase">{data.accountHolder}</strong>
+                  <div className="flex items-center border-b border-slate-200/80 pb-1.5">
+                    <span className="w-32 text-slate-500 shrink-0 text-left">Chủ tài khoản:</span>
+                    <strong className="flex-1 text-center text-slate-800 font-bold uppercase">{data.accountHolder}</strong>
                   </div>
 
                   {/* Cú pháp chuyển khoản nổi bật */}
@@ -321,7 +343,7 @@ export default function InvoiceReceiptModal({
                         )}
                       </button>
                     </div>
-                    <p className="mt-1 font-mono text-sm font-extrabold text-orange-600 tracking-wide select-all">
+                    <p className="mt-1 font-mono text-center text-sm font-extrabold text-orange-600 tracking-wide select-all bg-white py-1 px-2 rounded border border-amber-200">
                       {data.transferContent}
                     </p>
                   </div>

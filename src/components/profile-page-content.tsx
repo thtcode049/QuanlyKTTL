@@ -25,7 +25,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { dataStore, UserData, resolveCanonicalCoachId, getCoachClasses } from "@/lib/data-store";
-import { SUPPORTED_BANKS } from "@/lib/vietqr";
+import { SUPPORTED_BANKS, resolveBank } from "@/lib/vietqr";
 import confetti from "canvas-confetti";
 
 interface ProfilePageContentProps {
@@ -82,10 +82,11 @@ export default function ProfilePageContent({ userRole }: ProfilePageContentProps
         setAccountHolder(merged.accountHolder || merged.name || "");
         setHasAdminAccess(merged.role === "ADMIN" || !!merged.hasAdminAccess);
 
-        const foundBank = SUPPORTED_BANKS.find(
-          (b) => b.shortName.toLowerCase() === (merged.bankName || "").toLowerCase()
-        );
-        if (foundBank) setBankId(foundBank.id);
+        const foundBank = resolveBank(merged.bankId, merged.bankName);
+        setBankId(foundBank.id);
+        if (!merged.bankName) {
+          setBankName(`${foundBank.name} (${foundBank.shortName})`);
+        }
       } catch (e) {}
     }
   };
@@ -173,6 +174,7 @@ export default function ProfilePageContent({ userRole }: ProfilePageContentProps
         bio,
         experience,
         elo: Number(elo),
+        bankId,
         bankAccount,
         bankName,
         accountHolder,
@@ -188,6 +190,12 @@ export default function ProfilePageContent({ userRole }: ProfilePageContentProps
 
       // Cập nhật dataStore
       dataStore.updateCoach(currentUser.id, payload as any);
+      dataStore.updateCoachBankConfig(currentUser.id, {
+        bankId,
+        bankName,
+        bankAccount,
+        accountHolder,
+      });
 
       // Cập nhật localStorage
       try {
