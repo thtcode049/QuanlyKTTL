@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dataStore } from "@/lib/data-store";
-import { generateVietQrUrl } from "@/lib/vietqr";
+import { generateVietQrUrl, formatTuitionTransferContent } from "@/lib/vietqr";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -130,14 +130,17 @@ export async function GET(req: NextRequest) {
             });
 
             studentsList = Array.from(studentMap.values()).map((st) => {
-              const transferContent = `HP ${st.studentCode} T${month}`;
+              const transferContent = formatTuitionTransferContent(st.studentName, month);
+              const primaryClass = st.classList[0];
+              const targetCls = dataStore.classes.find((c) => c.name === primaryClass?.className);
+              const coachBank = dataStore.getCoachBankConfig(targetCls?.coachId);
               const vietQrUrl =
-                dataStore.bankConfig.useCustomQr && dataStore.bankConfig.customQrImage
-                  ? dataStore.bankConfig.customQrImage
+                coachBank.useCustomQr && coachBank.customQrImage
+                  ? coachBank.customQrImage
                   : generateVietQrUrl({
-                      bankId: dataStore.bankConfig.bankId,
-                      accountNo: dataStore.bankConfig.bankAccount,
-                      accountName: dataStore.bankConfig.accountHolder,
+                      bankId: coachBank.bankId,
+                      accountNo: coachBank.bankAccount,
+                      accountName: coachBank.accountHolder,
                       template: "compact2",
                       amount: st.totalAmount,
                       description: transferContent,
@@ -146,9 +149,9 @@ export async function GET(req: NextRequest) {
                 ...st,
                 transferContent,
                 vietQrUrl,
-                bankName: dataStore.bankConfig.bankName,
-                bankAccount: dataStore.bankConfig.bankAccount,
-                accountHolder: dataStore.bankConfig.accountHolder,
+                bankName: coachBank.bankName,
+                bankAccount: coachBank.bankAccount,
+                accountHolder: coachBank.accountHolder,
                 zaloChatUrl: `https://zalo.me/${st.cleanParentPhone}`,
               };
             });
@@ -158,6 +161,8 @@ export async function GET(req: NextRequest) {
               const d = new Date(s.date);
               return d.getMonth() + 1 === month && d.getFullYear() === year;
             });
+
+            const coachBank = dataStore.getCoachBankConfig(targetClass?.coachId);
 
             studentsList = invoices.map((inv) => {
               const student = dataStore.students.find((s) => s.id === inv.studentId);
@@ -170,14 +175,14 @@ export async function GET(req: NextRequest) {
                 }
               });
 
-              const transferContent = `HP ${student?.code || "HS"} T${month}`;
+              const transferContent = formatTuitionTransferContent(student?.fullName, month);
               const vietQrUrl =
-                dataStore.bankConfig.useCustomQr && dataStore.bankConfig.customQrImage
-                  ? dataStore.bankConfig.customQrImage
+                coachBank.useCustomQr && coachBank.customQrImage
+                  ? coachBank.customQrImage
                   : generateVietQrUrl({
-                      bankId: dataStore.bankConfig.bankId,
-                      accountNo: dataStore.bankConfig.bankAccount,
-                      accountName: dataStore.bankConfig.accountHolder,
+                      bankId: coachBank.bankId,
+                      accountNo: coachBank.bankAccount,
+                      accountName: coachBank.accountHolder,
                       template: "compact2",
                       amount: inv.totalAmount,
                       description: transferContent,
@@ -204,9 +209,9 @@ export async function GET(req: NextRequest) {
                 status: inv.status,
                 transferContent,
                 vietQrUrl,
-                bankName: dataStore.bankConfig.bankName,
-                bankAccount: dataStore.bankConfig.bankAccount,
-                accountHolder: dataStore.bankConfig.accountHolder,
+                bankName: coachBank.bankName,
+                bankAccount: coachBank.bankAccount,
+                accountHolder: coachBank.accountHolder,
               };
             });
           }
@@ -391,14 +396,17 @@ export async function GET(req: NextRequest) {
     });
 
     studentsList = Array.from(studentMap.values()).map((st) => {
-      const transferContent = `HP ${st.studentCode} T${month}`;
+      const transferContent = formatTuitionTransferContent(st.studentName, month);
+      const primaryClass = st.classList[0];
+      const targetCls = dataStore.classes.find((c) => c.name === primaryClass?.className);
+      const coachBank = dataStore.getCoachBankConfig(targetCls?.coachId);
       const vietQrUrl =
-        bank.useCustomQr && bank.customQrImage
-          ? bank.customQrImage
+        coachBank.useCustomQr && coachBank.customQrImage
+          ? coachBank.customQrImage
           : generateVietQrUrl({
-              bankId: bank.bankId,
-              accountNo: bank.bankAccount,
-              accountName: bank.accountHolder,
+              bankId: coachBank.bankId,
+              accountNo: coachBank.bankAccount,
+              accountName: coachBank.accountHolder,
               template: "compact2",
               amount: st.totalAmount,
               description: transferContent,
@@ -407,9 +415,9 @@ export async function GET(req: NextRequest) {
         ...st,
         transferContent,
         vietQrUrl,
-        bankName: bank.bankName,
-        bankAccount: bank.bankAccount,
-        accountHolder: bank.accountHolder,
+        bankName: coachBank.bankName,
+        bankAccount: coachBank.bankAccount,
+        accountHolder: coachBank.accountHolder,
         zaloChatUrl: `https://zalo.me/${st.cleanParentPhone}`,
       };
     });
@@ -419,6 +427,8 @@ export async function GET(req: NextRequest) {
       const d = new Date(s.date);
       return d.getMonth() + 1 === month && d.getFullYear() === year;
     });
+
+    const coachBank = dataStore.getCoachBankConfig(targetClass?.coachId);
 
     studentsList = invoices.map((inv) => {
       const student = dataStore.students.find((s) => s.id === inv.studentId);
@@ -431,13 +441,13 @@ export async function GET(req: NextRequest) {
         }
       });
 
-      const transferContent = `HP ${student?.code || "HS"} T${month}`;
-      const vietQrUrl = bank.useCustomQr && bank.customQrImage
-        ? bank.customQrImage
+      const transferContent = formatTuitionTransferContent(student?.fullName, month);
+      const vietQrUrl = coachBank.useCustomQr && coachBank.customQrImage
+        ? coachBank.customQrImage
         : generateVietQrUrl({
-            bankId: bank.bankId,
-            accountNo: bank.bankAccount,
-            accountName: bank.accountHolder,
+            bankId: coachBank.bankId,
+            accountNo: coachBank.bankAccount,
+            accountName: coachBank.accountHolder,
             template: "compact2",
             amount: inv.totalAmount,
             description: transferContent,
@@ -464,6 +474,9 @@ export async function GET(req: NextRequest) {
         status: inv.status,
         transferContent,
         vietQrUrl,
+        bankName: coachBank.bankName,
+        bankAccount: coachBank.bankAccount,
+        accountHolder: coachBank.accountHolder,
         zaloChatUrl: `https://zalo.me/${cleanPhone}`,
       };
     });

@@ -338,6 +338,7 @@ class InMemoryDataStore {
   public sessions: AttendanceSessionData[] = [...initialSessions];
   public evaluations: StudentEvaluationData[] = [...initialEvaluations];
   public bankConfig: BankConfig = { ...initialBankConfig };
+  public coachBankConfigs: Record<string, BankConfig> = {};
   public zaloConfig: ZaloConfig = { ...initialZaloConfig };
   public tasks: TaskData[] = [...initialTasks];
   public notifications: NotificationData[] = [...initialNotifications];
@@ -370,6 +371,7 @@ class InMemoryDataStore {
         tasks: this.tasks,
         notifications: this.notifications,
         bankConfig: this.bankConfig,
+        coachBankConfigs: this.coachBankConfigs,
         zaloConfig: this.zaloConfig,
         zaloSentMap,
       };
@@ -437,6 +439,9 @@ class InMemoryDataStore {
       }
       if (data.bankConfig) {
         this.bankConfig = { ...this.bankConfig, ...data.bankConfig };
+      }
+      if (data.coachBankConfigs && typeof data.coachBankConfigs === "object") {
+        this.coachBankConfigs = { ...this.coachBankConfigs, ...data.coachBankConfigs };
       }
       if (data.zaloConfig) {
         this.zaloConfig = { ...this.zaloConfig, ...data.zaloConfig };
@@ -1490,11 +1495,52 @@ class InMemoryDataStore {
     }
   }
 
-  // Cập nhật cấu hình ngân hàng thụ hưởng & mã VietQR
+  // Cập nhật cấu hình ngân hàng thụ hưởng & mã VietQR chung
   public updateBankConfig(data: Partial<BankConfig>) {
     Object.assign(this.bankConfig, data);
     this.saveToLocalStorage();
     return this.bankConfig;
+  }
+
+  // Lấy cấu hình tài khoản ngân hàng của HLV cụ thể hoặc fallback về bankConfig chung
+  public getCoachBankConfig(coachId?: string): BankConfig {
+    if (coachId && this.coachBankConfigs[coachId]) {
+      return this.coachBankConfigs[coachId];
+    }
+    if (coachId) {
+      const u = this.users.find((user) => user.id === coachId || user.email === coachId);
+      if (u && (u.bankAccount || u.accountHolder)) {
+        return {
+          bankId: "MB",
+          bankAccount: u.bankAccount || this.bankConfig.bankAccount,
+          bankName: u.bankName || this.bankConfig.bankName,
+          accountHolder: (u.accountHolder || u.name || "").trim().toUpperCase(),
+          qrTemplate: this.bankConfig.qrTemplate || "compact2",
+          customQrImage: this.bankConfig.customQrImage,
+          useCustomQr: this.bankConfig.useCustomQr,
+        };
+      }
+    }
+    return this.bankConfig;
+  }
+
+  // Cập nhật cấu hình ngân hàng riêng cho 1 HLV
+  public updateCoachBankConfig(coachId: string, data: Partial<BankConfig>) {
+    if (!coachId) return this.updateBankConfig(data);
+    const existing = this.getCoachBankConfig(coachId);
+    this.coachBankConfigs[coachId] = {
+      ...existing,
+      ...data,
+    };
+    // Đồng bộ vào thông tin user để hiển thị nhất quán trong danh sách HLV
+    const uIdx = this.users.findIndex((u) => u.id === coachId || u.email === coachId);
+    if (uIdx >= 0) {
+      if (data.bankAccount) this.users[uIdx].bankAccount = data.bankAccount;
+      if (data.bankName) this.users[uIdx].bankName = data.bankName;
+      if (data.accountHolder) this.users[uIdx].accountHolder = data.accountHolder;
+    }
+    this.saveToLocalStorage();
+    return this.coachBankConfigs[coachId];
   }
 
   // Cập nhật mẫu tin nhắn Zalo gửi phụ huynh

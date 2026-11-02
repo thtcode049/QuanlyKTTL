@@ -52,3 +52,14 @@ export function formatCurrencyVND(amount: number): string {
     currency: "VND",
   }).format(amount);
 }
+
+/**
+ * Sinh cú pháp chuyển khoản học phí chuẩn: [Tên học sinh] gửi HP T[tháng]
+ * Định dạng liền không khoảng cách T10 (ví dụ: "Nguyễn Minh Khang gửi HP T10")
+ */
+export function formatTuitionTransferContent(studentName?: string, month?: number): string {
+  const cleanName = (studentName || "Học viên").trim();
+  const m = month ?? 10;
+  return `${cleanName} gửi HP T${m}`;
+}
+

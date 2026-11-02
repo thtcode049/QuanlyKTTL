@@ -3,7 +3,7 @@
  */
 
 import { dataStore } from '../src/lib/data-store';
-import { generateVietQrUrl } from '../src/lib/vietqr';
+import { generateVietQrUrl, formatTuitionTransferContent } from '../src/lib/vietqr';
 import fs from 'fs';
 import path from 'path';
 
@@ -45,7 +45,7 @@ export function getInvoicesForMonth(month = 10, year = 2026, classId?: string) {
         }
       });
 
-      const transferContent = `HP ${student.code} T${month}`;
+      const transferContent = formatTuitionTransferContent(student.fullName, month);
       const vietQrUrl = bank.useCustomQr && bank.customQrImage
         ? bank.customQrImage
         : generateVietQrUrl({

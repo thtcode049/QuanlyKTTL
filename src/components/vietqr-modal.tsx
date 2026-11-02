@@ -16,7 +16,7 @@ import {
   Save,
   ImageIcon,
 } from "lucide-react";
-import { formatCurrencyVND, generateVietQrUrl, SUPPORTED_BANKS } from "@/lib/vietqr";
+import { formatCurrencyVND, generateVietQrUrl, SUPPORTED_BANKS, formatTuitionTransferContent } from "@/lib/vietqr";
 import { dataStore } from "@/lib/data-store";
 
 interface VietQrModalProps {
@@ -73,14 +73,14 @@ export const VietQrModal: React.FC<VietQrModalProps> = ({
       setBankName(initialBankName || cfg.bankName || "Ngân hàng TMCP Quân Đội (MBBank)");
       setAccountHolder(initialAccountHolder || cfg.accountHolder || "CLB CO VUA KIEN TUONG TUONG LAI");
       setAmount(initialAmount);
-      setTransferContent(initialTransferContent || `HP ${studentCode} T${month}`);
+      setTransferContent(initialTransferContent || formatTuitionTransferContent(studentName, month));
       setQrTemplate((cfg.qrTemplate as any) || "compact2");
       setCustomQrImage(cfg.customQrImage || "");
       setUseUploadedQrImage(Boolean(cfg.useCustomQr && cfg.customQrImage));
       setActiveTab("VIEW");
       setSaveSuccess(false);
     }
-  }, [isOpen, initialAmount, studentCode, month, initialBankAccount, initialBankName, initialAccountHolder, initialTransferContent]);
+  }, [isOpen, initialAmount, studentName, studentCode, month, initialBankAccount, initialBankName, initialAccountHolder, initialTransferContent]);
 
   if (!isOpen) return null;
 

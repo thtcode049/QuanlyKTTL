@@ -36,7 +36,7 @@ function buildInvoiceHtml(data) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phiếu Báo Học Phí - ${data.studentName}</title>
+  <title>Phiếu Thu Học Phí - ${data.studentName}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -234,10 +234,10 @@ function buildInvoiceHtml(data) {
 
     <!-- Header -->
     <div class="card-header">
-      <span class="badge-month">HỌC PHÍ THÁNG ${data.month}/${data.year}</span>
-      <h1 class="title">[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}</h1>
+      <span class="badge-month">PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}</span>
+      <h1 class="title">[KTTLL] PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}</h1>
       <p class="intro">
-        Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
+        Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi phiếu thu học phí tháng ${data.month}/${data.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
       </p>
     </div>
 

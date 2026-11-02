@@ -21,11 +21,15 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { dataStore } from "@/lib/data-store";
-import { generateVietQrUrl, SUPPORTED_BANKS, formatCurrencyVND } from "@/lib/vietqr";
+import { generateVietQrUrl, SUPPORTED_BANKS, formatCurrencyVND, formatTuitionTransferContent } from "@/lib/vietqr";
 import confetti from "canvas-confetti";
 
 export default function CoachSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Coach identity
+  const [currentCoachId, setCurrentCoachId] = useState<string>("");
+  const [currentCoachName, setCurrentCoachName] = useState<string>("");
 
   // Bank config state
   const [bankId, setBankId] = useState("MB");
@@ -43,13 +47,27 @@ export default function CoachSettingsPage() {
 
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Khởi tạo từ dataStore và localStorage khi mount
+  // Khởi tạo từ dataStore theo riêng từng HLV khi mount
   useEffect(() => {
-    const cfg = dataStore.bankConfig;
+    let coachId = "";
+    let coachName = "";
+    const stored = localStorage.getItem("kttll_user");
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.id) coachId = u.id;
+        if (u.name) coachName = u.name;
+      } catch (e) {}
+    }
+    setCurrentCoachId(coachId);
+    setCurrentCoachName(coachName);
+
+    const cfg = dataStore.getCoachBankConfig(coachId);
     if (cfg.bankId) setBankId(cfg.bankId);
     if (cfg.bankAccount) setBankAccount(cfg.bankAccount);
     if (cfg.bankName) setBankName(cfg.bankName);
     if (cfg.accountHolder) setAccountHolder(cfg.accountHolder);
+    else if (coachName) setAccountHolder(coachName.toUpperCase());
     if (cfg.qrTemplate) setQrTemplate(cfg.qrTemplate);
     if (cfg.customQrImage) setCustomQrImage(cfg.customQrImage);
     if (cfg.useCustomQr !== undefined) setUseCustomQr(Boolean(cfg.useCustomQr));
@@ -103,7 +121,7 @@ export default function CoachSettingsPage() {
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
 
-    dataStore.updateBankConfig({
+    dataStore.updateCoachBankConfig(currentCoachId, {
       bankId,
       bankAccount,
       bankName,
@@ -132,6 +150,9 @@ export default function CoachSettingsPage() {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
+  const sampleStudentName = "Nguyễn Minh Khang";
+  const sampleTransferContent = formatTuitionTransferContent(sampleStudentName, 10);
+
   const sampleQrUrl =
     useCustomQr && customQrImage
       ? customQrImage
@@ -140,7 +161,7 @@ export default function CoachSettingsPage() {
           accountNo: bankAccount,
           accountName: accountHolder,
           amount: 600000,
-          description: "HP HS001 T10",
+          description: sampleTransferContent,
           template: qrTemplate as any,
         });
 
@@ -543,7 +564,7 @@ export default function CoachSettingsPage() {
                       .replace("{year}", "2026")
                       .replace("{presentCount}", "4")
                       .replace("{totalAmount}", "600.000 đ")
-                      .replace("{transferContent}", "HP HS001 T10")}
+                      .replace("{transferContent}", "Nguyễn Minh Khang gửi HP T10")}
                   </p>
 
                   <div className="rounded bg-blue-50/50 p-2 border border-blue-100 space-y-1 text-[11px]">
@@ -557,7 +578,7 @@ export default function CoachSettingsPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Cú pháp CK:</span>
-                      <strong className="font-mono text-orange-600">HP HS001 T10</strong>
+                      <strong className="font-mono text-orange-600">Nguyễn Minh Khang gửi HP T10</strong>
                     </div>
                   </div>
 

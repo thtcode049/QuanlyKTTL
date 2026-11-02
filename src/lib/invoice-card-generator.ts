@@ -152,11 +152,11 @@ export async function generateInvoiceCardCanvas(
   ctx.textBaseline = "middle";
   ctx.fillText("♔", crownX + crownSize / 2, crownY + crownSize / 2 + 1);
 
-  // 4. Header Badge: HỌC PHÍ THÁNG M/YYYY
+  // 4. Header Badge: PHIẾU THU HỌC PHÍ THÁNG M/YYYY
   const padLeft = cardX + 24;
   let curY = cardY + 28;
 
-  const badgeText = `HỌC PHÍ THÁNG ${data.month}/${data.year}`;
+  const badgeText = `PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}`;
   ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
@@ -179,14 +179,14 @@ export async function generateInvoiceCardCanvas(
   curY += 32;
   ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#0F172A";
-  ctx.fillText(`[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`, padLeft, curY);
+  ctx.fillText(`[KTTLL] PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}`, padLeft, curY);
 
   // 6. Lời chào
   curY += 24;
   ctx.font = "500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#475569";
   const introLine1 = `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai`;
-  const introLine2 = `xin gửi bảng tổng kết học phí theo nguyên tắc Thực học - Thực trả.`;
+  const introLine2 = `xin gửi phiếu thu học phí theo nguyên tắc Thực học - Thực trả.`;
   ctx.fillText(truncateText(ctx, introLine1, cardW - 48), padLeft, curY);
   curY += 17;
   ctx.fillText(introLine2, padLeft, curY);

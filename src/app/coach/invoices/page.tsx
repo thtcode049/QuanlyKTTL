@@ -23,6 +23,7 @@ import {
   FileImage,
   FolderArchive,
   Layers,
+  ReceiptText,
 } from "lucide-react";
 import {
   dataStore,
@@ -32,9 +33,10 @@ import {
   resolveCanonicalCoachId,
   getCoachClasses,
 } from "@/lib/data-store";
-import { formatCurrencyVND, generateVietQrUrl } from "@/lib/vietqr";
+import { formatCurrencyVND, generateVietQrUrl, formatTuitionTransferContent } from "@/lib/vietqr";
 import { exportInvoicesToExcel, InvoiceExportRow } from "@/lib/excel";
 import VietQrModal from "@/components/vietqr-modal";
+import InvoiceReceiptModal from "@/components/invoice-receipt-modal";
 import ZaloParentSenderModal, { StudentParentInvoiceItem } from "@/components/zalo-parent-sender-modal";
 import BatchCardExportModal from "@/components/batch-card-export-modal";
 import {
@@ -127,6 +129,15 @@ function InvoicesContent() {
     accountHolder?: string;
   } | null>(null);
 
+  // Modal Xem & In Phiếu Thu Học Phí Mới
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [activeReceiptData, setActiveReceiptData] = useState<InvoiceCardData | null>(null);
+
+  const handleOpenReceipt = (cardData: InvoiceCardData) => {
+    setActiveReceiptData(cardData);
+    setReceiptModalOpen(true);
+  };
+
   // Modal HLV Gửi Thẻ Học Phí Bằng Tool Zalo EXE
   const [zaloParentModalOpen, setZaloParentModalOpen] = useState(false);
   const [selectedStudentForParentModal, setSelectedStudentForParentModal] = useState<string | undefined>(undefined);
@@ -143,10 +154,11 @@ function InvoicesContent() {
     student: StudentData,
     includeOtherClasses: boolean = preferConsolidatedCards
   ): InvoiceCardData => {
-    const bank = dataStore.bankConfig;
-    const transferContent = `HP ${student.code} T${selectedMonth}`;
     const targetClass = classes.find((c) => c.id === inv.classId) || selectedClass;
     const targetBranch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+    const classCoachId = targetClass?.coachId || currentCoachId;
+    const bank = dataStore.getCoachBankConfig(classCoachId);
+    const transferContent = formatTuitionTransferContent(student.fullName, selectedMonth);
 
     // Nếu yêu cầu gộp các lớp khác và học viên có nhiều hơn 1 lớp trong tháng
     const studentInvsInMonth = dataStore.invoices.filter(
@@ -173,17 +185,14 @@ function InvoicesContent() {
       const allDates = classList.flatMap((c) => c.presentDates);
       const classNames = classList.map((c) => c.className).join(", ");
 
-      const vietQrUrl =
-        bank.useCustomQr && bank.customQrImage
-          ? bank.customQrImage
-          : generateVietQrUrl({
-              bankId: bank.bankId,
-              accountNo: bank.bankAccount,
-              accountName: bank.accountHolder,
-              template: (bank.qrTemplate as any) || "compact2",
-              amount: totalAmount,
-              description: transferContent,
-            });
+      const vietQrUrl = generateVietQrUrl({
+        bankId: bank.bankId,
+        accountNo: bank.bankAccount,
+        accountName: bank.accountHolder,
+        template: "qr_only",
+        amount: totalAmount,
+        description: transferContent,
+      });
 
       return {
         studentCode: student.code,
@@ -205,17 +214,14 @@ function InvoicesContent() {
       };
     }
 
-    const vietQrUrl =
-      bank.useCustomQr && bank.customQrImage
-        ? bank.customQrImage
-        : generateVietQrUrl({
-            bankId: bank.bankId,
-            accountNo: bank.bankAccount,
-            accountName: bank.accountHolder,
-            template: (bank.qrTemplate as any) || "compact2",
-            amount: inv.totalAmount,
-            description: transferContent,
-          });
+    const vietQrUrl = generateVietQrUrl({
+      bankId: bank.bankId,
+      accountNo: bank.bankAccount,
+      accountName: bank.accountHolder,
+      template: "qr_only",
+      amount: inv.totalAmount,
+      description: transferContent,
+    });
 
     return {
       studentCode: student.code,
@@ -238,8 +244,10 @@ function InvoicesContent() {
 
   // Helper tạo dữ liệu thẻ học phí gộp cho học sinh học nhiều lớp
   const buildAggregatedInvoiceCardData = (agg: AggregatedStudentInvoice): InvoiceCardData => {
-    const bank = dataStore.bankConfig;
     const primaryClass = agg.classItems[0];
+    const targetCls = classes.find((c) => c.id === primaryClass?.classId);
+    const classCoachId = targetCls?.coachId || currentCoachId;
+    const bank = dataStore.getCoachBankConfig(classCoachId);
     const classNames = agg.classItems.map((c) => c.className).join(", ");
     const allDates = agg.classItems.flatMap((c) => c.presentDates);
 
@@ -381,7 +389,6 @@ function InvoicesContent() {
 
   // Mở VietQR Modal cho hóa đơn đơn lẻ
   const handleOpenVietQr = (inv: MonthlyInvoiceData, student: StudentData) => {
-    const bank = dataStore.bankConfig;
     const cardData = buildInvoiceCardData(inv, student, preferConsolidatedCards);
     setActiveQrData({
       studentName: student.fullName,
@@ -391,16 +398,16 @@ function InvoicesContent() {
       year: selectedYear,
       qrUrl: cardData.vietQrUrl,
       transferContent: cardData.transferContent,
-      bankName: bank.bankName,
-      bankAccount: bank.bankAccount,
-      accountHolder: bank.accountHolder,
+      bankName: cardData.bankName,
+      bankAccount: cardData.bankAccount,
+      accountHolder: cardData.accountHolder,
     });
     setVietQrModalOpen(true);
   };
 
   // Mở VietQR Modal cho học viên gộp nhiều lớp
   const handleOpenAggregatedVietQr = (agg: AggregatedStudentInvoice) => {
-    const bank = dataStore.bankConfig;
+    const cardData = buildAggregatedInvoiceCardData(agg);
     setActiveQrData({
       studentName: agg.studentName,
       studentCode: agg.studentCode,
@@ -409,9 +416,9 @@ function InvoicesContent() {
       year: selectedYear,
       qrUrl: agg.vietQrUrl,
       transferContent: agg.transferContent,
-      bankName: bank.bankName,
-      bankAccount: bank.bankAccount,
-      accountHolder: bank.accountHolder,
+      bankName: cardData.bankName,
+      bankAccount: cardData.bankAccount,
+      accountHolder: cardData.accountHolder,
     });
     setVietQrModalOpen(true);
   };
@@ -457,7 +464,7 @@ function InvoicesContent() {
           invoiceIds: [inv.id],
           zaloSentAt: inv.zaloSentAt,
           vietQrUrl: "",
-          transferContent: `HP ${student.code || "HS"} T${selectedMonth}`,
+          transferContent: formatTuitionTransferContent(student.fullName, selectedMonth),
         });
       } else {
         const existing = studentMap.get(student.id)!;
@@ -476,17 +483,17 @@ function InvoicesContent() {
 
     const result = Array.from(studentMap.values());
     result.forEach((item) => {
-      item.vietQrUrl =
-        bank.useCustomQr && bank.customQrImage
-          ? bank.customQrImage
-          : generateVietQrUrl({
-              bankId: bank.bankId,
-              accountNo: bank.bankAccount,
-              accountName: bank.accountHolder,
-              template: "compact2",
-              amount: item.totalAmount,
-              description: item.transferContent,
-            });
+      const primaryItem = item.classItems[0];
+      const cls = classes.find((c) => c.id === primaryItem?.classId);
+      const coachBank = dataStore.getCoachBankConfig(cls?.coachId || currentCoachId);
+      item.vietQrUrl = generateVietQrUrl({
+        bankId: coachBank.bankId,
+        accountNo: coachBank.bankAccount,
+        accountName: coachBank.accountHolder,
+        template: "qr_only",
+        amount: item.totalAmount,
+        description: item.transferContent,
+      });
     });
 
     return result;
@@ -905,7 +912,15 @@ function InvoicesContent() {
                   </div>
 
                   {/* Quick Action Buttons on Mobile */}
-                  <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
+                  <div className="mt-2.5 grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => handleOpenReceipt(buildAggregatedInvoiceCardData(agg))}
+                      className="flex items-center justify-center gap-1 rounded bg-emerald-600 py-1.5 text-[11px] font-bold text-white shadow-xs active:bg-emerald-700"
+                      title="Xem & In Phiếu thu học phí"
+                    >
+                      <ReceiptText className="h-3.5 w-3.5" />
+                      <span>Phiếu Thu</span>
+                    </button>
                     <button
                       onClick={() => handleOpenAggregatedVietQr(agg)}
                       className="flex items-center justify-center gap-1 rounded bg-emerald-50 py-1.5 text-[11px] font-semibold text-brand-primary border border-emerald-200 active:bg-emerald-100"
@@ -999,7 +1014,15 @@ function InvoicesContent() {
                   </div>
 
                   {/* Quick Action Buttons on Mobile */}
-                  <div className="mt-2.5 grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
+                  <div className="mt-2.5 grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => student && handleOpenReceipt(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
+                      className="flex items-center justify-center gap-1 rounded bg-emerald-600 py-1.5 text-[11px] font-bold text-white shadow-xs active:bg-emerald-700"
+                      title="Xem & In Phiếu thu học phí"
+                    >
+                      <ReceiptText className="h-3.5 w-3.5" />
+                      <span>Phiếu Thu</span>
+                    </button>
                     <button
                       onClick={() => student && handleOpenVietQr(inv, student)}
                       className="flex items-center justify-center gap-1 rounded bg-emerald-50 py-1.5 text-[11px] font-semibold text-brand-primary border border-emerald-200 active:bg-emerald-100"
@@ -1166,6 +1189,16 @@ function InvoicesContent() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* Nút Xem & In Phiếu Thu */}
+                          <button
+                            onClick={() => handleOpenReceipt(buildAggregatedInvoiceCardData(agg))}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200 transition-colors hover:bg-emerald-100 shadow-2xs active:scale-95"
+                            title="Xem & In phiếu thu học phí có mã VietQR động của học sinh này"
+                          >
+                            <ReceiptText className="h-3.5 w-3.5 text-emerald-600" />
+                            <span>Phiếu Thu</span>
+                          </button>
+
                           {/* Nút VietQR Gộp */}
                           <button
                             onClick={() => handleOpenAggregatedVietQr(agg)}
@@ -1336,6 +1369,16 @@ function InvoicesContent() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* Nút Xem & In Phiếu Thu */}
+                          <button
+                            onClick={() => student && handleOpenReceipt(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200 transition-colors hover:bg-emerald-100 shadow-2xs active:scale-95"
+                            title="Xem & In phiếu thu học phí có mã VietQR động của học sinh này"
+                          >
+                            <ReceiptText className="h-3.5 w-3.5 text-emerald-600" />
+                            <span>Phiếu Thu</span>
+                          </button>
+
                           {/* Nút VietQR */}
                           <button
                             onClick={() => student && handleOpenVietQr(inv, student)}
@@ -1488,6 +1531,20 @@ function InvoicesContent() {
       )}
 
       {/* Modals */}
+      {/* Modal Xem & In Phiếu Thu Học Phí */}
+      <InvoiceReceiptModal
+        isOpen={receiptModalOpen}
+        onClose={() => setReceiptModalOpen(false)}
+        data={activeReceiptData}
+        onOpenZaloTool={() => {
+          if (activeReceiptData) {
+            const st = dataStore.students.find((s) => s.code === activeReceiptData.studentCode);
+            setSelectedStudentForParentModal(st?.id);
+          }
+          setZaloParentModalOpen(true);
+        }}
+      />
+
       {activeQrData && (
         <VietQrModal
           isOpen={vietQrModalOpen}
@@ -1592,11 +1649,11 @@ function InvoicesContent() {
                   totalAmount: cardData?.totalAmount ?? inv.totalAmount,
                   status: inv.status,
                   zaloSentAt: inv.zaloSentAt,
-                  transferContent: cardData?.transferContent || `HP ${student?.code || "HS"} T${selectedMonth}`,
+                  transferContent: cardData?.transferContent || formatTuitionTransferContent(student?.fullName, selectedMonth),
                   vietQrUrl: cardData?.vietQrUrl || "",
-                  bankName: dataStore.bankConfig.bankName,
-                  bankAccount: dataStore.bankConfig.bankAccount,
-                  accountHolder: dataStore.bankConfig.accountHolder,
+                  bankName: cardData?.bankName || dataStore.bankConfig.bankName,
+                  bankAccount: cardData?.bankAccount || dataStore.bankConfig.bankAccount,
+                  accountHolder: cardData?.accountHolder || dataStore.bankConfig.accountHolder,
                   classList: cardData?.classList,
                 };
               })

@@ -127,7 +127,7 @@ export default function AdminSettingsPage() {
           accountNo: bankAccount,
           accountName: accountHolder,
           amount: 600000,
-          description: "HP HS001 T10",
+          description: "Nguyễn Minh Khang gửi HP T10",
           template: qrTemplate,
         });
 
@@ -145,7 +145,7 @@ export default function AdminSettingsPage() {
     feePerSession: 150000,
     totalAmount: 600000,
     vietQrUrl: sampleQrUrl,
-    transferContent: "HP HS001 T10",
+    transferContent: "Nguyễn Minh Khang gửi HP T10",
     bankName,
     bankAccount,
     accountHolder,
