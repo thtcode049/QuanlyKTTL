@@ -30,16 +30,59 @@ export interface InvoiceCardData {
 }
 
 /**
- * Tải ảnh từ URL vào đối tượng HTMLImageElement với hỗ trợ crossOrigin
+ * Tải ảnh QR hoặc tài nguyên ảnh:
+ * Với URL VietQR (thường trả về SVG chứa data:image/png base64 bên trong),
+ * ta fetch text và bóc tách trực tiếp base64 data URL để vẽ an toàn lên Canvas
+ * mà không bao giờ bị lỗi CORS hay ô nhiễm Canvas (tainted canvas).
  */
-function loadImage(src: string): Promise<HTMLImageElement> {
+async function loadQrImage(src: string): Promise<HTMLImageElement> {
+  // Nếu là data url sẵn
+  if (src.startsWith("data:")) {
+    return loadRawImage(src);
+  }
+
+  // Thử fetch để bóc tách base64 png từ SVG của VietQR (hoặc lấy blob)
+  try {
+    const res = await fetch(src);
+    const contentType = res.headers.get("content-type") || "";
+    
+    if (contentType.includes("svg") || src.includes("vietqr.io")) {
+      const text = await res.text();
+      // VietQR SVG nhúng mã QR dưới dạng: href="data:image/png;base64,..."
+      const match = text.match(/href=["'](data:image\/[^"']+)["']/);
+      if (match && match[1]) {
+        return await loadRawImage(match[1]);
+      }
+      // Nếu là SVG thuần không có base64 png, tạo data-uri SVG
+      const svgBase64 = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`;
+      return await loadRawImage(svgBase64);
+    } else {
+      // Nếu là ảnh thông thường (PNG/JPEG), convert sang Blob object URL
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        const img = await loadRawImage(objectUrl);
+        return img;
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    }
+  } catch (err) {
+    console.warn("Fetch VietQR qua mạng thất bại, thử load thẻ img thông thường:", err);
+    return loadRawImage(src);
+  }
+}
+
+/**
+ * Tải ảnh cơ bản từ URL/DataURL vào HTMLImageElement
+ */
+function loadRawImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = (e) => reject(e);
     img.src = src;
-    // Timeout sau 6 giây nếu mạng chậm
     setTimeout(() => {
       if (!img.complete) {
         reject(new Error("Timeout tải ảnh QR"));
@@ -358,9 +401,10 @@ export async function generateInvoiceCardCanvas(
 
   // Tải và vẽ ảnh VietQR lên Canvas
   try {
-    const qrImg = await loadImage(data.vietQrUrl);
+    const qrImg = await loadQrImage(data.vietQrUrl);
     ctx.drawImage(qrImg, qrImgX + 6, qrImgY + 6, qrImgSize - 12, qrImgSize - 12);
   } catch (err) {
+    console.error("Lỗi vẽ VietQR lên Canvas:", err);
     // Vẽ placeholder nếu lỗi tải ảnh
     ctx.fillStyle = "#64748B";
     ctx.font = "600 11px -apple-system, BlinkMacSystemFont, sans-serif";
