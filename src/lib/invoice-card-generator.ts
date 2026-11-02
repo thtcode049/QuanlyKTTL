@@ -67,22 +67,10 @@ async function loadQrImage(src: string): Promise<HTMLImageElement> {
         return await loadRawImage(dataUrl);
       }
 
-      // Nếu là SVG chứa PNG base64 bên trong (chuẩn của img.vietqr.io)
+      // Nếu là SVG từ img.vietqr.io, giữ nguyên vẹn 100% toàn bộ SVG (bao gồm khung nền, mã QR, logo VietQR và số tiền)
       const text = await fetchRes.text();
-      const base64Match =
-        text.match(/href=["']data:image\/png;base64,([^"']+)["']/i) ||
-        text.match(/xlink:href=["']data:image\/png;base64,([^"']+)["']/i) ||
-        text.match(/data:image\/png;base64,([A-Za-z0-9+/=]+)/);
-
-      if (base64Match) {
-        const fullDataUrl = base64Match[0].startsWith("data:")
-          ? base64Match[0]
-          : `data:image/png;base64,${base64Match[1]}`;
-        return await loadRawImage(fullDataUrl);
-      }
-
-      const svgBase64 = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`;
-      return await loadRawImage(svgBase64);
+      const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`;
+      return await loadRawImage(svgDataUrl);
     }
   } catch (err) {
     console.warn("Lỗi fetch VietQR:", err);
@@ -103,7 +91,9 @@ async function loadQrImage(src: string): Promise<HTMLImageElement> {
 function loadRawImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (!src.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => resolve(img);
     img.onerror = (e) => reject(e);
     img.src = src;

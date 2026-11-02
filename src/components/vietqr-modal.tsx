@@ -211,9 +211,19 @@ export const VietQrModal: React.FC<VietQrModalProps> = ({
             {/* QR Code Image Display */}
             <div className="relative mx-auto flex w-56 items-center justify-center rounded border border-slate-200 bg-slate-50/50 p-2.5">
               <img
-                src={activeQrDisplayUrl}
+                src={
+                  activeQrDisplayUrl && activeQrDisplayUrl.startsWith("http")
+                    ? `/api/vietqr-proxy?url=${encodeURIComponent(activeQrDisplayUrl)}`
+                    : activeQrDisplayUrl
+                }
                 alt="Mã VietQR Thanh Toán"
                 className="h-auto w-full rounded object-contain bg-white"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (activeQrDisplayUrl && !target.src.includes(activeQrDisplayUrl)) {
+                    target.src = activeQrDisplayUrl;
+                  }
+                }}
               />
             </div>
 

@@ -327,14 +327,21 @@ export default function InvoiceReceiptModal({
                 <div className="flex flex-col items-center justify-center shrink-0">
                   <div className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
                     <img
-                      src={data.vietQrUrl || localQrSrc}
+                      src={
+                        data.vietQrUrl
+                          ? (data.vietQrUrl.startsWith("http")
+                              ? `/api/vietqr-proxy?url=${encodeURIComponent(data.vietQrUrl)}`
+                              : data.vietQrUrl)
+                          : localQrSrc
+                      }
                       alt="Mã VietQR Chuyển Khoản"
                       className="w-52 h-64 object-contain rounded-lg"
                       onError={(e) => {
                         const target = e.currentTarget;
-                        const currentSrc = data.vietQrUrl || localQrSrc;
-                        if (currentSrc && !currentSrc.startsWith("/api/vietqr-proxy")) {
-                          target.src = `/api/vietqr-proxy?url=${encodeURIComponent(currentSrc)}`;
+                        if (data.vietQrUrl && !target.src.includes(data.vietQrUrl)) {
+                          target.src = data.vietQrUrl;
+                        } else if (localQrSrc) {
+                          target.src = localQrSrc;
                         }
                       }}
                     />
