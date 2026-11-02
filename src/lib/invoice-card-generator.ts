@@ -27,6 +27,7 @@ export interface InvoiceCardData {
   transferContent: string;
   vietQrUrl: string;
   classList?: InvoiceClassItem[];
+  customTitle?: string;
 }
 
 /**
@@ -142,7 +143,7 @@ export async function generateInvoiceCardCanvas(
   const extraHeight = hasMultipleClasses
     ? (data.classList!.length * 56)
     : 0;
-  const height = 980 + extraHeight;
+  const height = 750 + extraHeight;
 
   const canvas = document.createElement("canvas");
   canvas.width = width * scale;
@@ -180,7 +181,7 @@ export async function generateInvoiceCardCanvas(
   roundRect(ctx, cardX, cardY, cardW, cardH, 24);
   ctx.stroke();
 
-  // 3. Logo Vương Miện KTTLL ở góc trên phải
+  // 3. Logo Vương Miện KTTL ở góc trên phải
   const crownSize = 34;
   const crownX = cardX + cardW - crownSize - 20;
   const crownY = cardY + 20;
@@ -198,10 +199,10 @@ export async function generateInvoiceCardCanvas(
 
   // 4. Header Badge: HỌC PHÍ THÁNG M/YYYY
   const padLeft = cardX + 24;
-  let curY = cardY + 28;
+  let curY = cardY + 24;
 
   const badgeText = `HỌC PHÍ THÁNG ${data.month}/${data.year}`;
-  ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "800 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   const badgeMetrics = ctx.measureText(badgeText);
@@ -219,15 +220,16 @@ export async function generateInvoiceCardCanvas(
   ctx.fillStyle = "#059669";
   ctx.fillText(badgeText, padLeft + 9, curY + 5);
 
-  // 5. Tiêu đề chính
-  curY += 32;
-  ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  // 5. Tiêu đề chính (cho phép tùy biến customTitle)
+  curY += 30;
+  ctx.font = "800 17px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#0F172A";
-  ctx.fillText(`[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`, padLeft, curY);
+  const titleText = data.customTitle || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`;
+  ctx.fillText(titleText, padLeft, curY);
 
   // 6. Lời chào
   curY += 24;
-  ctx.font = "500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "500 12.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#475569";
   const introLine1 = `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai`;
   const introLine2 = `xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc Thực học - Thực trả.`;
@@ -236,7 +238,7 @@ export async function generateInvoiceCardCanvas(
   ctx.fillText(introLine2, padLeft, curY);
 
   // Đường kẻ phân cách
-  curY += 22;
+  curY += 20;
   ctx.strokeStyle = "#F1F5F9";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -246,7 +248,7 @@ export async function generateInvoiceCardCanvas(
 
   // 7. Chi tiết học phí
   curY += 12;
-  const rowH = 25;
+  const rowH = 26;
   const colValX = cardX + cardW - 24;
 
   const renderRow = (
@@ -256,14 +258,14 @@ export async function generateInvoiceCardCanvas(
     valColor: string = "#0F172A"
   ) => {
     // 1. Nhãn căn lề trái
-    ctx.font = "500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.font = "500 12.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.fillStyle = "#64748B";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(label, padLeft, curY + rowH / 2);
 
     // 2. Giá trị căn lề phải
-    ctx.font = `${isBoldVal ? "700" : "600"} 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+    ctx.font = `${isBoldVal ? "700" : "600"} 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
     ctx.fillStyle = valColor;
     ctx.textAlign = "right";
     const maxValW = cardW - 170;
@@ -272,10 +274,11 @@ export async function generateInvoiceCardCanvas(
     curY += rowH;
   };
 
-  renderRow("Học viên:", `${data.studentName} (${data.studentCode})`, true);
+  // Hiển thị tên học sinh (không kèm mã số HS theo yêu cầu)
+  renderRow("Học viên:", data.studentName, true);
 
   if (hasMultipleClasses) {
-    ctx.font = "700 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.font = "700 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.fillStyle = "#334155";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
@@ -348,13 +351,13 @@ export async function generateInvoiceCardCanvas(
   roundRect(ctx, padLeft, curY, cardW - 48, totalBoxH, 12);
   ctx.stroke();
 
-  ctx.font = "700 12.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "700 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#047857";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText("Tổng học phí:", padLeft + 14, curY + totalBoxH / 2);
 
-  ctx.font = "800 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "800 19px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#059669";
   ctx.textAlign = "right";
   ctx.fillText(
@@ -367,9 +370,9 @@ export async function generateInvoiceCardCanvas(
   renderRow("Ngân hàng:", `${data.bankName} – ${data.bankAccount}`);
   renderRow("Cú pháp CK:", data.transferContent, true, "#EA580C");
 
-  // 8. Khung Mã VietQR
+  // 8. Khung Mã VietQR (gọn gàng, cân đối, không lấn át văn bản)
   curY += 8;
-  const qrBoxH = 270;
+  const qrBoxH = 242;
   const qrBoxY = curY;
   ctx.fillStyle = "#F8FAFC";
   roundRect(ctx, padLeft, qrBoxY, cardW - 48, qrBoxH, 16);
@@ -380,16 +383,16 @@ export async function generateInvoiceCardCanvas(
   ctx.stroke();
 
   // Tiêu đề khung QR
-  ctx.font = "700 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "700 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#334155";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("⚡ Mã VietQR thanh toán Napas 247", cardX + cardW / 2, qrBoxY + 12);
+  ctx.fillText("⚡ Mã VietQR thanh toán Napas 247", cardX + cardW / 2, qrBoxY + 11);
 
-  // Vùng chứa ảnh QR trắng
-  const qrImgSize = 186;
+  // Vùng chứa ảnh QR trắng (kích thước vừa vặn cân đối)
+  const qrImgSize = 160;
   const qrImgX = cardX + (cardW - qrImgSize) / 2;
-  const qrImgY = qrBoxY + 34;
+  const qrImgY = qrBoxY + 31;
 
   ctx.fillStyle = "#FFFFFF";
   roundRect(ctx, qrImgX, qrImgY, qrImgSize, qrImgSize, 12);
@@ -402,7 +405,7 @@ export async function generateInvoiceCardCanvas(
   // Tải và vẽ ảnh VietQR lên Canvas (Tự động tải VietQR compact2 hoặc sinh nội bộ nếu mạng lỗi)
   try {
     const qrImg = await loadQrImage(data.vietQrUrl);
-    ctx.drawImage(qrImg, qrImgX + 6, qrImgY + 6, qrImgSize - 12, qrImgSize - 12);
+    ctx.drawImage(qrImg, qrImgX + 5, qrImgY + 5, qrImgSize - 10, qrImgSize - 10);
   } catch (err) {
     console.warn("Không thể tải ảnh vietQrUrl trực tiếp, thử sinh VietQR nội bộ:", err);
     try {
@@ -414,7 +417,7 @@ export async function generateInvoiceCardCanvas(
         description: data.transferContent,
       });
       const localImg = await loadQrImage(localDataUrl);
-      ctx.drawImage(localImg, qrImgX + 6, qrImgY + 6, qrImgSize - 12, qrImgSize - 12);
+      ctx.drawImage(localImg, qrImgX + 5, qrImgY + 5, qrImgSize - 10, qrImgSize - 10);
     } catch (e2) {
       console.error("Lỗi vẽ VietQR lên Canvas:", e2);
       // Vẽ placeholder nếu lỗi tải ảnh
@@ -428,21 +431,21 @@ export async function generateInvoiceCardCanvas(
   }
 
   // Ghi chú dưới QR
-  ctx.font = "italic 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "italic 10.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#64748B";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   const noteStr = "Quét mã QR bằng App Ngân Hàng bất kỳ để chuyển khoản tự động chính xác.";
-  ctx.fillText(noteStr, cardX + cardW / 2, qrBoxY + qrImgSize + 44);
+  ctx.fillText(noteStr, cardX + cardW / 2, qrBoxY + qrImgSize + 39);
 
   // 9. Nút Call to Action dưới cùng
-  curY = qrBoxY + qrBoxH + 12;
-  const ctaH = 34;
+  curY = qrBoxY + qrBoxH + 10;
+  const ctaH = 36;
   ctx.fillStyle = "#059669";
   roundRect(ctx, padLeft, curY, cardW - 48, ctaH, 10);
   ctx.fill();
 
-  ctx.font = "700 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.font = "700 12.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#FFFFFF";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";

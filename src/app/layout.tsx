@@ -4,10 +4,10 @@ import { AntdConfigProvider } from "@/components/providers/AntdConfigProvider";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Quản Lý CLB Cờ Vua Kiện Tướng Tương Lai (KTTLL)",
+  title: "Quản Lý CLB Cờ Vua Kiện Tướng Tương Lai (KTTL)",
   description: "Hệ thống quản lý CLB Cờ vua Kiện Tướng Tương Lai",
   openGraph: {
-    title: "Quản Lý CLB Cờ Vua Kiện Tướng Tương Lai (KTTLL)",
+    title: "Quản Lý CLB Cờ Vua Kiện Tướng Tương Lai (KTTL)",
     description: "Hệ thống quản lý CLB Cờ vua Kiện Tướng Tương Lai",
     url: "https://quanlikttl.vercel.app",
     siteName: "CLB Cờ Vua Kiện Tướng Tương Lai",

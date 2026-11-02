@@ -74,7 +74,7 @@ export async function GET(request: Request) {
       currentLevel: s.currentLevel || "Nhập môn",
       notes: s.notes || "",
       classIds: s.classes.map((cs) => cs.classId),
-      customFeePerSession: s.customFeePerSession || undefined,
+      customFeePerSession: s.customFeePerSession !== null && s.customFeePerSession !== undefined ? s.customFeePerSession : undefined,
       avatar: s.avatar || undefined,
       address: s.address || undefined,
       school: s.school || undefined,

@@ -363,7 +363,7 @@ ${currentPreview.footer}`;
                 type="text"
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
-                placeholder="VD: [KTTLL] THÔNG BÁO HỌC PHÍ THÁNG..."
+                placeholder="VD: [KTTL] THÔNG BÁO HỌC PHÍ THÁNG..."
                 className="w-full rounded border border-slate-300 p-2.5 font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
               />
             </div>

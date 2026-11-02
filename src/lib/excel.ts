@@ -21,7 +21,7 @@ export function exportInvoicesToExcel(
 ) {
   // Chuẩn bị dữ liệu bảng Excel
   const excelData = [
-    ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTLL)"],
+    ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTL)"],
     [`BẢNG TỔNG KẾT HỌC PHÍ THÁNG ${month}/${year}`],
     [`Lớp học: ${className} | Quy tắc: Thực học - Thực trả (Nghỉ không tính phí)`],
     [],
@@ -86,7 +86,7 @@ export function exportInvoicesToExcel(
   XLSX.utils.book_append_sheet(workbook, worksheet, `HocPhi_T${month}_${year}`);
 
   // Xuất file tải xuống ở client
-  XLSX.writeFile(workbook, `KTTLL_HocPhi_${className.replace(/\s+/g, "_")}_T${month}_${year}.xlsx`);
+  XLSX.writeFile(workbook, `KTTL_HocPhi_${className.replace(/\s+/g, "_")}_T${month}_${year}.xlsx`);
 }
 
 export interface PayrollExportRow {
@@ -105,7 +105,7 @@ export interface PayrollExportRow {
 
 export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, year: number) {
   const excelData = [
-    ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTLL)"],
+    ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTL)"],
     [`BẢNG THANH TOÁN THU NHẬP HUẤN LUYỆN VIÊN THÁNG ${month}/${year}`],
     ["Công thức: Thu nhập HLV = 50% Tổng học phí + 30% Tiền sách phát"],
     [],
@@ -177,5 +177,5 @@ export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, ye
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, `ThuNhapHLV_T${month}_${year}`);
-  XLSX.writeFile(workbook, `KTTLL_BangThuLao_HLV_T${month}_${year}.xlsx`);
+  XLSX.writeFile(workbook, `KTTL_BangThuLao_HLV_T${month}_${year}.xlsx`);
 }

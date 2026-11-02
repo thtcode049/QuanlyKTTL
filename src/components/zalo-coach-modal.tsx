@@ -83,7 +83,7 @@ export default function ZaloCoachModal({
 
     // Tạo nội dung tin nhắn Zalo chuẩn
     const lines = [
-      `🥋 [KTTLL] BẢNG TỔNG HỢP HỌC PHÍ THÁNG ${month}/${year}`,
+      `🥋 [KTTL] BẢNG TỔNG HỢP HỌC PHÍ THÁNG ${month}/${year}`,
       `Kính gửi Thầy/Cô: ${coach.name}`,
       `CLB Cờ vua Kiện Tướng Tương Lai gửi Thầy/Cô bảng tổng hợp học phí các lớp Thầy/Cô đang phụ trách:\n`,
     ];

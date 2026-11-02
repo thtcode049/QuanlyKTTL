@@ -86,7 +86,7 @@ export default function BatchCardExportModal({
 
     try {
       const safeClass = className.replace(/[^a-zA-Z0-9\-_]/g, "_");
-      const zipName = `KTTLL_AnhTheHocPhi_${safeClass}_T${month}_${year}.zip`;
+      const zipName = `KTTL_AnhTheHocPhi_${safeClass}_T${month}_${year}.zip`;
 
       await batchExportInvoiceCardsAsZip(
         targetStudents,

@@ -1,6 +1,6 @@
 /**
  * Render Invoice Card to High-Resolution PNG Image
- * CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)
+ * CLB Cờ vua Kiện Tướng Tương Lai (KTTL)
  */
 
 const fs = require('fs');
@@ -169,8 +169,8 @@ function buildInvoiceHtml(data) {
       gap: 6px;
     }
     .qr-box {
-      width: 210px;
-      height: 225px;
+      width: 176px;
+      height: 182px;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 14px;
@@ -241,7 +241,7 @@ function buildInvoiceHtml(data) {
     <!-- Header -->
     <div class="card-header">
       <span class="badge-month">HỌC PHÍ THÁNG ${data.month}/${data.year}</span>
-      <h1 class="title">[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}</h1>
+      <h1 class="title">${data.customTitle || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`}</h1>
       <p class="intro">
         Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
       </p>
@@ -251,7 +251,7 @@ function buildInvoiceHtml(data) {
     <div class="details-table">
       <div class="row">
         <span class="label">Học viên:</span>
-        <span class="value">${data.studentName} (${data.studentCode})</span>
+        <span class="value">${data.studentName}</span>
       </div>
       <div class="row">
         <span class="label">Lớp học:</span>

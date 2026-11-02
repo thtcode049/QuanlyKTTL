@@ -313,7 +313,7 @@ export default function ZaloParentSenderModal({
     const downloadAnchor = document.createElement("a");
     const safeClassName = classroom.name.replace(/[^a-zA-Z0-9\-_]/g, "_");
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `KTTLL_HocPhi_${safeClassName}_T${month}_${year}.json`);
+    downloadAnchor.setAttribute("download", `KTTL_HocPhi_${safeClassName}_T${month}_${year}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -499,7 +499,7 @@ export default function ZaloParentSenderModal({
                     const safeClass = (classroom?.name || "Lop").replace(/[^a-zA-Z0-9\-_]/g, "_");
                     await batchExportInvoiceCardsAsZip(
                       cardList,
-                      `KTTLL_AnhTheHocPhi_${safeClass}_T${month}_${year}.zip`,
+                      `KTTL_AnhTheHocPhi_${safeClass}_T${month}_${year}.zip`,
                       (curr, tot) => {
                         if (curr === tot) {
                           showToast(`✅ Đã tải xong ${tot} ảnh thẻ PNG (.zip)!`);
@@ -903,7 +903,7 @@ export default function ZaloParentSenderModal({
 
                     {/* Title */}
                     <h4 className="mt-1.5 text-xs font-bold text-slate-900 leading-tight">
-                      [KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {previewStudent.month}/{previewStudent.year}
+                      [KTTL] THÔNG BÁO HỌC PHÍ THÁNG {previewStudent.month}/{previewStudent.year}
                     </h4>
 
                     <p className="mt-1.5 text-[11px] leading-relaxed text-slate-600">

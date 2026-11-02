@@ -243,7 +243,7 @@ export function downloadStudentImportTemplate(availableClasses: ClassroomData[] 
 
   // Thêm sheet Hướng dẫn sử dụng
   const guideData = [
-    ["HƯỚNG DẪN NHẬP DỮ LIỆU HỌC VIÊN CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTLL)"],
+    ["HƯỚNG DẪN NHẬP DỮ LIỆU HỌC VIÊN CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTL)"],
     [],
     ["1. Hai cột bắt buộc tối thiểu: 'Họ và tên (*)' và 'Số điện thoại phụ huynh (*)'. Các cột khác có thể để trống."],
     ["2. Cột 'Năm sinh': Điền năm sinh 4 chữ số (VD: 2017). Có thể để trống nếu chưa có thông tin."],
@@ -261,7 +261,7 @@ export function downloadStudentImportTemplate(availableClasses: ClassroomData[] 
   guideSheet["!cols"] = [{ wch: 6 }, { wch: 30 }, { wch: 18 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(workbook, guideSheet, "HuongDan_LopHoc");
 
-  XLSX.writeFile(workbook, "Mau_Nhap_Hoc_Vien_KTTLL.xlsx");
+  XLSX.writeFile(workbook, "Mau_Nhap_Hoc_Vien_KTTL.xlsx");
 }
 
 /**

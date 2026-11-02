@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       currentLevel: s.currentLevel,
       notes: s.notes || "",
       classIds: s.classes.map((cs) => cs.classId),
-      customFeePerSession: s.customFeePerSession || undefined,
+      customFeePerSession: s.customFeePerSession !== null && s.customFeePerSession !== undefined ? s.customFeePerSession : undefined,
       avatar: s.avatar || undefined,
       address: s.address || undefined,
       school: s.school || undefined,
@@ -199,7 +199,10 @@ export async function PUT(request: Request) {
     if (address !== undefined) updateData.address = address ? String(address).trim() : null;
     if (school !== undefined) updateData.school = school ? String(school).trim() : null;
     if (customFeePerSession !== undefined) {
-      updateData.customFeePerSession = customFeePerSession !== null && customFeePerSession !== "" ? parseFloat(String(customFeePerSession)) : null;
+      updateData.customFeePerSession =
+        customFeePerSession !== null && customFeePerSession !== "" && !isNaN(Number(customFeePerSession))
+          ? parseFloat(String(customFeePerSession))
+          : null;
     }
     if (status !== undefined) updateData.status = status;
 
@@ -244,7 +247,10 @@ export async function PUT(request: Request) {
         currentLevel: updated.currentLevel || "Nhập môn",
         notes: updated.notes || "",
         classIds: linkedClassIds !== undefined ? linkedClassIds : undefined,
-        customFeePerSession: updated.customFeePerSession ?? undefined,
+        customFeePerSession:
+          updated.customFeePerSession !== null && updated.customFeePerSession !== undefined
+            ? updated.customFeePerSession
+            : undefined,
         avatar: updated.avatar ?? undefined,
         address: updated.address ?? undefined,
         school: updated.school ?? undefined,

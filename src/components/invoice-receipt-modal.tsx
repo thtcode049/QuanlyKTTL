@@ -15,6 +15,7 @@ import {
   User,
   CheckCircle2,
   CreditCard,
+  Edit3,
 } from "lucide-react";
 import {
   InvoiceCardData,
@@ -40,9 +41,12 @@ export default function InvoiceReceiptModal({
   const [copyImageSuccess, setCopyImageSuccess] = useState(false);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const [localQrSrc, setLocalQrSrc] = useState<string>("");
+  const [titleInput, setTitleInput] = useState<string>("");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   useEffect(() => {
     if (!data) return;
+    setTitleInput(data.customTitle || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`);
     if (data.vietQrUrl && data.vietQrUrl.startsWith("data:")) {
       setLocalQrSrc(data.vietQrUrl);
       return;
@@ -61,6 +65,11 @@ export default function InvoiceReceiptModal({
 
   if (!isOpen || !data) return null;
 
+  const getEffectiveData = (): InvoiceCardData => ({
+    ...data,
+    customTitle: titleInput.trim() || undefined,
+  });
+
   const handleCopyText = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -70,7 +79,7 @@ export default function InvoiceReceiptModal({
   const handleCopyImage = async () => {
     try {
       setIsCopyingImage(true);
-      await copyInvoiceCardToClipboard(data);
+      await copyInvoiceCardToClipboard(getEffectiveData());
       setCopyImageSuccess(true);
       setTimeout(() => setCopyImageSuccess(false), 2500);
     } catch (err) {
@@ -78,6 +87,10 @@ export default function InvoiceReceiptModal({
     } finally {
       setIsCopyingImage(false);
     }
+  };
+
+  const handleDownloadImage = () => {
+    downloadInvoiceCardPng(getEffectiveData());
   };
 
   const handlePrint = () => {
@@ -162,15 +175,49 @@ export default function InvoiceReceiptModal({
                       ♔
                     </span>
                     <h2 className="text-sm font-extrabold text-slate-800 tracking-tight uppercase">
-                      CLB Cờ Vua Kiện Tướng Tương Lai (KTTLL)
+                      CLB Cờ Vua Kiện Tướng Tương Lai (KTTL)
                     </h2>
                   </div>
-                  <h1 className="mt-2 text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    PHIẾU THU HỌC PHÍ
-                  </h1>
-                  <p className="text-xs font-semibold text-emerald-700">
-                    THÁNG {data.month}/{data.year}
-                  </p>
+
+                  {/* Dòng tiêu đề cho phép HLV sửa linh hoạt */}
+                  <div className="mt-2">
+                    {isEditingTitle ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={titleInput}
+                          onChange={(e) => setTitleInput(e.target.value)}
+                          className="text-lg sm:text-xl font-black text-slate-900 border border-emerald-400 rounded-lg px-2.5 py-1 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                          placeholder="Nhập tiêu đề thông báo học phí..."
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingTitle(false)}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shrink-0"
+                        >
+                          Lưu
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                          {titleInput || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`}
+                        </h1>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingTitle(true)}
+                          className="text-slate-400 hover:text-emerald-700 p-1 rounded-md hover:bg-slate-100 transition-colors no-print"
+                          title="Bấm để chỉnh sửa dòng tiêu đề này"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-xs font-semibold text-emerald-700 mt-0.5">
+                      HỌC PHÍ THÁNG {data.month}/{data.year}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="text-left sm:text-right text-xs space-y-1 text-slate-500">
@@ -181,12 +228,12 @@ export default function InvoiceReceiptModal({
                 </div>
               </div>
 
-              {/* Thông tin học viên */}
+              {/* Thông tin học viên (đã bỏ mã HS theo yêu cầu) */}
               <div className="rounded-xl bg-slate-50/80 p-3.5 text-xs border border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Học viên:</span>
                   <strong className="text-slate-900 font-bold text-sm text-right">
-                    {data.studentName} ({data.studentCode})
+                    {data.studentName}
                   </strong>
                 </div>
                 <div className="flex items-center justify-between">
@@ -387,7 +434,7 @@ export default function InvoiceReceiptModal({
               {/* Nút Tải Ảnh PNG */}
               <button
                 type="button"
-                onClick={() => downloadInvoiceCardPng(data)}
+                onClick={handleDownloadImage}
                 className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all"
                 title="Tải ảnh thẻ học phí chất lượng cao (PNG) về máy"
               >

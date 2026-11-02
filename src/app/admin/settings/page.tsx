@@ -78,7 +78,7 @@ export default function AdminSettingsPage() {
   };
 
   const handleResetZaloTemplate = () => {
-    setTitleTemplate("[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
+    setTitleTemplate("[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
     setBodyTemplate(
       "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả."
     );
@@ -415,7 +415,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={titleTemplate}
                 onChange={(e) => setTitleTemplate(e.target.value)}
-                placeholder="VD: [KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}"
+                placeholder="VD: [KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}"
                 className="w-full rounded border border-slate-200 bg-white p-2 font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
               />
             </div>

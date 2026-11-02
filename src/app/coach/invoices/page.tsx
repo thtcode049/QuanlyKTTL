@@ -301,11 +301,13 @@ function InvoicesContent() {
 
   const handleSaveCustomFee = async (resetToDefault = false) => {
     if (!editingStudentFee) return;
-    if (resetToDefault) {
+    if (resetToDefault || customFeeInput.trim() === "") {
       await dataStore.updateStudentFee(editingStudentFee.student.id, null);
     } else {
-      const fee = Number(customFeeInput);
-      await dataStore.updateStudentFee(editingStudentFee.student.id, fee);
+      const fee = Number(customFeeInput.trim());
+      if (!isNaN(fee) && fee >= 0) {
+        await dataStore.updateStudentFee(editingStudentFee.student.id, fee);
+      }
     }
     reloadInvoices();
     setEditingStudentFee(null);
@@ -1328,9 +1330,15 @@ function InvoicesContent() {
                           <div className="text-right">
                             <p className="font-bold text-slate-800">{formatCurrencyVND(inv.feePerSession)}</p>
                             {student?.customFeePerSession !== undefined && student?.customFeePerSession !== null ? (
-                              <span className="inline-block rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
-                                Giá riêng
-                              </span>
+                              student.customFeePerSession === 0 ? (
+                                <span className="inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                                  0đ (Học bổng)
+                                </span>
+                              ) : (
+                                <span className="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                  Giá riêng
+                                </span>
+                              )
                             ) : (
                               <span className="text-[10px] text-slate-400">Giá lớp</span>
                             )}
@@ -1498,7 +1506,9 @@ function InvoicesContent() {
                 <div className="relative mt-1">
                   <input
                     type="number"
-                    step="10000"
+                    min="0"
+                    step="5000"
+                    placeholder="0"
                     value={customFeeInput}
                     onChange={(e) => setCustomFeeInput(e.target.value)}
                     className="w-full rounded border border-slate-200 p-2 pr-7 text-sm font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
@@ -1508,7 +1518,7 @@ function InvoicesContent() {
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Áp dụng cho trường hợp học bổng, ưu đãi anh/chị em, hoặc đơn giá kèm riêng.
+                  Áp dụng cho học viên học bổng (0đ), miễn phí, ưu đãi anh/chị em, hoặc đơn giá kèm riêng.
                 </p>
               </div>
 

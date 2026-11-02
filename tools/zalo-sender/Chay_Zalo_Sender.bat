@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-title ZALO BULK SENDER - CLB CO VUA KTTLL
+title ZALO BULK SENDER - CLB CO VUA KTTL
 cd /d "%~dp0"
 
 if exist ".venv\Scripts\python.exe" goto install

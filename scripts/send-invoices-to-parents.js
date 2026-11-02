@@ -1,6 +1,6 @@
 /**
  * Tool Tự Động HLV Gửi Thẻ Học Phí Trực Tiếp Đến Phụ Huynh Qua Zalo Cá Nhân (Puppeteer)
- * CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)
+ * CLB Cờ vua Kiện Tướng Tương Lai (KTTL)
  * 
  * Hướng dẫn sử dụng:
  * 1. Chạy thử nghiệm xem trước (Dry-Run, KHÔNG gửi thật):
@@ -263,7 +263,7 @@ async function sendInvoicesToParents(options = {}) {
 
   console.log(`\n================================================================`);
   console.log(`🥋 TOOL HLV GỬI THẺ HỌC PHÍ HÀNG LOẠT ĐẾN PHỤ HUYNH (ZALO BOT)`);
-  console.log(`CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)`);
+  console.log(`CLB Cờ vua Kiện Tướng Tương Lai (KTTL)`);
   console.log(`----------------------------------------------------------------`);
   console.log(`Chế độ: ${isDryRun ? '🔍 DRY-RUN (Xem trước, KHÔNG gửi)' : '⚡ LIVE (Tự động gửi thật)'}`);
   console.log(`Bộ lọc lớp: ${options.classId || 'Tất cả các lớp'}`);

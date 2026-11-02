@@ -1,6 +1,6 @@
 /**
  * Tool Tự Động Gửi Học Phí Đến Từng Huấn Luyện Viên Qua Zalo Cá Nhân (Puppeteer)
- * CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)
+ * CLB Cờ vua Kiện Tướng Tương Lai (KTTL)
  * 
  * Hướng dẫn sử dụng:
  * 1. Chạy thử nghiệm (Dry-Run - Xem trước không gửi):
@@ -152,7 +152,7 @@ async function sendInvoicesToCoaches(options = {}) {
 
   console.log(`\n================================================================`);
   console.log(`🚀 TOOL GỬI HỌC PHÍ ĐẾN TỪNG HLV QUA ZALO CÁ NHÂN (PUPPETEER)`);
-  console.log(`CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)`);
+  console.log(`CLB Cờ vua Kiện Tướng Tương Lai (KTTL)`);
   console.log(`----------------------------------------------------------------`);
   console.log(`Chế độ: ${isDryRun ? '🔍 DRY-RUN (Xem trước, KHÔNG gửi)' : '⚡ LIVE (Gửi thật)'}`);
   console.log(`Mục tiêu: ${targetCoachId === 'all' ? 'Tất cả Huấn luyện viên' : 'HLV ID: ' + targetCoachId}`);

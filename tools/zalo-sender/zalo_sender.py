@@ -1,5 +1,5 @@
 """
-Zalo Bulk Sender - CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)
+Zalo Bulk Sender - CLB Cờ vua Kiện Tướng Tương Lai (KTTL)
 Gửi Thẻ Báo Học Phí (Dạng ảnh VietQR Napas 24/7) và Tin nhắn Zalo tự động.
 
 Công nghệ: Python, Playwright (Sync API), CustomTkinter (đa luồng).
@@ -145,11 +145,12 @@ def format_money(val: int | float | None) -> str:
 
 
 # ----------------------------------------------------------------------------
-# Mẫu HTML Thẻ Báo Học Phí (Chuẩn 100% Mocktest KTTLL)
+# Mẫu HTML Thẻ Báo Học Phí (Chuẩn 100% Mocktest KTTL)
 # ----------------------------------------------------------------------------
 def build_invoice_html(data: dict) -> str:
     student_name = data.get("studentName", "Học viên")
     student_code = data.get("studentCode", "HS")
+    custom_title = data.get("customTitle")
     class_name = data.get("className", "Lớp Cờ vua")
     branch_name = data.get("branchName", "CLB Kiện Tướng Tương Lai")
     month = data.get("month", datetime.now().month)
@@ -364,7 +365,7 @@ def build_invoice_html(data: dict) -> str:
     </div>
     <div class="card-header">
       <span class="badge-month">HỌC PHÍ THÁNG {month}/{year}</span>
-      <h1 class="title">[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}</h1>
+      <h1 class="title">{custom_title or f"[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}"}</h1>
       <p class="intro">
         Kính gửi phụ huynh em <strong>{student_name}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc <em>Thực học - Thực trả</em>.
       </p>
@@ -372,7 +373,7 @@ def build_invoice_html(data: dict) -> str:
     <div class="details-table">
       <div class="row">
         <span class="label">Học viên:</span>
-        <span class="value">{student_name} ({student_code})</span>
+        <span class="value">{student_name}</span>
       </div>
       <div class="row">
         <span class="label">Lớp học:</span>

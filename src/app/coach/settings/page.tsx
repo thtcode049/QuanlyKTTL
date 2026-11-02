@@ -106,7 +106,7 @@ export default function CoachSettingsPage() {
   };
 
   const handleResetZaloTemplate = () => {
-    setTitleTemplate("[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
+    setTitleTemplate("[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
     setBodyTemplate(
       "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả."
     );

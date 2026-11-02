@@ -1,6 +1,6 @@
 /**
  * Export Invoices Grouped by Coach for Zalo Bot Automation
- * CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)
+ * CLB Cờ vua Kiện Tướng Tương Lai (KTTL)
  */
 
 import { dataStore } from '../src/lib/data-store';
@@ -81,7 +81,7 @@ export function buildZaloCoachMessage(bundle: {
   totalStudents: number;
 }): string {
   const lines: string[] = [
-    `🥋 [KTTLL] BẢNG TỔNG HỢP HỌC PHÍ THÁNG ${bundle.month}/${bundle.year}`,
+    `🥋 [KTTL] BẢNG TỔNG HỢP HỌC PHÍ THÁNG ${bundle.month}/${bundle.year}`,
     `Kính gửi Thầy/Cô: ${bundle.coachName}`,
     `CLB Cờ vua Kiện Tướng Tương Lai gửi Thầy/Cô bảng tổng hợp học phí các lớp Thầy/Cô đang phụ trách:\n`,
   ];

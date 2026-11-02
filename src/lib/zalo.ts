@@ -60,7 +60,7 @@ export function buildZaloMessagePreview(
   footer: string;
   fields: { label: string; value: string }[];
 } {
-  const defaultTitle = `[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`;
+  const defaultTitle = `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`;
   const defaultBody = `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc Thực học - Thực trả.`;
   const defaultFooter = "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666.";
 

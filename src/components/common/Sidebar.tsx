@@ -211,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
         <div className="border-t border-slate-100 p-3">
           {!isSmall ? (
             <div className="rounded bg-slate-50 p-2 text-xs text-slate-600">
-              <p className="font-semibold text-slate-900">CLB Cờ Vua KTTLL</p>
+              <p className="font-semibold text-slate-900">CLB Cờ Vua KTTL</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Chủ nhiệm: GM Bùi Vinh</p>
             </div>
           ) : (

@@ -1,6 +1,6 @@
 /**
  * Batch generate invoice card PNG images for students grouped by Coach & Class
- * CLB Cờ vua Kiện Tướng Tương Lai (KTTLL)
+ * CLB Cờ vua Kiện Tướng Tương Lai (KTTL)
  */
 
 const fs = require('fs');

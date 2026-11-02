@@ -320,7 +320,7 @@ export const initialBankConfig: BankConfig = {
 };
 
 export const initialZaloConfig: ZaloConfig = {
-  titleTemplate: "[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}",
+  titleTemplate: "[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}",
   bodyTemplate: "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả.",
   footerNote: "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666.",
 };
@@ -1468,7 +1468,8 @@ class InMemoryDataStore {
     const student = this.students.find((s) => s.id === studentId);
     if (student) {
       if (customFeePerSession === null || isNaN(customFeePerSession) || customFeePerSession < 0) {
-        delete student.customFeePerSession;
+        student.customFeePerSession = null;
+        delete (student as any).customFeePerSession;
       } else {
         student.customFeePerSession = customFeePerSession;
       }
@@ -1478,14 +1479,26 @@ class InMemoryDataStore {
       // Đồng bộ lên Supabase Database
       try {
         if (typeof window !== "undefined") {
-          await fetch("/api/students", {
+          const res = await fetch("/api/students", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               id: studentId,
-              customFeePerSession: customFeePerSession !== null && !isNaN(customFeePerSession) && customFeePerSession > 0 ? customFeePerSession : null,
+              fullName: student.fullName,
+              parentPhone: student.parentPhone,
+              customFeePerSession:
+                customFeePerSession !== null && !isNaN(customFeePerSession) && customFeePerSession >= 0
+                  ? customFeePerSession
+                  : null,
             }),
           });
+          if (res.ok) {
+            const resJson = await res.json();
+            if (resJson.success && resJson.data && resJson.data.id && resJson.data.id !== student.id) {
+              student.id = resJson.data.id;
+              this.saveToLocalStorage();
+            }
+          }
         }
       } catch (e) {
         console.warn("Lỗi cập nhật học phí riêng lên DB:", e);
