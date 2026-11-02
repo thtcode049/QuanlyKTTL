@@ -203,7 +203,6 @@ export async function generateInvoiceCardCanvas(
   // 7. Chi tiết học phí
   curY += 12;
   const rowH = 25;
-  const colValX = cardX + cardW - 24;
 
   const renderRow = (
     label: string,
@@ -217,16 +216,19 @@ export async function generateInvoiceCardCanvas(
     ctx.textBaseline = "middle";
     ctx.fillText(label, padLeft, curY + rowH / 2);
 
+    const labelW = ctx.measureText(label).width;
+    const valX = padLeft + labelW + 8; // Đặt ngay sát sau dấu : không căn lề phải
+    const maxValW = cardX + cardW - 24 - valX;
+
     ctx.font = `${isBoldVal ? "700" : "600"} 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
     ctx.fillStyle = valColor;
-    ctx.textAlign = "right";
-    const maxValW = cardW - 170;
-    ctx.fillText(truncateText(ctx, value, maxValW), colValX, curY + rowH / 2);
+    ctx.textAlign = "left";
+    ctx.fillText(truncateText(ctx, value, maxValW), valX, curY + rowH / 2);
 
     curY += rowH;
   };
 
-  renderRow("Học viên:", `${data.studentName} (${data.studentCode})`, true);
+  renderRow("Học viên:", data.studentName, true);
 
   if (hasMultipleClasses) {
     ctx.font = "700 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -236,6 +238,7 @@ export async function generateInvoiceCardCanvas(
     ctx.fillText(`Chi tiết các lớp học (${data.classList!.length} lớp):`, padLeft, curY + 12);
     curY += 24;
 
+    const boxRightX = padLeft + (cardW - 48);
     data.classList!.forEach((clsItem, idx) => {
       const hasDates = clsItem.presentDates && clsItem.presentDates.length > 0;
       const boxH = hasDates ? 48 : 38;
@@ -258,7 +261,7 @@ export async function generateInvoiceCardCanvas(
       ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#059669";
       ctx.textAlign = "right";
-      ctx.fillText(formatCurrencyVND(clsItem.totalAmount), colValX - 8, curY + 6);
+      ctx.fillText(formatCurrencyVND(clsItem.totalAmount), boxRightX - 8, curY + 6);
 
       // Dòng 2: Số buổi & Đơn giá
       ctx.font = "500 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -271,7 +274,7 @@ export async function generateInvoiceCardCanvas(
         ctx.textAlign = "right";
         ctx.fillStyle = "#94A3B8";
         const datesText = truncateText(ctx, `Ngày: ${clsItem.presentDates.join(", ")}`, cardW - 200);
-        ctx.fillText(datesText, colValX - 8, curY + 24);
+        ctx.fillText(datesText, boxRightX - 8, curY + 24);
       }
 
       curY += boxH + 6;
@@ -312,7 +315,7 @@ export async function generateInvoiceCardCanvas(
   ctx.textAlign = "right";
   ctx.fillText(
     formatCurrencyVND(data.totalAmount),
-    colValX - 14,
+    padLeft + (cardW - 48) - 14,
     curY + totalBoxH / 2
   );
 

@@ -115,7 +115,7 @@ export default function InvoiceReceiptModal({
                   Phiếu Thu Học Phí Có Mã VietQR Động
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Học viên: <strong className="text-slate-800">{data.studentName}</strong> ({data.studentCode})
+                  Học viên: <strong className="text-slate-800">{data.studentName}</strong>
                 </p>
               </div>
             </div>
@@ -155,7 +155,6 @@ export default function InvoiceReceiptModal({
                 </div>
 
                 <div className="text-left sm:text-right text-xs space-y-1 text-slate-500">
-                  <p>Mã học viên: <strong className="font-mono text-slate-800 font-bold">{data.studentCode}</strong></p>
                   <p>Ngày lập phiếu: <strong className="text-slate-700">{new Date().toLocaleDateString("vi-VN")}</strong></p>
                   <span className="inline-block rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold">
                     Thực học - Thực trả
@@ -268,12 +267,12 @@ export default function InvoiceReceiptModal({
 
                 {/* Thông tin chuyển khoản & Cú pháp */}
                 <div className="w-full space-y-2.5 text-xs">
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-1.5">
                     <span className="text-slate-500">Ngân hàng:</span>
-                    <strong className="text-slate-900 font-bold text-right">{data.bankName}</strong>
+                    <strong className="text-slate-900 font-bold">{data.bankName}</strong>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-1.5">
                     <span className="text-slate-500">Số tài khoản:</span>
                     <div className="flex items-center gap-1.5">
                       <strong className="font-mono text-sm font-black text-slate-900">{data.bankAccount}</strong>
@@ -292,7 +291,7 @@ export default function InvoiceReceiptModal({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-1.5">
                     <span className="text-slate-500">Chủ tài khoản:</span>
                     <strong className="text-slate-800 font-bold uppercase">{data.accountHolder}</strong>
                   </div>

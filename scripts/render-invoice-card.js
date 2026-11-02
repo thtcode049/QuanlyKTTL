@@ -97,8 +97,9 @@ function buildInvoiceHtml(data) {
     }
     .row {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      justify-content: flex-start;
+      align-items: baseline;
+      gap: 8px;
       padding: 9px 0;
       border-bottom: 1px solid #f8fafc;
       font-size: 12.5px;
@@ -109,14 +110,12 @@ function buildInvoiceHtml(data) {
     .label {
       color: #64748b;
       font-weight: 500;
-      width: 38%;
       flex-shrink: 0;
     }
     .value {
       color: #0f172a;
       font-weight: 700;
-      text-align: right;
-      width: 62%;
+      text-align: left;
       line-height: 1.4;
     }
     .row-highlight {
@@ -245,7 +244,7 @@ function buildInvoiceHtml(data) {
     <div class="details-table">
       <div class="row">
         <span class="label">Học viên:</span>
-        <span class="value">${data.studentName} (${data.studentCode})</span>
+        <span class="value">${data.studentName}</span>
       </div>
       <div class="row">
         <span class="label">Lớp học:</span>

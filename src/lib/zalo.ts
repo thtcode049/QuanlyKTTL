@@ -90,7 +90,7 @@ export function buildZaloMessagePreview(
     body,
     footer,
     fields: [
-      { label: "Học viên", value: `${data.studentName} (${data.studentCode})` },
+      { label: "Học viên", value: data.studentName },
       { label: "Lớp học", value: `${data.className} - ${data.branchName}` },
       { label: "Số buổi thực học", value: `${data.presentCount} buổi` },
       {
