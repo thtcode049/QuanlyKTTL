@@ -185,15 +185,18 @@ function InvoicesContent() {
       const allDates = classList.flatMap((c) => c.presentDates);
       const classNames = classList.map((c) => c.className).join(", ");
 
-      const vietQrUrl = generateVietQrUrl({
-        bankId: bank.bankId,
-        bankName: bank.bankName,
-        accountNo: bank.bankAccount,
-        accountName: bank.accountHolder,
-        template: "compact2",
-        amount: totalAmount,
-        description: transferContent,
-      });
+      const vietQrUrl =
+        bank.useCustomQr && bank.customQrImage
+          ? bank.customQrImage
+          : generateVietQrUrl({
+              bankId: bank.bankId,
+              bankName: bank.bankName,
+              accountNo: bank.bankAccount,
+              accountName: bank.accountHolder,
+              template: bank.qrTemplate || "compact2",
+              amount: totalAmount,
+              description: transferContent,
+            });
 
       return {
         studentCode: student.code,
@@ -215,15 +218,18 @@ function InvoicesContent() {
       };
     }
 
-    const vietQrUrl = generateVietQrUrl({
-      bankId: bank.bankId,
-      bankName: bank.bankName,
-      accountNo: bank.bankAccount,
-      accountName: bank.accountHolder,
-      template: "compact2",
-      amount: inv.totalAmount,
-      description: transferContent,
-    });
+    const vietQrUrl =
+      bank.useCustomQr && bank.customQrImage
+        ? bank.customQrImage
+        : generateVietQrUrl({
+            bankId: bank.bankId,
+            bankName: bank.bankName,
+            accountNo: bank.bankAccount,
+            accountName: bank.accountHolder,
+            template: bank.qrTemplate || "compact2",
+            amount: inv.totalAmount,
+            description: transferContent,
+          });
 
     return {
       studentCode: student.code,
@@ -271,7 +277,19 @@ function InvoicesContent() {
       bankAccount: bank.bankAccount,
       accountHolder: bank.accountHolder,
       transferContent: agg.transferContent,
-      vietQrUrl: agg.vietQrUrl,
+      vietQrUrl:
+        agg.vietQrUrl ||
+        (bank.useCustomQr && bank.customQrImage
+          ? bank.customQrImage
+          : generateVietQrUrl({
+              bankId: bank.bankId,
+              bankName: bank.bankName,
+              accountNo: bank.bankAccount,
+              accountName: bank.accountHolder,
+              template: bank.qrTemplate || "compact2",
+              amount: agg.totalAmount,
+              description: agg.transferContent,
+            })),
       classList: agg.classItems.map((c) => ({
         className: c.className,
         branchName: c.branchName,
@@ -418,7 +436,7 @@ function InvoicesContent() {
       amount: agg.totalAmount,
       month: selectedMonth,
       year: selectedYear,
-      qrUrl: agg.vietQrUrl,
+      qrUrl: cardData.vietQrUrl,
       transferContent: agg.transferContent,
       bankName: cardData.bankName,
       bankAccount: cardData.bankAccount,
@@ -490,15 +508,18 @@ function InvoicesContent() {
       const primaryItem = item.classItems[0];
       const cls = classes.find((c) => c.id === primaryItem?.classId);
       const coachBank = dataStore.getCoachBankConfig(cls?.coachId || currentCoachId);
-      item.vietQrUrl = generateVietQrUrl({
-        bankId: coachBank.bankId,
-        bankName: coachBank.bankName,
-        accountNo: coachBank.bankAccount,
-        accountName: coachBank.accountHolder,
-        template: "qr_only",
-        amount: item.totalAmount,
-        description: item.transferContent,
-      });
+      item.vietQrUrl =
+        coachBank.useCustomQr && coachBank.customQrImage
+          ? coachBank.customQrImage
+          : generateVietQrUrl({
+              bankId: coachBank.bankId,
+              bankName: coachBank.bankName,
+              accountNo: coachBank.bankAccount,
+              accountName: coachBank.accountHolder,
+              template: coachBank.qrTemplate || "compact2",
+              amount: item.totalAmount,
+              description: item.transferContent,
+            });
     });
 
     return result;

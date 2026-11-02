@@ -99,9 +99,9 @@ function buildInvoiceHtml(data) {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 9px 0;
+      padding: 10px 0;
       border-bottom: 1px solid #f8fafc;
-      font-size: 12.5px;
+      font-size: 14px;
     }
     .row:last-child {
       border-bottom: none;
@@ -109,16 +109,18 @@ function buildInvoiceHtml(data) {
     .label {
       color: #64748b;
       font-weight: 500;
-      width: 38%;
+      width: 36%;
       flex-shrink: 0;
       text-align: left;
+      font-size: 13.5px;
     }
     .value {
       color: #0f172a;
       font-weight: 700;
       text-align: right;
-      width: 62%;
+      width: 64%;
       line-height: 1.4;
+      font-size: 14.5px;
     }
     .row-highlight {
       display: flex;
@@ -133,11 +135,11 @@ function buildInvoiceHtml(data) {
     .row-highlight .label {
       color: #047857;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 14px;
       width: auto;
     }
     .row-highlight .value {
-      font-size: 18px;
+      font-size: 21px;
       font-weight: 800;
       color: #059669;
       flex: none;
@@ -146,7 +148,7 @@ function buildInvoiceHtml(data) {
     .syntax-highlight {
       color: #ea580c;
       font-family: monospace;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: 0.5px;
     }
@@ -159,7 +161,7 @@ function buildInvoiceHtml(data) {
       text-align: center;
     }
     .qr-title {
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 700;
       color: #334155;
       margin-bottom: 10px;
@@ -169,12 +171,12 @@ function buildInvoiceHtml(data) {
       gap: 6px;
     }
     .qr-box {
-      width: 176px;
-      height: 182px;
+      width: 186px;
+      height: 214px;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 14px;
-      padding: 8px;
+      padding: 6px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       border: 1px solid #cbd5e1;
       display: flex;
@@ -189,7 +191,7 @@ function buildInvoiceHtml(data) {
     }
     .qr-footer-note {
       margin-top: 10px;
-      font-size: 10.5px;
+      font-size: 11px;
       color: #64748b;
       font-style: italic;
       line-height: 1.45;
@@ -198,10 +200,10 @@ function buildInvoiceHtml(data) {
       margin: 0 24px 24px 24px;
       background: linear-gradient(135deg, #059669 0%, #10b981 100%);
       color: #ffffff;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 700;
       text-align: center;
-      padding: 11px;
+      padding: 12px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
       display: flex;
