@@ -97,7 +97,8 @@ function buildInvoiceHtml(data) {
     }
     .row {
       display: flex;
-      align-items: center;
+      justify-content: space-between;
+      align-items: flex-start;
       padding: 9px 0;
       border-bottom: 1px solid #f8fafc;
       font-size: 12.5px;
@@ -108,15 +109,15 @@ function buildInvoiceHtml(data) {
     .label {
       color: #64748b;
       font-weight: 500;
-      width: 145px;
+      width: 38%;
       flex-shrink: 0;
       text-align: left;
     }
     .value {
       color: #0f172a;
       font-weight: 700;
-      flex: 1;
-      text-align: center;
+      text-align: right;
+      width: 62%;
       line-height: 1.4;
     }
     .row-highlight {
@@ -131,7 +132,8 @@ function buildInvoiceHtml(data) {
     }
     .row-highlight .label {
       color: #047857;
-      font-weight: 800;
+      font-weight: 700;
+      font-size: 13px;
       width: auto;
     }
     .row-highlight .value {
@@ -140,14 +142,6 @@ function buildInvoiceHtml(data) {
       color: #059669;
       flex: none;
       text-align: right;
-    }
-      font-weight: 700;
-      font-size: 13px;
-    }
-    .row-highlight .value {
-      color: #059669;
-      font-size: 18px;
-      font-weight: 800;
     }
     .syntax-highlight {
       color: #ea580c;
@@ -175,8 +169,8 @@ function buildInvoiceHtml(data) {
       gap: 6px;
     }
     .qr-box {
-      width: 190px;
-      height: 190px;
+      width: 210px;
+      height: 225px;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 14px;
@@ -246,10 +240,10 @@ function buildInvoiceHtml(data) {
 
     <!-- Header -->
     <div class="card-header">
-      <span class="badge-month">PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}</span>
-      <h1 class="title">[KTTLL] PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}</h1>
+      <span class="badge-month">HỌC PHÍ THÁNG ${data.month}/${data.year}</span>
+      <h1 class="title">[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}</h1>
       <p class="intro">
-        Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi phiếu thu học phí tháng ${data.month}/${data.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
+        Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
       </p>
     </div>
 
@@ -257,7 +251,7 @@ function buildInvoiceHtml(data) {
     <div class="details-table">
       <div class="row">
         <span class="label">Học viên:</span>
-        <span class="value">${data.studentName}</span>
+        <span class="value">${data.studentName} (${data.studentCode})</span>
       </div>
       <div class="row">
         <span class="label">Lớp học:</span>
@@ -265,7 +259,7 @@ function buildInvoiceHtml(data) {
       </div>
       <div class="row">
         <span class="label">Số buổi thực học:</span>
-        <span class="value">${data.presentCount} buổi</span>
+        <span class="value" style="color: #047857;">${data.presentCount} buổi</span>
       </div>
       <div class="row">
         <span class="label">Các ngày có mặt:</span>
@@ -279,15 +273,15 @@ function buildInvoiceHtml(data) {
       <!-- Highlight Total -->
       <div class="row row-highlight">
         <span class="label">Tổng học phí:</span>
-        <span class="value">${totalFormatted} VNĐ</span>
+        <span class="value">${totalFormatted} đ</span>
       </div>
 
       <div class="row">
-        <span class="label">Ngân hàng thụ hưởng:</span>
-        <span class="value">${data.bankName || 'MBBank'} – ${data.bankAccount || '0987654321'} (${data.accountHolder || 'CLB CO VUA KIEN TUONG TUONG LAI'})</span>
+        <span class="label">Ngân hàng:</span>
+        <span class="value">${data.bankName || 'MBBank'} – ${data.bankAccount || '0987654321'}</span>
       </div>
       <div class="row">
-        <span class="label">Cú pháp chuyển khoản:</span>
+        <span class="label">Cú pháp CK:</span>
         <span class="value syntax-highlight">${data.transferContent}</span>
       </div>
     </div>
@@ -295,13 +289,13 @@ function buildInvoiceHtml(data) {
     <!-- VietQR Box -->
     <div class="qr-container">
       <div class="qr-title">
-        <span>⚡ Mã VietQR thanh toán nhanh Napas 247</span>
+        <span>⚡ Mã VietQR thanh toán Napas 247</span>
       </div>
       <div class="qr-box">
         <img src="${vietQrUrl}" alt="VietQR Code" id="qrImg">
       </div>
       <p class="qr-footer-note">
-        Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666.
+        Quét mã QR bằng App Ngân Hàng bất kỳ để chuyển khoản tự động chính xác.
       </p>
     </div>
 

@@ -183,36 +183,38 @@ export default function InvoiceReceiptModal({
 
               {/* Thông tin học viên */}
               <div className="rounded-xl bg-slate-50/80 p-3.5 text-xs border border-slate-100 space-y-2">
-                <div className="flex items-center">
-                  <span className="w-36 text-slate-500 shrink-0 text-left">Học viên:</span>
-                  <strong className="flex-1 text-center text-slate-900 font-bold text-sm">{data.studentName}</strong>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Học viên:</span>
+                  <strong className="text-slate-900 font-bold text-sm text-right">
+                    {data.studentName} ({data.studentCode})
+                  </strong>
                 </div>
-                <div className="flex items-center">
-                  <span className="w-36 text-slate-500 shrink-0 text-left">Lớp học:</span>
-                  <strong className="flex-1 text-center text-slate-800 font-medium">{data.className}</strong>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Lớp học:</span>
+                  <strong className="text-slate-800 font-medium text-right">{data.className}</strong>
                 </div>
                 {data.branchName && (
-                  <div className="flex items-center">
-                    <span className="w-36 text-slate-500 shrink-0 text-left">Cơ sở đào tạo:</span>
-                    <strong className="flex-1 text-center text-slate-800 font-medium">{data.branchName}</strong>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Cơ sở đào tạo:</span>
+                    <strong className="text-slate-800 font-medium text-right">{data.branchName}</strong>
                   </div>
                 )}
-                <div className="flex items-center">
-                  <span className="w-36 text-slate-500 shrink-0 text-left">Tổng số buổi thực học:</span>
-                  <strong className="flex-1 text-center text-emerald-700 font-bold">{data.presentCount} buổi</strong>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Số buổi thực học:</span>
+                  <strong className="text-emerald-700 font-bold text-right">{data.presentCount} buổi</strong>
                 </div>
                 {!hasMultipleClasses && (
                   <>
-                    <div className="flex items-center">
-                      <span className="w-36 text-slate-500 shrink-0 text-left">Các ngày có mặt:</span>
-                      <strong className="flex-1 text-center text-slate-800 font-mono text-[11px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Các ngày có mặt:</span>
+                      <strong className="text-slate-800 font-mono text-[11px] text-right">
                         {data.presentDates && data.presentDates.length > 0 ? data.presentDates.join(", ") : "Chưa có buổi học"}
                       </strong>
                     </div>
-                    <div className="flex items-center">
-                      <span className="w-36 text-slate-500 shrink-0 text-left">Đơn giá học phí:</span>
-                      <strong className="flex-1 text-center text-slate-700">
-                        {formatCurrencyVND(data.feePerSession)} / buổi
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Đơn giá:</span>
+                      <strong className="text-slate-700 text-right">
+                        {formatCurrencyVND(data.feePerSession)}/buổi
                       </strong>
                     </div>
                   </>
@@ -277,52 +279,33 @@ export default function InvoiceReceiptModal({
                 <div className="flex flex-col items-center justify-center shrink-0">
                   <div className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
                     <img
-                      src={localQrSrc || data.vietQrUrl}
+                      src={data.vietQrUrl || localQrSrc}
                       alt="Mã VietQR Chuyển Khoản"
-                      className="w-44 h-44 object-contain rounded-lg"
+                      className="w-48 h-56 object-contain rounded-lg"
                     />
                   </div>
                   <span className="mt-1.5 text-[10px] font-bold text-emerald-700 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> Mã VietQR Động Napas 24/7
+                    <Sparkles className="h-3 w-3" /> Mã VietQR thanh toán Napas 247
                   </span>
                 </div>
 
                 {/* Thông tin chuyển khoản & Cú pháp */}
                 <div className="w-full space-y-2.5 text-xs">
-                  <div className="flex items-center border-b border-slate-200/80 pb-1.5">
-                    <span className="w-32 text-slate-500 shrink-0 text-left">Ngân hàng:</span>
-                    <strong className="flex-1 text-center text-slate-900 font-bold">{data.bankName}</strong>
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                    <span className="text-slate-500">Ngân hàng:</span>
+                    <strong className="text-slate-900 font-bold text-right">{data.bankName} – {data.bankAccount}</strong>
                   </div>
 
-                  <div className="flex items-center border-b border-slate-200/80 pb-1.5">
-                    <span className="w-32 text-slate-500 shrink-0 text-left">Số tài khoản:</span>
-                    <div className="flex-1 flex items-center justify-center gap-1.5">
-                      <strong className="font-mono text-sm font-black text-slate-900">{data.bankAccount}</strong>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyText(data.bankAccount, "account")}
-                        className="text-slate-400 hover:text-brand-primary p-0.5 rounded transition-colors"
-                        title="Sao chép số tài khoản"
-                      >
-                        {copiedField === "account" ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center border-b border-slate-200/80 pb-1.5">
-                    <span className="w-32 text-slate-500 shrink-0 text-left">Chủ tài khoản:</span>
-                    <strong className="flex-1 text-center text-slate-800 font-bold uppercase">{data.accountHolder}</strong>
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                    <span className="text-slate-500">Chủ tài khoản:</span>
+                    <strong className="text-slate-800 font-bold uppercase text-right">{data.accountHolder}</strong>
                   </div>
 
                   {/* Cú pháp chuyển khoản nổi bật */}
                   <div className="rounded-lg bg-amber-50/80 border border-amber-200 p-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-amber-900 uppercase">
-                        Cú pháp chuyển khoản:
+                        Cú pháp CK:
                       </span>
                       <button
                         type="button"
@@ -343,7 +326,7 @@ export default function InvoiceReceiptModal({
                         )}
                       </button>
                     </div>
-                    <p className="mt-1 font-mono text-center text-sm font-extrabold text-orange-600 tracking-wide select-all bg-white py-1 px-2 rounded border border-amber-200">
+                    <p className="mt-1 font-mono text-right text-sm font-extrabold text-orange-600 tracking-wide select-all bg-white py-1 px-2 rounded border border-amber-200">
                       {data.transferContent}
                     </p>
                   </div>

@@ -190,7 +190,7 @@ function InvoicesContent() {
         bankName: bank.bankName,
         accountNo: bank.bankAccount,
         accountName: bank.accountHolder,
-        template: "qr_only",
+        template: "compact2",
         amount: totalAmount,
         description: transferContent,
       });
@@ -220,7 +220,7 @@ function InvoicesContent() {
       bankName: bank.bankName,
       accountNo: bank.bankAccount,
       accountName: bank.accountHolder,
-      template: "qr_only",
+      template: "compact2",
       amount: inv.totalAmount,
       description: transferContent,
     });

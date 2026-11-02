@@ -36,17 +36,18 @@ export interface InvoiceCardData {
  * mà không bao giờ bị lỗi CORS hay ô nhiễm Canvas (tainted canvas).
  */
 async function loadQrImage(src: string): Promise<HTMLImageElement> {
-  // Nếu là data url sẵn
+  if (!src) throw new Error("URL ảnh rỗng");
   if (src.startsWith("data:")) {
     return loadRawImage(src);
   }
 
-  // Thử fetch để bóc tách base64 png từ SVG của VietQR (hoặc lấy blob)
+  // Thử fetch để lấy Blob (tránh tainted canvas và CORS issue)
   try {
     const res = await fetch(src);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
     const contentType = res.headers.get("content-type") || "";
     
-    if (contentType.includes("svg") || src.includes("vietqr.io")) {
+    if (contentType.includes("svg")) {
       const text = await res.text();
       // VietQR SVG nhúng mã QR dưới dạng: href="data:image/png;base64,..."
       const match = text.match(/href=["'](data:image\/[^"']+)["']/);
@@ -195,11 +196,11 @@ export async function generateInvoiceCardCanvas(
   ctx.textBaseline = "middle";
   ctx.fillText("♔", crownX + crownSize / 2, crownY + crownSize / 2 + 1);
 
-  // 4. Header Badge: PHIẾU THU HỌC PHÍ THÁNG M/YYYY
+  // 4. Header Badge: HỌC PHÍ THÁNG M/YYYY
   const padLeft = cardX + 24;
   let curY = cardY + 28;
 
-  const badgeText = `PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}`;
+  const badgeText = `HỌC PHÍ THÁNG ${data.month}/${data.year}`;
   ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
@@ -222,14 +223,14 @@ export async function generateInvoiceCardCanvas(
   curY += 32;
   ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#0F172A";
-  ctx.fillText(`[KTTLL] PHIẾU THU HỌC PHÍ THÁNG ${data.month}/${data.year}`, padLeft, curY);
+  ctx.fillText(`[KTTLL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`, padLeft, curY);
 
   // 6. Lời chào
   curY += 24;
   ctx.font = "500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#475569";
   const introLine1 = `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai`;
-  const introLine2 = `xin gửi phiếu thu học phí theo nguyên tắc Thực học - Thực trả.`;
+  const introLine2 = `xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc Thực học - Thực trả.`;
   ctx.fillText(truncateText(ctx, introLine1, cardW - 48), padLeft, curY);
   curY += 17;
   ctx.fillText(introLine2, padLeft, curY);
@@ -246,6 +247,7 @@ export async function generateInvoiceCardCanvas(
   // 7. Chi tiết học phí
   curY += 12;
   const rowH = 25;
+  const colValX = cardX + cardW - 24;
 
   const renderRow = (
     label: string,
@@ -260,22 +262,17 @@ export async function generateInvoiceCardCanvas(
     ctx.textBaseline = "middle";
     ctx.fillText(label, padLeft, curY + rowH / 2);
 
-    // 2. Thông tin căn giữa trong phần còn lại của hàng
-    const labelColW = 145;
-    const valAreaLeft = padLeft + labelColW;
-    const valAreaRight = cardX + cardW - 24;
-    const valCenterX = valAreaLeft + (valAreaRight - valAreaLeft) / 2;
-    const maxValW = valAreaRight - valAreaLeft - 10;
-
+    // 2. Giá trị căn lề phải
     ctx.font = `${isBoldVal ? "700" : "600"} 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
     ctx.fillStyle = valColor;
-    ctx.textAlign = "center";
-    ctx.fillText(truncateText(ctx, value, maxValW), valCenterX, curY + rowH / 2);
+    ctx.textAlign = "right";
+    const maxValW = cardW - 170;
+    ctx.fillText(truncateText(ctx, value, maxValW), colValX, curY + rowH / 2);
 
     curY += rowH;
   };
 
-  renderRow("Học viên:", data.studentName, true);
+  renderRow("Học viên:", `${data.studentName} (${data.studentCode})`, true);
 
   if (hasMultipleClasses) {
     ctx.font = "700 11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -368,8 +365,7 @@ export async function generateInvoiceCardCanvas(
 
   curY += totalBoxH + 10;
   renderRow("Ngân hàng:", `${data.bankName} – ${data.bankAccount}`);
-  renderRow("Chủ tài khoản:", data.accountHolder, true);
-  renderRow("Cú pháp chuyển khoản:", data.transferContent, true, "#EA580C");
+  renderRow("Cú pháp CK:", data.transferContent, true, "#EA580C");
 
   // 8. Khung Mã VietQR
   curY += 8;
@@ -388,10 +384,10 @@ export async function generateInvoiceCardCanvas(
   ctx.fillStyle = "#334155";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("⚡ Mã VietQR thanh toán nhanh Napas 247", cardX + cardW / 2, qrBoxY + 12);
+  ctx.fillText("⚡ Mã VietQR thanh toán Napas 247", cardX + cardW / 2, qrBoxY + 12);
 
   // Vùng chứa ảnh QR trắng
-  const qrImgSize = 180;
+  const qrImgSize = 186;
   const qrImgX = cardX + (cardW - qrImgSize) / 2;
   const qrImgY = qrBoxY + 34;
 
@@ -403,33 +399,32 @@ export async function generateInvoiceCardCanvas(
   roundRect(ctx, qrImgX, qrImgY, qrImgSize, qrImgSize, 12);
   ctx.stroke();
 
-  // Tải và vẽ ảnh VietQR lên Canvas (Tự động sinh trực tiếp data URL chuẩn Napas 24/7 không phụ thuộc mạng)
+  // Tải và vẽ ảnh VietQR lên Canvas (Tự động tải VietQR compact2 hoặc sinh nội bộ nếu mạng lỗi)
   try {
-    let qrSrc = data.vietQrUrl;
-    if (!qrSrc || !qrSrc.startsWith("data:")) {
-      try {
-        qrSrc = await generateVietQrDataUrl({
-          bankName: data.bankName,
-          accountNo: data.bankAccount,
-          accountName: data.accountHolder,
-          amount: data.totalAmount,
-          description: data.transferContent,
-        });
-      } catch (err) {
-        console.warn("Lỗi sinh VietQR data URL trực tiếp, thử tải từ URL:", err);
-      }
-    }
-    const qrImg = await loadQrImage(qrSrc);
+    const qrImg = await loadQrImage(data.vietQrUrl);
     ctx.drawImage(qrImg, qrImgX + 6, qrImgY + 6, qrImgSize - 12, qrImgSize - 12);
   } catch (err) {
-    console.error("Lỗi vẽ VietQR lên Canvas:", err);
-    // Vẽ placeholder nếu lỗi tải ảnh
-    ctx.fillStyle = "#64748B";
-    ctx.font = "600 11px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("Mã VietQR Chuyển Khoản", qrImgX + qrImgSize / 2, qrImgY + qrImgSize / 2 - 10);
-    ctx.fillText(data.transferContent, qrImgX + qrImgSize / 2, qrImgY + qrImgSize / 2 + 10);
+    console.warn("Không thể tải ảnh vietQrUrl trực tiếp, thử sinh VietQR nội bộ:", err);
+    try {
+      const localDataUrl = await generateVietQrDataUrl({
+        bankName: data.bankName,
+        accountNo: data.bankAccount,
+        accountName: data.accountHolder,
+        amount: data.totalAmount,
+        description: data.transferContent,
+      });
+      const localImg = await loadQrImage(localDataUrl);
+      ctx.drawImage(localImg, qrImgX + 6, qrImgY + 6, qrImgSize - 12, qrImgSize - 12);
+    } catch (e2) {
+      console.error("Lỗi vẽ VietQR lên Canvas:", e2);
+      // Vẽ placeholder nếu lỗi tải ảnh
+      ctx.fillStyle = "#64748B";
+      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Mã VietQR Chuyển Khoản", qrImgX + qrImgSize / 2, qrImgY + qrImgSize / 2 - 10);
+      ctx.fillText(data.transferContent, qrImgX + qrImgSize / 2, qrImgY + qrImgSize / 2 + 10);
+    }
   }
 
   // Ghi chú dưới QR
@@ -437,7 +432,7 @@ export async function generateInvoiceCardCanvas(
   ctx.fillStyle = "#64748B";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  const noteStr = "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát.";
+  const noteStr = "Quét mã QR bằng App Ngân Hàng bất kỳ để chuyển khoản tự động chính xác.";
   ctx.fillText(noteStr, cardX + cardW / 2, qrBoxY + qrImgSize + 44);
 
   // 9. Nút Call to Action dưới cùng
@@ -452,7 +447,7 @@ export async function generateInvoiceCardCanvas(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(
-    "📱 Quét mã QR bằng App Ngân Hàng để hoàn tất học phí",
+    "📱 Quét mã QR bằng App Ngân Hàng để đóng học phí",
     cardX + cardW / 2,
     curY + ctaH / 2
   );
