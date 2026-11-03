@@ -42,7 +42,7 @@ import { StudentContextMenu, ContextMenuPosition } from "@/components/student-co
 import { BatchImportStudentsModal } from "@/components/batch-import-students-modal";
 
 export default function CoachClassesPage() {
-  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("");
   const [currentCoachEmail, setCurrentCoachEmail] = useState<string>("");
   const [classes, setClasses] = useState<ClassroomData[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);

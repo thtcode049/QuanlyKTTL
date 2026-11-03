@@ -161,6 +161,7 @@ export default function RegisterPage() {
         hasAdminAccess: isAdminRole,
       };
       localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+      document.cookie = "kttll_logged_in=1; path=/; max-age=2592000; SameSite=Lax";
 
       setSuccess(true);
       setTimeout(() => {

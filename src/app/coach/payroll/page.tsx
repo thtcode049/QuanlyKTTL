@@ -41,7 +41,7 @@ export default function CoachPayrollPage() {
       (u) =>
         (currentCoachId && u.id === currentCoachId) ||
         (currentCoachEmail && u.email && u.email.toLowerCase() === currentCoachEmail.toLowerCase())
-    ) || dataStore.users.find((u) => u.role === "COACH");
+    ) || (currentCoachId ? dataStore.users.find((u) => u.role === "COACH") : undefined);
 
   const coachClasses = getCoachClasses(currentCoachId, currentCoachEmail || currentCoach?.email);
   const coachClassIds = coachClasses.map((c) => c.id);

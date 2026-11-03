@@ -381,38 +381,7 @@ export const initialTasks: TaskData[] = [];
 
 export const initialNotifications: NotificationData[] = [];
 
-export const initialBookDistributions: BookDistributionData[] = [
-  {
-    id: "dist-demo-1",
-    coachId: "user-coach-1",
-    coachName: "HLV Kiện tướng Lương Trọng Minh",
-    bookTitle: "Từng bước Từng bước tập 1",
-    quantity: 5,
-    unitPrice: 60000,
-    totalPrice: 300000,
-    takenDate: "2026-10-05",
-    classId: "",
-    className: "Phát cho trường tiểu học",
-    note: "HLV mua phát cho giải phong trào",
-    source: "DIRECT_PURCHASE",
-    createdAt: "2026-10-05T08:00:00.000Z",
-  },
-  {
-    id: "dist-demo-2",
-    coachId: "user-coach-1",
-    coachName: "HLV Kiện tướng Lương Trọng Minh",
-    bookTitle: "Chiếu hết 1 nước",
-    quantity: 3,
-    unitPrice: 70000,
-    totalPrice: 210000,
-    takenDate: "2026-10-12",
-    classId: "class-1",
-    className: "Cờ vua Nhập Môn - K1 (Bạch Mai)",
-    note: "Phát bổ sung ngoài lớp",
-    source: "DIRECT_PURCHASE",
-    createdAt: "2026-10-12T09:30:00.000Z",
-  },
-];
+export const initialBookDistributions: BookDistributionData[] = [];
 
 /**
  * Singleton DataStore State Manager
@@ -439,6 +408,10 @@ class InMemoryDataStore {
     this.loadCachedInvoiceStatuses();
     this.recalculateAllInvoices(10, 2026);
     this.loadFromLocalStorage();
+    // Đảm bảo không tồn tại dữ liệu demo / test nào
+    this.bookDistributions = this.bookDistributions.filter((d) => !d.id.startsWith("dist-demo"));
+    this.tasks = this.tasks.filter((t) => !t.id.startsWith("task-demo") && !t.id.startsWith("task-test") && !t.title.toLowerCase().includes("test"));
+    this.notifications = this.notifications.filter((n) => !n.id.startsWith("notif-demo") && !n.id.startsWith("notif-test") && !n.title.toLowerCase().includes("test"));
   }
 
   // Tự động lưu dữ liệu vào localStorage trên trình duyệt để không bị mất khi F5
@@ -563,13 +536,19 @@ class InMemoryDataStore {
         });
       }
       if (data.bookDistributions && Array.isArray(data.bookDistributions)) {
-        this.bookDistributions = data.bookDistributions;
+        this.bookDistributions = data.bookDistributions.filter(
+          (d: BookDistributionData) => !d.id.startsWith("dist-demo")
+        );
       }
       if (data.tasks && Array.isArray(data.tasks)) {
-        this.tasks = data.tasks;
+        this.tasks = data.tasks.filter(
+          (t: TaskData) => !t.id.startsWith("task-demo") && !t.id.startsWith("task-test") && !t.title.toLowerCase().includes("test")
+        );
       }
       if (data.notifications && Array.isArray(data.notifications)) {
-        this.notifications = data.notifications;
+        this.notifications = data.notifications.filter(
+          (n: NotificationData) => !n.id.startsWith("notif-demo") && !n.id.startsWith("notif-test") && !n.title.toLowerCase().includes("test")
+        );
       }
       if (data.bankConfig) {
         this.bankConfig = { ...this.bankConfig, ...data.bankConfig };
@@ -733,6 +712,15 @@ class InMemoryDataStore {
     this.evaluations = this.evaluations.filter((ev) => !demoStudentIds.includes(ev.studentId));
     this.invoices = this.invoices.filter(
       (inv) => !demoClassIds.includes(inv.classId) && !demoStudentIds.includes(inv.studentId)
+    );
+    this.bookDistributions = this.bookDistributions.filter(
+      (d) => !d.id.startsWith("dist-demo")
+    );
+    this.tasks = this.tasks.filter(
+      (t) => !t.id.startsWith("task-demo") && !t.id.startsWith("task-test") && !t.title.toLowerCase().includes("test")
+    );
+    this.notifications = this.notifications.filter(
+      (n) => !n.id.startsWith("notif-demo") && !n.id.startsWith("notif-test") && !n.title.toLowerCase().includes("test")
     );
 
     this.saveToLocalStorage();
@@ -1794,7 +1782,7 @@ class InMemoryDataStore {
   }
 
   public getUserNotifications(userId?: string): NotificationData[] {
-    if (!userId) return this.notifications;
+    if (!userId || !userId.trim()) return [];
     const canonical = resolveCanonicalCoachId(userId);
     return this.notifications.filter((n) => {
       if (n.userId === userId) return true;
@@ -1806,6 +1794,7 @@ class InMemoryDataStore {
   }
 
   public getUnreadNotificationCount(userId?: string): number {
+    if (!userId || !userId.trim()) return 0;
     return this.getUserNotifications(userId).filter((n) => !n.isRead).length;
   }
 

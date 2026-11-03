@@ -27,7 +27,7 @@ import EvaluationStars from "@/components/evaluation-stars";
 import confetti from "canvas-confetti";
 
 export default function CoachEvaluationsPage() {
-  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("");
   const [students, setStudents] = useState<StudentData[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");

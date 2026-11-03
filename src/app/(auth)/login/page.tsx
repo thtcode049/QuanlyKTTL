@@ -48,6 +48,7 @@ export default function LoginPage() {
       if (res.ok && data.success && data.user) {
         const sessionUser = { ...data.user };
         localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+        document.cookie = "kttll_logged_in=1; path=/; max-age=2592000; SameSite=Lax";
 
         // Đồng bộ toàn bộ dữ liệu mới nhất từ Supabase PostgreSQL
         await dataStore.syncWithDatabase();
@@ -76,7 +77,15 @@ export default function LoginPage() {
           dataStore.saveToLocalStorage();
         }
 
-        if (sessionUser.role === "ADMIN") {
+        const params = new URLSearchParams(window.location.search);
+        const redirectPath = params.get("redirect");
+        if (redirectPath && (redirectPath.startsWith("/coach") || redirectPath.startsWith("/admin"))) {
+          if (redirectPath.startsWith("/admin") && sessionUser.role !== "ADMIN" && !sessionUser.hasAdminAccess) {
+            router.push("/coach/classes");
+          } else {
+            router.push(redirectPath);
+          }
+        } else if (sessionUser.role === "ADMIN") {
           router.push("/admin/dashboard");
         } else {
           router.push("/coach/classes");
@@ -115,8 +124,17 @@ export default function LoginPage() {
           hasAdminAccess: !!foundUser.hasAdminAccess,
         };
         localStorage.setItem("kttll_user", JSON.stringify(sessionUser));
+        document.cookie = "kttll_logged_in=1; path=/; max-age=2592000; SameSite=Lax";
 
-        if (foundUser.role === "ADMIN") {
+        const params = new URLSearchParams(window.location.search);
+        const redirectPath = params.get("redirect");
+        if (redirectPath && (redirectPath.startsWith("/coach") || redirectPath.startsWith("/admin"))) {
+          if (redirectPath.startsWith("/admin") && sessionUser.role !== "ADMIN" && !sessionUser.hasAdminAccess) {
+            router.push("/coach/classes");
+          } else {
+            router.push(redirectPath);
+          }
+        } else if (foundUser.role === "ADMIN") {
           router.push("/admin/dashboard");
         } else {
           router.push("/coach/classes");

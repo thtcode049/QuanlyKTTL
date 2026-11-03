@@ -40,6 +40,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ currentUserI
       } catch (e) {}
     }
 
+    if (!uid) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     const list = dataStore.getUserNotifications(uid);
     setNotifications([...list]);
     const unread = list.filter((n) => !n.isRead).length;

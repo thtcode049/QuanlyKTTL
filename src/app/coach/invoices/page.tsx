@@ -76,7 +76,7 @@ export interface AggregatedStudentInvoice {
 function InvoicesContent() {
   const searchParams = useSearchParams();
 
-  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("");
   const [classes, setClasses] = useState<ClassroomData[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<number>(10);

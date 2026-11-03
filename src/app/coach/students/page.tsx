@@ -42,7 +42,7 @@ import { BatchImportStudentsModal } from "@/components/batch-import-students-mod
 
 export default function StudentsDirectoryPage() {
   const { message, modal } = App.useApp();
-  const [currentCoachId, setCurrentCoachId] = useState<string>("user-coach-1");
+  const [currentCoachId, setCurrentCoachId] = useState<string>("");
   const [coachClasses, setCoachClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");

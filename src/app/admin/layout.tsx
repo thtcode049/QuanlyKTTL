@@ -22,6 +22,8 @@ export default function AdminLayout({
   useEffect(() => {
     const stored = localStorage.getItem("kttll_user");
     if (!stored) {
+      setIsAuthorized(false);
+      document.cookie = "kttll_logged_in=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       router.replace("/login");
       return;
     }
@@ -68,6 +70,9 @@ export default function AdminLayout({
         return () => clearTimeout(timer);
       }
     } catch (e) {
+      localStorage.removeItem("kttll_user");
+      document.cookie = "kttll_logged_in=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      setIsAuthorized(false);
       router.replace("/login");
     }
   }, [router]);

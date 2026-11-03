@@ -77,7 +77,7 @@ export default function CoachBooksPage() {
         (u) =>
           (currentCoachId && u.id === currentCoachId) ||
           (currentUser?.email && u.email?.toLowerCase() === currentUser.email.toLowerCase())
-      ) || dataStore.users.find((u) => u.role === "COACH")
+      ) || (currentCoachId ? dataStore.users.find((u) => u.role === "COACH") : undefined)
     );
   }, [currentCoachId, currentUser?.email, refreshTrigger]);
 
@@ -85,7 +85,9 @@ export default function CoachBooksPage() {
 
   // Lấy toàn bộ sách trong tháng/năm này: cả sách HLV lấy ngoài VÀ sách phát qua lớp học
   const allBooks = useMemo(() => {
-    return dataStore.getAllBookDistributions(currentCoach?.id || currentCoachId, month, year);
+    const coachId = currentCoach?.id || currentCoachId;
+    if (!coachId) return [];
+    return dataStore.getAllBookDistributions(coachId, month, year);
   }, [currentCoach?.id, currentCoachId, month, year, refreshTrigger]);
 
   // Bộ lọc dữ liệu theo tab và từ khóa
@@ -188,8 +190,8 @@ export default function CoachBooksPage() {
     const targetClass = coachClasses.find((c) => c.id === formClassId);
 
     const payload = {
-      coachId: currentCoach?.id || currentCoachId || "user-coach-1",
-      coachName: currentCoach?.name || "Huấn Luyện Viên",
+      coachId: currentCoach?.id || currentCoachId || currentUser?.id || "",
+      coachName: currentCoach?.name || currentUser?.name || "Huấn Luyện Viên",
       bookTitle: finalTitle,
       quantity: qty,
       unitPrice,

@@ -44,7 +44,8 @@ export const Header: React.FC<HeaderProps> = ({ userRole, userName, userTitle })
 
   const handleLogout = () => {
     localStorage.removeItem("kttll_user");
-    router.push("/login");
+    document.cookie = "kttll_logged_in=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    router.replace("/login");
   };
 
   const handleToggleMobileMenu = () => {
