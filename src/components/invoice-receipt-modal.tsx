@@ -224,7 +224,7 @@ export default function InvoiceReceiptModal({
                 <div className="text-left sm:text-right text-xs space-y-1 text-slate-500">
                   <p>Ngày lập phiếu: <strong className="text-slate-700">{new Date().toLocaleDateString("vi-VN")}</strong></p>
                   <span className="inline-block rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold">
-                    Thực học - Thực trả
+                    Hóa đơn học phí
                   </span>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function InvoiceReceiptModal({
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-600 font-semibold text-sm sm:text-base">Số buổi thực học:</span>
+                  <span className="text-slate-600 font-semibold text-sm sm:text-base">Số buổi học:</span>
                   <strong className="text-emerald-700 font-extrabold text-base sm:text-lg text-right">{data.presentCount} buổi</strong>
                 </div>
                 {!hasMultipleClasses && (
@@ -364,7 +364,7 @@ export default function InvoiceReceiptModal({
                   <p className="text-xs text-emerald-600 mt-0.5">
                     {data.surchargeAmount && data.surchargeAmount > 0
                       ? `(Gồm ${formatCurrencyVND(data.tuitionAmount || 0)} tiền học + ${formatCurrencyVND(data.surchargeAmount)} phụ phí)`
-                      : "(Đã tính theo số buổi thực tế học sinh tham gia lớp)"}
+                      : "(Đã tính theo số buổi học sinh tham gia lớp)"}
                   </p>
                 </div>
                 <div className="text-right">

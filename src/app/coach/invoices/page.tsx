@@ -684,7 +684,7 @@ function InvoicesContent() {
             Tổng Kết Học Phí
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Học phí = (Số buổi Có mặt thực tế) × (Đơn giá/buổi). Tự động sinh mã VietQR và xuất ảnh thẻ PNG gửi phụ huynh.
+            Học phí = (Số buổi Có mặt) × (Đơn giá/buổi). Tự động sinh mã VietQR và xuất ảnh thẻ PNG gửi phụ huynh.
           </p>
         </div>
 
@@ -762,7 +762,7 @@ function InvoicesContent() {
             Bạn chưa có lớp học nào để tổng kết học phí
           </h2>
           <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500">
-            Hệ thống không hiển thị hóa đơn học phí mẫu đối với tài khoản thật của bạn. Vui lòng tạo lớp học và điểm danh học sinh để sinh hóa đơn theo nguyên tắc Thực học - Thực trả.
+            Hệ thống không hiển thị hóa đơn học phí mẫu đối với tài khoản thật của bạn. Vui lòng tạo lớp học và điểm danh học sinh để sinh hóa đơn học phí.
           </p>
           <a
             href="/coach/classes"
@@ -876,7 +876,7 @@ function InvoicesContent() {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-          <p className="text-xs font-medium text-slate-500">Tổng Học Phí Phải Thu (Thực học)</p>
+          <p className="text-xs font-medium text-slate-500">Tổng Học Phí Phải Thu</p>
           <p className="mt-1.5 text-2xl font-bold text-slate-900 tracking-tight">
             {formatCurrencyVND(totalDue)}
           </p>
@@ -1571,7 +1571,7 @@ function InvoicesContent() {
                 {filteredInvoices.length === 0 && (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-slate-400">
-                      Chưa có dữ liệu học phí cho lớp này trong tháng {selectedMonth}/{selectedYear}. Khi HLV thực hiện điểm danh học viên, hệ thống sẽ tự động tính học phí theo nguyên tắc Thực học - Thực trả.
+                      Chưa có dữ liệu học phí cho lớp này trong tháng {selectedMonth}/{selectedYear}. Khi HLV thực hiện điểm danh học viên, hệ thống sẽ tự động tính học phí.
                     </td>
                   </tr>
                 )}

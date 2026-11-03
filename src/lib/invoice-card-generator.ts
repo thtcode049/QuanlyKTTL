@@ -250,7 +250,7 @@ export async function generateInvoiceCardCanvas(
   ctx.font = "500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#475569";
   const introLine1 = `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai`;
-  const introLine2 = `xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc Thực học - Thực trả.`;
+  const introLine2 = `xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year}.`;
   ctx.fillText(truncateText(ctx, introLine1, cardW - 48), padLeft, curY);
   curY += 19;
   ctx.fillText(introLine2, padLeft, curY);
@@ -346,10 +346,10 @@ export async function generateInvoiceCardCanvas(
       curY += boxH + 6;
     });
 
-    renderRow("Tổng số buổi thực học:", `${data.presentCount} buổi`, true, "#047857", 16);
+    renderRow("Tổng số buổi học:", `${data.presentCount} buổi`, true, "#047857", 16);
   } else {
     renderRow("Lớp học:", `${data.className} – ${data.branchName}`, false, "#1E293B", 15);
-    renderRow("Số buổi thực học:", `${data.presentCount} buổi`, true, "#047857", 16.5);
+    renderRow("Số buổi học:", `${data.presentCount} buổi`, true, "#047857", 16.5);
 
     const datesStr =
       data.presentDates && data.presentDates.length > 0
@@ -362,7 +362,7 @@ export async function generateInvoiceCardCanvas(
   // Hiển thị chi tiết Phụ phí (nếu có: Sách, Ăn trưa, Tùy chọn khác)
   if (data.surcharges && data.surcharges.length > 0) {
     if (data.tuitionAmount !== undefined) {
-      renderRow("Tiền học thực tế:", formatCurrencyVND(data.tuitionAmount), false, "#1E293B", 15);
+      renderRow("Tiền học phí:", formatCurrencyVND(data.tuitionAmount), false, "#1E293B", 15);
     }
     const surchargeTitle = `Phụ phí (${data.surcharges.length} khoản):`;
     renderRow(surchargeTitle, `+${formatCurrencyVND(data.surchargeAmount || 0)}`, true, "#D97706", 15);

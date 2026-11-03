@@ -300,7 +300,7 @@ async function sendInvoicesToParents(options = {}) {
       console.log(`[${idx + 1}/${students.length}] 🎓 Học viên: ${st.studentName} (${st.studentCode})`);
       console.log(`   👨‍👩‍👧 Phụ huynh: ${st.parentName || 'Chưa cập nhật'} - SĐT: ${st.parentPhone} (Zalo: ${st.cleanParentPhone})`);
       console.log(`   📚 Lớp: ${st.className} (${st.branchName})`);
-      console.log(`   💰 Thực học: ${st.presentCount} buổi | Tổng học phí: ${st.totalAmount.toLocaleString('vi-VN')} VNĐ`);
+      console.log(`   💰 Số buổi học: ${st.presentCount} buổi | Tổng học phí: ${st.totalAmount.toLocaleString('vi-VN')} VNĐ`);
       console.log(`   🖼️  Ảnh thẻ gửi đính kèm: ${st.imagePath}`);
       console.log(`   🔗 Link mở chat Zalo phụ huynh: https://zalo.me/${st.cleanParentPhone}`);
       console.log(`----------------------------------------------------------------`);

@@ -80,7 +80,7 @@ export default function AdminSettingsPage() {
   const handleResetZaloTemplate = () => {
     setTitleTemplate("[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
     setBodyTemplate(
-      "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả."
+      "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year}."
     );
     setFooterNote(
       "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666."

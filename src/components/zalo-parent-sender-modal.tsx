@@ -800,7 +800,7 @@ export default function ZaloParentSenderModal({
                             </p>
 
                             <p className="mt-0.5 text-[11px] text-slate-600">
-                              Thực học: <strong>{st.presentCount}</strong> buổi | Số tiền:{" "}
+                              Số buổi học: <strong>{st.presentCount}</strong> buổi | Số tiền:{" "}
                               <strong className="text-emerald-700 font-bold">
                                 {formatCurrencyVND(st.totalAmount)}
                               </strong>
@@ -907,7 +907,7 @@ export default function ZaloParentSenderModal({
                     </h4>
 
                     <p className="mt-1.5 text-[11px] leading-relaxed text-slate-600">
-                      Kính gửi phụ huynh em <strong>{previewStudent.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {previewStudent.month}/{previewStudent.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
+                      Kính gửi phụ huynh em <strong>{previewStudent.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {previewStudent.month}/{previewStudent.year}.
                     </p>
 
                     {/* Details Table */}
@@ -923,7 +923,7 @@ export default function ZaloParentSenderModal({
                         <div className="space-y-1 py-1">
                           <div className="flex justify-between items-center text-[11px] font-bold text-slate-700">
                             <span>Chi tiết các lớp học ({previewStudent.classList.length} lớp):</span>
-                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Thực học - Thực trả</span>
+                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Học phí theo buổi</span>
                           </div>
                           {previewStudent.classList.map((clsItem, cIdx) => (
                             <div key={cIdx} className="rounded bg-slate-50 p-2 border border-slate-200/80 text-xs">
@@ -940,7 +940,7 @@ export default function ZaloParentSenderModal({
                             </div>
                           ))}
                           <div className="flex justify-between pt-1">
-                            <span className="text-slate-500">Tổng số buổi thực học:</span>
+                            <span className="text-slate-500">Tổng số buổi học:</span>
                             <span className="font-bold text-slate-900">{previewStudent.presentCount} buổi</span>
                           </div>
                         </div>
@@ -954,7 +954,7 @@ export default function ZaloParentSenderModal({
                           </div>
 
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Số buổi thực học:</span>
+                            <span className="text-slate-500">Số buổi học:</span>
                             <span className="font-semibold text-slate-900">
                               {previewStudent.presentCount} buổi
                             </span>
@@ -1104,7 +1104,7 @@ export default function ZaloParentSenderModal({
           <p className="text-xs text-slate-500 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
             <span>
-              Mã VietQR Napas 24/7 tự động nhận diện tài khoản thụ hưởng và số tiền học phí thực tế.
+              Mã VietQR Napas 24/7 tự động nhận diện tài khoản thụ hưởng và số tiền học phí.
             </span>
           </p>
 

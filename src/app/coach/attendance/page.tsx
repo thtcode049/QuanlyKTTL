@@ -627,7 +627,7 @@ function AttendanceContent() {
       dataStore.sessions.push(newSession);
     }
 
-    // Tự động tính toán lại toàn bộ học phí theo quy tắc THỰC HỌC - THỰC TRẢ (bao gồm cả học sinh học bù)
+    // Tự động tính toán lại toàn bộ học phí (bao gồm cả học sinh học bù)
     const dateObj = new Date(sessionDate);
     dataStore.recalculateAllInvoices(dateObj.getMonth() + 1, dateObj.getFullYear());
     dataStore.saveToLocalStorage();
@@ -968,7 +968,7 @@ function AttendanceContent() {
             <Check className="h-3.5 w-3.5" />
           </div>
           <span>
-            Đã lưu kết quả điểm danh thành công! Hệ thống đã tự động tính học phí theo nguyên tắc Thực học - Thực trả.
+            Đã lưu kết quả điểm danh thành công! Hệ thống đã tự động cập nhật học phí.
           </span>
         </div>
       )}

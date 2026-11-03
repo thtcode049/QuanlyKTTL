@@ -245,7 +245,7 @@ function buildInvoiceHtml(data) {
       <span class="badge-month">HỌC PHÍ THÁNG ${data.month}/${data.year}</span>
       <h1 class="title">${data.customTitle || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`}</h1>
       <p class="intro">
-        Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year} theo nguyên tắc <em>Thực học - Thực trả</em>.
+        Kính gửi phụ huynh em <strong>${data.studentName}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year}.
       </p>
     </div>
 
@@ -260,7 +260,7 @@ function buildInvoiceHtml(data) {
         <span class="value">${data.className} – ${data.branchName}</span>
       </div>
       <div class="row">
-        <span class="label">Số buổi thực học:</span>
+        <span class="label">Số buổi học:</span>
         <span class="value" style="color: #047857;">${data.presentCount} buổi</span>
       </div>
       <div class="row">

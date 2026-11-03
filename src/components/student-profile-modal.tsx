@@ -649,7 +649,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <div className="flex justify-between items-center pt-1 border-t border-slate-100 text-[11px]">
                       <span className="text-slate-400">Quy tắc học phí:</span>
                       <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-700 text-[10px]">
-                        Thực học - Thực trả
+                        Theo số buổi học
                       </span>
                     </div>
                   </div>

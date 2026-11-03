@@ -453,7 +453,7 @@ export default function CoachClassesPage() {
             Lớp Học Của Tôi
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Quản lý hồ sơ học viên, ảnh đại diện, điểm danh và học phí theo nguyên tắc Thực học - Thực trả.
+            Quản lý hồ sơ học viên, ảnh đại diện, điểm danh và học phí.
           </p>
         </div>
 

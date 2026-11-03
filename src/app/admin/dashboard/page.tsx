@@ -293,7 +293,7 @@ export default function AdminDashboardPage() {
                 Doanh Thu Chi Tiết Theo Cơ Sở (Tháng {month}/{year})
               </h3>
               <p className="text-xs text-slate-500">
-                Thống kê học phí Thực học của từng cơ sở đào tạo tại Hà Nội
+                Thống kê học phí của từng cơ sở đào tạo tại Hà Nội
               </p>
             </div>
             <Link

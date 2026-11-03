@@ -220,7 +220,7 @@ export default function CoachPayrollPage() {
             Chi Tiết Thu Nhập Theo Từng Lớp Phụ Trách
           </h3>
           <p className="text-xs text-slate-500">
-            Đối soát học phí thực học (50%) và doanh thu phát sách (30%) của từng lớp.
+            Đối soát học phí (50%) và doanh thu phát sách (30%) của từng lớp.
           </p>
         </div>
 

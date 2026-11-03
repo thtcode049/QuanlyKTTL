@@ -127,7 +127,7 @@ export interface MonthlyInvoiceData {
   year: number;
   presentCount: number;
   feePerSession: number;
-  tuitionAmount?: number; // presentCount * feePerSession (học phí thực học)
+  tuitionAmount?: number; // presentCount * feePerSession (học phí theo số buổi học)
   surchargeAmount?: number; // Tổng phụ phí (sách + ăn trưa + khác)
   surcharges?: InvoiceSurchargeItem[]; // Danh sách chi tiết các khoản phụ phí
   totalAmount: number; // tuitionAmount + surchargeAmount
@@ -373,7 +373,7 @@ export const initialBankConfig: BankConfig = {
 
 export const initialZaloConfig: ZaloConfig = {
   titleTemplate: "[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}",
-  bodyTemplate: "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc Thực học - Thực trả.",
+  bodyTemplate: "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year}.",
   footerNote: "Lưu ý: Quý phụ huynh vui lòng thanh toán đúng cú pháp để hệ thống đối soát tự động. Mọi thắc mắc xin liên hệ Hotline CLB: 0904.555.666.",
 };
 
@@ -1145,7 +1145,7 @@ class InMemoryDataStore {
     return true;
   }
 
-  // Tự động tính toán hóa đơn học phí cho tất cả học viên theo nguyên tắc THỰC HỌC - THỰC TRẢ
+  // Tự động tính toán hóa đơn học phí cho tất cả học viên
   public recalculateAllInvoices(month: number, year: number) {
     const newInvoices: MonthlyInvoiceData[] = [];
 
@@ -1221,11 +1221,11 @@ class InMemoryDataStore {
           ? student.customFeePerSession
           : cls.feePerSession;
         
-        // Học phí thực học
+        // Học phí theo số buổi học
         const tuitionAmount = presentCount * feePerSession;
         // Tổng các khoản phụ phí (sách + ăn trưa + tùy chọn khác)
         const surchargeAmount = surcharges.reduce((sum, s) => sum + s.amount, 0);
-        // Tổng số tiền phụ huynh cần thanh toán: Thực học + Phụ phí
+        // Tổng số tiền phụ huynh cần thanh toán: Học phí + Phụ phí
         const totalAmount = tuitionAmount + surchargeAmount;
 
         // Sinh mã hóa đơn: HP-[YEAR][MONTH]-[CODE]
@@ -1359,7 +1359,7 @@ class InMemoryDataStore {
           return d.getMonth() + 1 === month && d.getFullYear() === year;
         });
 
-        // Tổng học phí từ các lớp mà HLV phụ trách trong tháng (quy tắc Thực học - Thực trả)
+        // Tổng học phí từ các lớp mà HLV phụ trách trong tháng
         const coachInvoices = this.invoices.filter(
           (inv) => classIds.includes(inv.classId) && inv.month === month && inv.year === year
         );

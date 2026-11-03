@@ -25,7 +25,7 @@ export function exportInvoicesToExcel(
   const excelData = [
     ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTL)"],
     [`BẢNG TỔNG KẾT HỌC PHÍ THÁNG ${month}/${year}`],
-    [`Lớp học: ${className} | Quy tắc: Thực học - Thực trả (Nghỉ không tính phí)`],
+    [`Lớp học: ${className}`],
     [],
     [
       "STT",

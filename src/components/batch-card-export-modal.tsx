@@ -271,7 +271,7 @@ export default function BatchCardExportModal({
                           )}
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
-                          {st.presentCount} buổi thực học •{" "}
+                          {st.presentCount} buổi học •{" "}
                           <strong className="text-emerald-700 font-bold">
                             {formatCurrencyVND(st.totalAmount)}
                           </strong>

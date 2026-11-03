@@ -105,7 +105,7 @@ export function buildZaloCoachMessage(bundle: {
 }
 
 export function getCoachInvoices(month = 10, year = 2026): CoachInvoiceBundle[] {
-  // Tính toán lại học phí theo đúng thực học thực trả
+  // Tính toán lại học phí
   dataStore.recalculateAllInvoices(month, year);
 
   const bank = dataStore.bankConfig;
