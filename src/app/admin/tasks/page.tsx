@@ -297,7 +297,7 @@ export default function AdminTasksPage() {
             className="flex items-center gap-2 rounded bg-brand-primary px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-colors cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>+ Giao Nhiệm Vụ Mới</span>
+            <span>Giao Nhiệm Vụ Mới</span>
           </button>
         </div>
       </div>

@@ -1223,7 +1223,7 @@ function AttendanceContent() {
                   className="inline-flex items-center gap-1.5 rounded border border-brand-primary/40 bg-brand-primary/10 px-2.5 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary/20 transition-all active:scale-95"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
-                  <span>+ Thêm Học Viên / Học Bù</span>
+                  <span>Thêm Học Viên / Học Bù</span>
                 </button>
                 <button
                   type="button"

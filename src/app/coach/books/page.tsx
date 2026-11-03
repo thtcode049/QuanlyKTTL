@@ -344,7 +344,7 @@ export default function CoachBooksPage() {
             className="flex items-center gap-1.5 rounded-lg bg-brand-primary px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-primary-hover transition-all active:scale-95"
           >
             <Plus className="h-4 w-4" />
-            <span>+ Nhập Lấy Sách Ngoài</span>
+            <span>Nhập Lấy Sách Ngoài</span>
           </button>
         </div>
       </div>
@@ -511,7 +511,7 @@ export default function CoachBooksPage() {
                     <BookOpen className="mx-auto h-8 w-8 text-slate-300 mb-2" />
                     <p className="font-semibold">Chưa có bản ghi phát sách nào trong tháng {month}/{year}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      Bạn có thể bấm "+ Nhập Lấy Sách Ngoài" hoặc điểm danh phụ phí phát sách tại các lớp
+                      Bạn có thể bấm "Nhập Lấy Sách Ngoài" hoặc điểm danh phụ phí phát sách tại các lớp
                     </p>
                   </td>
                 </tr>
