@@ -20,6 +20,9 @@ export interface InvoiceCardData {
   presentCount: number;
   presentDates: string[];
   feePerSession: number;
+  tuitionAmount?: number;
+  surchargeAmount?: number;
+  surcharges?: Array<{ type: 'BOOK' | 'LUNCH' | 'OTHER'; title: string; amount: number; date?: string }>;
   totalAmount: number;
   bankName: string;
   bankAccount: string;
@@ -155,8 +158,10 @@ export async function generateInvoiceCardCanvas(
   const extraHeight = hasMultipleClasses
     ? (data.classList!.length * 62)
     : 0;
+  const surchargeRowsCount = data.surcharges && data.surcharges.length > 0 ? (data.surcharges.length + 1) : 0;
+  const surchargeHeight = surchargeRowsCount * 30;
   const baseHeight = 890 + (data.branchName ? 34 : 0);
-  const height = baseHeight + extraHeight;
+  const height = baseHeight + extraHeight + surchargeHeight;
 
   const canvas = document.createElement("canvas");
   canvas.width = width * scale;
@@ -354,6 +359,19 @@ export async function generateInvoiceCardCanvas(
     renderRow("Đơn giá:", `${formatCurrencyVND(data.feePerSession)}/buổi`, false, "#1E293B", 15);
   }
 
+  // Hiển thị chi tiết Phụ phí (nếu có: Sách, Ăn trưa, Tùy chọn khác)
+  if (data.surcharges && data.surcharges.length > 0) {
+    if (data.tuitionAmount !== undefined) {
+      renderRow("Tiền học thực tế:", formatCurrencyVND(data.tuitionAmount), false, "#1E293B", 15);
+    }
+    const surchargeTitle = `Phụ phí (${data.surcharges.length} khoản):`;
+    renderRow(surchargeTitle, `+${formatCurrencyVND(data.surchargeAmount || 0)}`, true, "#D97706", 15);
+    data.surcharges.forEach((sc) => {
+      const typeIcon = sc.type === "BOOK" ? "📚 Sách" : sc.type === "LUNCH" ? "🍱 Ăn trưa" : "🏷️ Khác";
+      renderRow(`   • ${typeIcon}: ${sc.title}`, formatCurrencyVND(sc.amount), false, "#64748B", 13.5);
+    });
+  }
+
   // Hộp nổi bật TỔNG HỌC PHÍ (to hơn, sắc nét)
   curY += 6;
   const totalBoxH = 54;
@@ -369,7 +387,7 @@ export async function generateInvoiceCardCanvas(
   ctx.fillStyle = "#047857";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText("Tổng học phí:", padLeft + 16, curY + totalBoxH / 2);
+  ctx.fillText("Tổng tiền phải nộp:", padLeft + 16, curY + totalBoxH / 2);
 
   ctx.font = "900 23px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#059669";

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   Coins,
   Calendar,
@@ -9,6 +10,8 @@ import {
   BookOpen,
   Award,
   Sparkles,
+  ShoppingBag,
+  ArrowRight,
 } from "lucide-react";
 import { dataStore, resolveCanonicalCoachId, getCoachClasses } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
@@ -177,19 +180,24 @@ export default function CoachPayrollPage() {
           </p>
         </div>
 
-        {/* Card 3: 30% Tiền Sách */}
+        {/* Card 3: Tiền Sách HLV */}
         <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-medium text-slate-500">30% Tiền Sách</p>
-            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-100">
-              30%
-            </span>
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500">
+              {coachPayroll?.bookRatePercent || 30}% Tiền Sách
+            </p>
+            <Link
+              href="/coach/books"
+              className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-100 hover:bg-amber-100 transition-colors"
+            >
+              Chi tiết →
+            </Link>
           </div>
           <p className="mt-1 text-xl sm:text-2xl font-bold text-amber-600 tracking-tight">
             {formatCurrencyVND(bookCommission)}
           </p>
-          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
-            {totalBooksCount} cuốn ({formatCurrencyVND(totalBookRevenue)})
+          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate" title={`Lớp: ${coachPayroll?.totalClassBooksCount || 0} cuốn • Ngoài: ${coachPayroll?.totalOutsideBooksCount || 0} cuốn`}>
+            {totalBooksCount} cuốn (Lớp: {coachPayroll?.totalClassBooksCount || 0} • Ngoài: {coachPayroll?.totalOutsideBooksCount || 0})
           </p>
         </div>
 
@@ -439,6 +447,51 @@ export default function CoachPayrollPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Mục Sách HLV Mua / Lấy Phát Ngoài */}
+      <div className="rounded bg-white border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)] p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-blue-600" />
+              <span>Sách HLV Lấy Phát Ngoài Lớp (HLV Mua)</span>
+            </h3>
+            <p className="text-xs text-slate-500">
+              Các đầu sách HLV lấy để phát cho những nơi khác ngoài lớp của KTTL trong tháng {month}/{year}.
+            </p>
+          </div>
+          <Link
+            href="/coach/books"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-emerald-50 transition-colors w-fit"
+          >
+            <span>Quản lý & Nhập sách</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
+            <span className="text-[11px] font-semibold text-slate-500 block uppercase">Số cuốn lấy ngoài</span>
+            <p className="mt-1 text-lg font-black text-slate-900">
+              {coachPayroll?.totalOutsideBooksCount || 0} cuốn
+            </p>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
+            <span className="text-[11px] font-semibold text-slate-500 block uppercase">Doanh số sách ngoài</span>
+            <p className="mt-1 text-lg font-black text-slate-900">
+              {formatCurrencyVND(coachPayroll?.totalOutsideBookRevenue || 0)}
+            </p>
+          </div>
+          <div className="rounded-lg bg-emerald-50/70 p-3 border border-emerald-200">
+            <span className="text-[11px] font-bold text-emerald-800 block uppercase">
+              Hoa hồng HLV (+{coachPayroll?.bookRatePercent || 30}%)
+            </span>
+            <p className="mt-1 text-lg font-black text-emerald-700">
+              +{formatCurrencyVND(Math.round((coachPayroll?.totalOutsideBookRevenue || 0) * ((coachPayroll?.bookRatePercent || 30) / 100)))}
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -182,6 +182,9 @@ function InvoicesContent() {
       });
       const totalAmount = studentInvsInMonth.reduce((s, i) => s + i.totalAmount, 0);
       const totalPresent = studentInvsInMonth.reduce((s, i) => s + i.presentCount, 0);
+      const totalTuition = studentInvsInMonth.reduce((s, i) => s + (i.tuitionAmount ?? (i.presentCount * i.feePerSession)), 0);
+      const totalSurcharges = studentInvsInMonth.reduce((s, i) => s + (i.surchargeAmount || 0), 0);
+      const allSurcharges = studentInvsInMonth.flatMap((i) => i.surcharges || []);
       const allDates = classList.flatMap((c) => c.presentDates);
       const classNames = classList.map((c) => c.className).join(", ");
 
@@ -208,6 +211,9 @@ function InvoicesContent() {
         presentCount: totalPresent,
         presentDates: allDates,
         feePerSession: 0,
+        tuitionAmount: totalTuition,
+        surchargeAmount: totalSurcharges,
+        surcharges: allSurcharges,
         totalAmount,
         bankName: bank.bankName,
         bankAccount: bank.bankAccount,
@@ -241,6 +247,9 @@ function InvoicesContent() {
       presentCount: inv.presentCount,
       presentDates: getPresentDatesForStudent(student.id, inv.classId),
       feePerSession: inv.feePerSession,
+      tuitionAmount: inv.tuitionAmount ?? (inv.presentCount * inv.feePerSession),
+      surchargeAmount: inv.surchargeAmount || 0,
+      surcharges: inv.surcharges || [],
       totalAmount: inv.totalAmount,
       bankName: bank.bankName,
       bankAccount: bank.bankAccount,
@@ -259,6 +268,14 @@ function InvoicesContent() {
     const classNames = agg.classItems.map((c) => c.className).join(", ");
     const allDates = agg.classItems.flatMap((c) => c.presentDates);
 
+    // Lấy các hóa đơn thành phần để tính phụ phí gộp
+    const studentInvs = dataStore.invoices.filter(
+      (i) => i.studentId === agg.student.id && i.month === selectedMonth && i.year === selectedYear
+    );
+    const totalTuition = studentInvs.reduce((s, i) => s + (i.tuitionAmount ?? (i.presentCount * i.feePerSession)), 0);
+    const totalSurcharges = studentInvs.reduce((s, i) => s + (i.surchargeAmount || 0), 0);
+    const allSurcharges = studentInvs.flatMap((i) => i.surcharges || []);
+
     return {
       studentCode: agg.studentCode,
       studentName: agg.studentName,
@@ -272,6 +289,9 @@ function InvoicesContent() {
       presentCount: agg.totalPresentCount,
       presentDates: allDates,
       feePerSession: agg.classItems.length === 1 ? primaryClass.feePerSession : 0,
+      tuitionAmount: totalTuition,
+      surchargeAmount: totalSurcharges,
+      surcharges: allSurcharges,
       totalAmount: agg.totalAmount,
       bankName: bank.bankName,
       bankAccount: bank.bankAccount,
@@ -578,17 +598,27 @@ function InvoicesContent() {
   // Xuất file Excel (thông minh: gộp khi chọn Tất cả các lớp)
   const handleExportExcel = () => {
     if (isAllClasses) {
-      const rows: InvoiceExportRow[] = aggregatedInvoices.map((agg, idx) => ({
-        stt: idx + 1,
-        studentCode: agg.studentCode,
-        fullName: `${agg.studentName} [${agg.classItems.map((c) => `${c.className} (${c.presentCount}b)`).join(" + ")}]`,
-        birthYear: agg.student?.birthYear || 0,
-        parentPhone: agg.parentPhone,
-        presentCount: agg.totalPresentCount,
-        feePerSession: agg.classItems.length === 1 ? agg.classItems[0].feePerSession : 0,
-        totalAmount: agg.totalAmount,
-        statusText: agg.status === "PAID" ? "Đã thanh toán" : "Chờ thanh toán",
-      }));
+      const rows: InvoiceExportRow[] = aggregatedInvoices.map((agg, idx) => {
+        const studentInvs = dataStore.invoices.filter(
+          (i) => i.studentId === agg.student.id && i.month === selectedMonth && i.year === selectedYear
+        );
+        const tuition = studentInvs.reduce((s, i) => s + (i.tuitionAmount ?? (i.presentCount * i.feePerSession)), 0);
+        const surcharge = studentInvs.reduce((s, i) => s + (i.surchargeAmount || 0), 0);
+
+        return {
+          stt: idx + 1,
+          studentCode: agg.studentCode,
+          fullName: `${agg.studentName} [${agg.classItems.map((c) => `${c.className} (${c.presentCount}b)`).join(" + ")}]`,
+          birthYear: agg.student?.birthYear || 0,
+          parentPhone: agg.parentPhone,
+          presentCount: agg.totalPresentCount,
+          feePerSession: agg.classItems.length === 1 ? agg.classItems[0].feePerSession : 0,
+          tuitionAmount: tuition,
+          surchargeAmount: surcharge,
+          totalAmount: agg.totalAmount,
+          statusText: agg.status === "PAID" ? "Đã thanh toán" : "Chờ thanh toán",
+        };
+      });
 
       exportInvoicesToExcel(
         rows,
@@ -609,6 +639,8 @@ function InvoicesContent() {
         parentPhone: student?.parentPhone || "",
         presentCount: inv.presentCount,
         feePerSession: inv.feePerSession,
+        tuitionAmount: inv.tuitionAmount ?? (inv.presentCount * inv.feePerSession),
+        surchargeAmount: inv.surchargeAmount || 0,
         totalAmount: inv.totalAmount,
         statusText: inv.status === "PAID" ? "Đã thanh toán" : "Chờ thanh toán",
       };
@@ -1222,8 +1254,22 @@ function InvoicesContent() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
-                        {formatCurrencyVND(agg.totalAmount)}
+                      <td className="px-4 py-3 text-right">
+                        <p className="font-black text-slate-900 text-sm">
+                          {formatCurrencyVND(agg.totalAmount)}
+                        </p>
+                        {(() => {
+                          const studentInvs = dataStore.invoices.filter(
+                            (i) => i.studentId === agg.student.id && i.month === selectedMonth && i.year === selectedYear
+                          );
+                          const totalSurcharge = studentInvs.reduce((sum, i) => sum + (i.surchargeAmount || 0), 0);
+                          if (totalSurcharge <= 0) return null;
+                          return (
+                            <span className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                              +Phụ phí {formatCurrencyVND(totalSurcharge)}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
@@ -1408,8 +1454,18 @@ function InvoicesContent() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
-                        {formatCurrencyVND(inv.totalAmount)}
+                      <td className="px-4 py-3 text-right">
+                        <p className="font-black text-slate-900 text-sm">
+                          {formatCurrencyVND(inv.totalAmount)}
+                        </p>
+                        {inv.surchargeAmount && inv.surchargeAmount > 0 ? (
+                          <span
+                            className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                            title={inv.surcharges?.map((s) => `${s.title}: ${formatCurrencyVND(s.amount)}`).join(", ")}
+                          >
+                            +Phụ phí {formatCurrencyVND(inv.surchargeAmount)}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button

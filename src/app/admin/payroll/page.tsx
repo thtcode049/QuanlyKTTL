@@ -347,8 +347,13 @@ export default function AdminPayrollPage() {
                       <span>{formatCurrencyVND(p.tuitionCommission)}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center font-medium text-slate-700">
-                    {p.totalBooksCount} cuốn
+                  <td className="px-4 py-3 text-center">
+                    <p className="font-bold text-slate-800">{p.totalBooksCount} cuốn</p>
+                    {(p.totalOutsideBooksCount || 0) > 0 ? (
+                      <span className="text-[10px] text-blue-600 font-medium block">
+                        (Ngoài: {p.totalOutsideBooksCount})
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-right font-medium text-slate-700">
                     {formatCurrencyVND(p.totalBookRevenue)}

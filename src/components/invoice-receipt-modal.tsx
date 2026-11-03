@@ -304,6 +304,57 @@ export default function InvoiceReceiptModal({
                 </div>
               )}
 
+              {/* Bảng Chi tiết Phụ phí (nếu có: Sách, Ăn trưa, Tùy chọn khác) */}
+              {data.surcharges && data.surcharges.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                      Chi tiết các khoản phụ phí ({data.surcharges.length} khoản):
+                    </h4>
+                    <span className="text-xs font-black text-amber-700">
+                      +{formatCurrencyVND(data.surchargeAmount || 0)}
+                    </span>
+                  </div>
+                  <div className="border border-amber-200 bg-amber-50/40 rounded-lg overflow-hidden text-xs">
+                    <table className="w-full text-left">
+                      <thead className="bg-amber-100/60 text-amber-900 font-semibold border-b border-amber-200">
+                        <tr>
+                          <th className="p-2.5">Khoản phụ phí</th>
+                          <th className="p-2.5 text-center">Phân loại</th>
+                          <th className="p-2.5 text-center">Ngày ghi nhận</th>
+                          <th className="p-2.5 text-right">Số tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-amber-100/70">
+                        {data.surcharges.map((sc, idx) => (
+                          <tr key={idx} className="hover:bg-amber-100/40">
+                            <td className="p-2.5 font-bold text-slate-800">{sc.title}</td>
+                            <td className="p-2.5 text-center">
+                              <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                sc.type === "BOOK"
+                                  ? "bg-amber-200/70 text-amber-900"
+                                  : sc.type === "LUNCH"
+                                  ? "bg-orange-200/70 text-orange-900"
+                                  : "bg-purple-200/70 text-purple-900"
+                              }`}>
+                                {sc.type === "BOOK" ? "Sách" : sc.type === "LUNCH" ? "Ăn trưa" : "Tùy chọn"}
+                              </span>
+                            </td>
+                            <td className="p-2.5 text-center text-slate-500 font-mono text-[11px]">
+                              {sc.date || "Trong kỳ"}
+                            </td>
+                            <td className="p-2.5 text-right font-bold text-amber-800">
+                              {formatCurrencyVND(sc.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* Hộp Tổng Học Phí */}
               <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 p-4">
                 <div>
@@ -311,7 +362,9 @@ export default function InvoiceReceiptModal({
                     Tổng Học Phí Phải Nộp:
                   </span>
                   <p className="text-xs text-emerald-600 mt-0.5">
-                    (Đã tính theo số buổi thực tế học sinh tham gia lớp)
+                    {data.surchargeAmount && data.surchargeAmount > 0
+                      ? `(Gồm ${formatCurrencyVND(data.tuitionAmount || 0)} tiền học + ${formatCurrencyVND(data.surchargeAmount)} phụ phí)`
+                      : "(Đã tính theo số buổi thực tế học sinh tham gia lớp)"}
                   </p>
                 </div>
                 <div className="text-right">

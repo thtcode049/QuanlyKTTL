@@ -6,6 +6,18 @@
 
 import { resolveBank } from "./vietqr";
 
+// Danh mục các đầu sách tiêu chuẩn của CLB KTTL và đơn giá mặc định
+export const STANDARD_BOOKS = [
+  { title: "Từng bước Từng bước tập 1", price: 60000 },
+  { title: "Từng bước Từng bước tập 2", price: 60000 },
+  { title: "Từng bước Từng bước tập 3", price: 60000 },
+  { title: "Chiếu hết 1 nước", price: 70000 },
+  { title: "Chiếu hết 2 nước", price: 70000 },
+  { title: "Chiếu hết 3 nước", price: 70000 },
+];
+
+export const DEFAULT_LUNCH_FEE = 50000;
+
 export interface BranchData {
   id: string;
   name: string;
@@ -79,8 +91,14 @@ export interface AttendanceRecordData {
   studentId: string;
   status: 'PRESENT' | 'ABSENT';
   coachNote?: string;
+  // Phụ phí phát sách
   bookTitle?: string; // Tên sách được phát cho học viên
   bookPrice?: number; // Giá bìa sách (VNĐ)
+  // Phụ phí ăn trưa
+  lunchFee?: number; // Tiền ăn trưa (VNĐ)
+  // Phụ phí tùy chọn khác
+  otherFeeTitle?: string; // Tên phụ phí tùy chọn (Đồng phục, Phí thi đấu,...)
+  otherFeePrice?: number; // Tiền phụ phí tùy chọn (VNĐ)
 }
 
 export interface AttendanceSessionData {
@@ -89,6 +107,14 @@ export interface AttendanceSessionData {
   date: string; // YYYY-MM-DD
   topic: string;
   records: AttendanceRecordData[];
+}
+
+export interface InvoiceSurchargeItem {
+  type: 'BOOK' | 'LUNCH' | 'OTHER';
+  title: string;
+  amount: number;
+  date?: string;
+  sessionId?: string;
 }
 
 export interface MonthlyInvoiceData {
@@ -100,10 +126,29 @@ export interface MonthlyInvoiceData {
   year: number;
   presentCount: number;
   feePerSession: number;
-  totalAmount: number;
+  tuitionAmount?: number; // presentCount * feePerSession (học phí thực học)
+  surchargeAmount?: number; // Tổng phụ phí (sách + ăn trưa + khác)
+  surcharges?: InvoiceSurchargeItem[]; // Danh sách chi tiết các khoản phụ phí
+  totalAmount: number; // tuitionAmount + surchargeAmount
   status: 'PENDING' | 'PAID';
   zaloSentAt?: string;
   vietQrUrl?: string;
+  createdAt: string;
+}
+
+export interface BookDistributionData {
+  id: string;
+  coachId: string;
+  coachName?: string;
+  bookTitle: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  takenDate?: string; // YYYY-MM-DD (có thể để trống)
+  classId?: string; // có thể để trống
+  className?: string; // có thể để trống
+  note?: string; // Ghi chú / nơi phát
+  source: 'DIRECT_PURCHASE' | 'CLASS_ATTENDANCE'; // HLV mua/lấy ngoài hoặc Tự động tổng hợp từ điểm danh
   createdAt: string;
 }
 
@@ -329,6 +374,39 @@ export const initialTasks: TaskData[] = [];
 
 export const initialNotifications: NotificationData[] = [];
 
+export const initialBookDistributions: BookDistributionData[] = [
+  {
+    id: "dist-demo-1",
+    coachId: "user-coach-1",
+    coachName: "HLV Kiện tướng Lương Trọng Minh",
+    bookTitle: "Từng bước Từng bước tập 1",
+    quantity: 5,
+    unitPrice: 60000,
+    totalPrice: 300000,
+    takenDate: "2026-10-05",
+    classId: "",
+    className: "Phát cho trường tiểu học",
+    note: "HLV mua phát cho giải phong trào",
+    source: "DIRECT_PURCHASE",
+    createdAt: "2026-10-05T08:00:00.000Z",
+  },
+  {
+    id: "dist-demo-2",
+    coachId: "user-coach-1",
+    coachName: "HLV Kiện tướng Lương Trọng Minh",
+    bookTitle: "Chiếu hết 1 nước",
+    quantity: 3,
+    unitPrice: 70000,
+    totalPrice: 210000,
+    takenDate: "2026-10-12",
+    classId: "class-1",
+    className: "Cờ vua Nhập Môn - K1 (Bạch Mai)",
+    note: "Phát bổ sung ngoài lớp",
+    source: "DIRECT_PURCHASE",
+    createdAt: "2026-10-12T09:30:00.000Z",
+  },
+];
+
 /**
  * Singleton DataStore State Manager
  */
@@ -339,6 +417,7 @@ class InMemoryDataStore {
   public classes: ClassroomData[] = [...initialClasses];
   public students: StudentData[] = [...initialStudents];
   public sessions: AttendanceSessionData[] = [...initialSessions];
+  public bookDistributions: BookDistributionData[] = [...initialBookDistributions];
   public evaluations: StudentEvaluationData[] = [...initialEvaluations];
   public bankConfig: BankConfig = { ...initialBankConfig };
   public coachBankConfigs: Record<string, BankConfig> = {};
@@ -382,6 +461,8 @@ class InMemoryDataStore {
         classes: this.classes,
         students: this.students,
         branches: this.branches,
+        sessions: this.sessions,
+        bookDistributions: this.bookDistributions,
         tasks: this.tasks,
         notifications: this.notifications,
         bankConfig: this.bankConfig,
@@ -466,6 +547,16 @@ class InMemoryDataStore {
           if (idx >= 0) this.classes[idx] = { ...this.classes[idx], ...c };
           else this.classes.push(c);
         });
+      }
+      if (data.sessions && Array.isArray(data.sessions)) {
+        data.sessions.forEach((sess: AttendanceSessionData) => {
+          const idx = this.sessions.findIndex((s) => s.id === sess.id || (s.classId === sess.classId && s.date === sess.date));
+          if (idx >= 0) this.sessions[idx] = { ...this.sessions[idx], ...sess };
+          else this.sessions.push(sess);
+        });
+      }
+      if (data.bookDistributions && Array.isArray(data.bookDistributions)) {
+        this.bookDistributions = data.bookDistributions;
       }
       if (data.tasks && Array.isArray(data.tasks)) {
         this.tasks = data.tasks;
@@ -1067,12 +1158,46 @@ class InMemoryDataStore {
       const classStudents = [...regularStudents, ...makeupStudents];
 
       for (const student of classStudents) {
-        // Đếm số buổi có mặt
+        // Đếm số buổi có mặt & thu thập các khoản phụ phí phát sinh trong tháng
         let presentCount = 0;
+        const surcharges: InvoiceSurchargeItem[] = [];
+
         for (const sess of classSessions) {
           const record = sess.records.find((r) => r.studentId === student.id);
-          if (record && record.status === "PRESENT") {
-            presentCount += 1;
+          if (record) {
+            if (record.status === "PRESENT") {
+              presentCount += 1;
+            }
+            // 1. Phụ phí phát sách
+            if (record.bookPrice && record.bookPrice > 0) {
+              surcharges.push({
+                type: "BOOK",
+                title: record.bookTitle || "Sách Cờ Vua Bài Tập",
+                amount: record.bookPrice,
+                date: sess.date,
+                sessionId: sess.id,
+              });
+            }
+            // 2. Phụ phí ăn trưa
+            if (record.lunchFee && record.lunchFee > 0) {
+              surcharges.push({
+                type: "LUNCH",
+                title: "Ăn trưa",
+                amount: record.lunchFee,
+                date: sess.date,
+                sessionId: sess.id,
+              });
+            }
+            // 3. Phụ phí tùy chọn khác
+            if (record.otherFeePrice && record.otherFeePrice > 0) {
+              surcharges.push({
+                type: "OTHER",
+                title: record.otherFeeTitle || "Phụ phí khác",
+                amount: record.otherFeePrice,
+                date: sess.date,
+                sessionId: sess.id,
+              });
+            }
           }
         }
 
@@ -1080,8 +1205,13 @@ class InMemoryDataStore {
         const feePerSession = (student.customFeePerSession !== undefined && student.customFeePerSession !== null)
           ? student.customFeePerSession
           : cls.feePerSession;
-        // Công thức THỰC HỌC - THỰC TRẢ: Số buổi Có mặt * Đơn giá
-        const totalAmount = presentCount * feePerSession;
+        
+        // Học phí thực học
+        const tuitionAmount = presentCount * feePerSession;
+        // Tổng các khoản phụ phí (sách + ăn trưa + tùy chọn khác)
+        const surchargeAmount = surcharges.reduce((sum, s) => sum + s.amount, 0);
+        // Tổng số tiền phụ huynh cần thanh toán: Thực học + Phụ phí
+        const totalAmount = tuitionAmount + surchargeAmount;
 
         // Sinh mã hóa đơn: HP-[YEAR][MONTH]-[CODE]
         const paddedMonth = month.toString().padStart(2, "0");
@@ -1111,6 +1241,9 @@ class InMemoryDataStore {
           year,
           presentCount,
           feePerSession,
+          tuitionAmount,
+          surchargeAmount,
+          surcharges,
           totalAmount,
           status,
           zaloSentAt: existing?.zaloSentAt,
@@ -1223,20 +1356,44 @@ class InMemoryDataStore {
 
         const tuitionCommission = Math.round(totalTuition * (tuitionRate / 100));
 
-        // Tiền sách phát cho học viên trong các buổi dạy của HLV trong tháng
-        let totalBooksCount = 0;
-        let totalBookRevenue = 0;
+        // 1. Tiền sách phát cho học viên trong các buổi dạy của HLV trong tháng
+        let totalClassBooksCount = 0;
+        let totalClassBookRevenue = 0;
         sessionsInMonth.forEach((sess) => {
           sess.records.forEach((rec) => {
             if (rec.bookPrice && rec.bookPrice > 0) {
-              totalBooksCount += 1;
-              totalBookRevenue += rec.bookPrice;
+              totalClassBooksCount += 1;
+              totalClassBookRevenue += rec.bookPrice;
             }
           });
         });
+
+        // 2. Sách HLV mua / lấy phát ngoài lớp trong tháng
+        let totalOutsideBooksCount = 0;
+        let totalOutsideBookRevenue = 0;
+        const coachOutsideBooks = this.bookDistributions.filter((b) => {
+          if (b.source === "CLASS_ATTENDANCE") return false;
+          const canonical = resolveCanonicalCoachId(coach.id);
+          if (b.coachId !== coach.id && resolveCanonicalCoachId(b.coachId) !== canonical) {
+            return false;
+          }
+          const dateStr = b.takenDate || b.createdAt;
+          if (!dateStr) return true;
+          const d = new Date(dateStr);
+          return d.getMonth() + 1 === month && d.getFullYear() === year;
+        });
+
+        coachOutsideBooks.forEach((b) => {
+          totalOutsideBooksCount += Number(b.quantity) || 1;
+          totalOutsideBookRevenue += Number(b.totalPrice) || ((Number(b.quantity) || 1) * (Number(b.unitPrice) || 60000));
+        });
+
+        // Tổng hợp toàn bộ sách trong tháng (sách tại lớp + sách HLV lấy ngoài)
+        const totalBooksCount = totalClassBooksCount + totalOutsideBooksCount;
+        const totalBookRevenue = totalClassBookRevenue + totalOutsideBookRevenue;
         const bookCommission = Math.round(totalBookRevenue * (bookRate / 100));
 
-        // Công thức: Thu nhập HLV = Tổng học phí * % học phí + Tiền sách * % tiền sách
+        // Công thức: Thu nhập HLV = Tổng hoa hồng học phí + Hoa hồng sách (sách lớp + sách ngoài)
         const totalSessions = sessionsInMonth.length;
         const totalIncome = tuitionCommission + bookCommission;
 
@@ -1251,6 +1408,10 @@ class InMemoryDataStore {
           tuitionCommission,
           totalBooksCount,
           totalBookRevenue,
+          totalClassBooksCount,
+          totalClassBookRevenue,
+          totalOutsideBooksCount,
+          totalOutsideBookRevenue,
           bookRatePercent: bookRate,
           bookCommission,
           totalIncome,
@@ -1262,6 +1423,97 @@ class InMemoryDataStore {
         };
       })
       .filter((p) => !targetBranchIds || targetBranchIds.length === 0 || p.classesCount > 0);
+  }
+
+  // Quản lý sách phân phối ngoài lớp (HLV mua/lấy sách)
+  public addBookDistribution(item: Omit<BookDistributionData, 'id' | 'createdAt'>): BookDistributionData {
+    const newDist: BookDistributionData = {
+      ...item,
+      id: `book-dist-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: new Date().toISOString(),
+    };
+    this.bookDistributions.unshift(newDist);
+    this.saveToLocalStorage();
+    return newDist;
+  }
+
+  public updateBookDistribution(id: string, updates: Partial<BookDistributionData>): BookDistributionData | null {
+    const idx = this.bookDistributions.findIndex((b) => b.id === id);
+    if (idx < 0) return null;
+    this.bookDistributions[idx] = { ...this.bookDistributions[idx], ...updates };
+    this.saveToLocalStorage();
+    return this.bookDistributions[idx];
+  }
+
+  public deleteBookDistribution(id: string): boolean {
+    const idx = this.bookDistributions.findIndex((b) => b.id === id);
+    if (idx < 0) return false;
+    this.bookDistributions.splice(idx, 1);
+    this.saveToLocalStorage();
+    return true;
+  }
+
+  // Tự động tổng hợp sách từ cả 2 nguồn: sách HLV lấy ngoài VÀ sách phát qua điểm danh các lớp
+  public getAllBookDistributions(coachId?: string, month?: number, year?: number): BookDistributionData[] {
+    const canonical = coachId ? resolveCanonicalCoachId(coachId) : undefined;
+
+    // 1. Sách HLV lấy/mua phát ngoài (DIRECT_PURCHASE)
+    let outside = this.bookDistributions.filter((b) => b.source === "DIRECT_PURCHASE" || !b.source);
+    if (coachId) {
+      outside = outside.filter(
+        (b) => b.coachId === coachId || (canonical && resolveCanonicalCoachId(b.coachId) === canonical)
+      );
+    }
+    if (month && year) {
+      outside = outside.filter((b) => {
+        const dateStr = b.takenDate || b.createdAt;
+        if (!dateStr) return true;
+        const d = new Date(dateStr);
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
+      });
+    }
+
+    // 2. Tự động trích xuất các sách phát tại các lớp từ attendance records (CLASS_ATTENDANCE)
+    const inClassBooks: BookDistributionData[] = [];
+    const coachClasses = coachId ? getCoachClasses(coachId) : this.classes;
+    const coachClassIds = new Set(coachClasses.map((c) => c.id));
+
+    this.sessions.forEach((sess) => {
+      if (!coachClassIds.has(sess.classId)) return;
+      if (month && year) {
+        const d = new Date(sess.date);
+        if (d.getMonth() + 1 !== month || d.getFullYear() !== year) return;
+      }
+      const cls = this.classes.find((c) => c.id === sess.classId);
+      const coach = this.users.find((u) => u.id === cls?.coachId);
+
+      sess.records.forEach((rec) => {
+        if (rec.bookPrice && rec.bookPrice > 0) {
+          const std = this.students.find((s) => s.id === rec.studentId);
+          inClassBooks.push({
+            id: `class-book-${rec.id || sess.id + '-' + rec.studentId}`,
+            coachId: cls?.coachId || coachId || "",
+            coachName: coach?.name || "HLV",
+            bookTitle: rec.bookTitle || "Sách Cờ Vua Bài Tập",
+            quantity: 1,
+            unitPrice: rec.bookPrice,
+            totalPrice: rec.bookPrice,
+            takenDate: sess.date,
+            classId: sess.classId,
+            className: cls?.name,
+            note: `Học viên: ${std?.fullName || rec.studentId}${rec.coachNote ? ` • ${rec.coachNote}` : ""}`,
+            source: 'CLASS_ATTENDANCE',
+            createdAt: sess.date,
+          });
+        }
+      });
+    });
+
+    return [...outside, ...inClassBooks].sort((a, b) => {
+      const dateA = a.takenDate || a.createdAt;
+      const dateB = b.takenDate || b.createdAt;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
   }
 
   // Cập nhật mức % học phí và % tiền sách cho Huấn luyện viên

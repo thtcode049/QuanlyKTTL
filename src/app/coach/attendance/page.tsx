@@ -27,6 +27,10 @@ import {
   Phone,
   User,
   GraduationCap,
+  Receipt,
+  Utensils,
+  Tag,
+  ChevronUp,
 } from "lucide-react";
 import {
   dataStore,
@@ -34,6 +38,8 @@ import {
   ClassroomData,
   StudentData,
   getCoachClasses,
+  STANDARD_BOOKS,
+  DEFAULT_LUNCH_FEE,
 } from "@/lib/data-store";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import confetti from "canvas-confetti";
@@ -274,7 +280,7 @@ function AttendanceContent() {
     return [...classStudents, ...makeupStudents];
   }, [classStudents, makeupStudents]);
 
-  // State điểm danh hiện tại: studentId -> { status, note, hasBook, bookTitle, bookPrice }
+  // State điểm danh hiện tại: studentId -> { status, note, hasBook, bookTitle, bookPrice, hasLunch, lunchFee, hasOther, otherFeeTitle, otherFeePrice, surchargeOpen }
   const [records, setRecords] = useState<
     Record<
       string,
@@ -284,6 +290,12 @@ function AttendanceContent() {
         hasBook: boolean;
         bookTitle: string;
         bookPrice: number;
+        hasLunch: boolean;
+        lunchFee: number;
+        hasOther: boolean;
+        otherFeeTitle: string;
+        otherFeePrice: number;
+        surchargeOpen?: boolean;
       }
     >
   >({});
@@ -321,6 +333,12 @@ function AttendanceContent() {
         hasBook: boolean;
         bookTitle: string;
         bookPrice: number;
+        hasLunch: boolean;
+        lunchFee: number;
+        hasOther: boolean;
+        otherFeeTitle: string;
+        otherFeePrice: number;
+        surchargeOpen?: boolean;
       }
     > = {};
 
@@ -329,12 +347,22 @@ function AttendanceContent() {
       allStds.forEach((std) => {
         const r = existingSession.records.find((rec) => rec.studentId === std.id);
         const isMakeup = initialMakeupIds.includes(std.id);
+        const hasBook = !!(r?.bookTitle && r?.bookPrice);
+        const hasLunch = !!(r?.lunchFee && r.lunchFee > 0);
+        const hasOther = !!(r?.otherFeePrice && r.otherFeePrice > 0);
+
         initial[std.id] = {
           status: r ? r.status : "PRESENT",
           note: r?.coachNote || (isMakeup ? "Học bù" : ""),
-          hasBook: !!(r?.bookTitle && r?.bookPrice),
-          bookTitle: r?.bookTitle || "Sách Cờ Vua Bài Tập",
-          bookPrice: r?.bookPrice || 80000,
+          hasBook,
+          bookTitle: r?.bookTitle || STANDARD_BOOKS[0].title,
+          bookPrice: r?.bookPrice || STANDARD_BOOKS[0].price,
+          hasLunch,
+          lunchFee: r?.lunchFee || DEFAULT_LUNCH_FEE,
+          hasOther,
+          otherFeeTitle: r?.otherFeeTitle || "",
+          otherFeePrice: r?.otherFeePrice || 0,
+          surchargeOpen: hasBook || hasLunch || hasOther,
         };
       });
     } else {
@@ -344,8 +372,14 @@ function AttendanceContent() {
           status: "PRESENT", // Mặc định [Có mặt] theo đặc tả
           note: isMakeup ? "Học bù" : "",
           hasBook: false,
-          bookTitle: "Sách Cờ Vua Bài Tập",
-          bookPrice: 80000,
+          bookTitle: STANDARD_BOOKS[0].title,
+          bookPrice: STANDARD_BOOKS[0].price,
+          hasLunch: false,
+          lunchFee: DEFAULT_LUNCH_FEE,
+          hasOther: false,
+          otherFeeTitle: "",
+          otherFeePrice: 0,
+          surchargeOpen: false,
         };
       });
     }
@@ -353,17 +387,27 @@ function AttendanceContent() {
     setRecords(initial);
   }, [selectedClassId, sessionDate, selectedClass, classStudents.length]);
 
+  const getDefaultRecord = (studentId: string) => {
+    const isMakeup = makeupStudentIds.includes(studentId);
+    return {
+      status: "PRESENT" as const,
+      note: isMakeup ? "Học bù" : "",
+      hasBook: false,
+      bookTitle: STANDARD_BOOKS[0].title,
+      bookPrice: STANDARD_BOOKS[0].price,
+      hasLunch: false,
+      lunchFee: DEFAULT_LUNCH_FEE,
+      hasOther: false,
+      otherFeeTitle: "",
+      otherFeePrice: 0,
+      surchargeOpen: false,
+    };
+  };
+
   // Toggle 1 chạm: PRESENT <-> ABSENT
   const toggleStatus = (studentId: string) => {
     setRecords((prev) => {
-      const isMakeup = makeupStudentIds.includes(studentId);
-      const current = prev[studentId] || {
-        status: "PRESENT",
-        note: isMakeup ? "Học bù" : "",
-        hasBook: false,
-        bookTitle: "Sách Cờ Vua Bài Tập",
-        bookPrice: 80000,
-      };
+      const current = prev[studentId] || getDefaultRecord(studentId);
       const nextStatus = current.status === "PRESENT" ? "ABSENT" : "PRESENT";
       return {
         ...prev,
@@ -379,22 +423,28 @@ function AttendanceContent() {
     setRecords((prev) => ({
       ...prev,
       [studentId]: {
-        ...prev[studentId],
+        ...(prev[studentId] || getDefaultRecord(studentId)),
         note,
       },
     }));
   };
 
+  const handleSurchargeOpenToggle = (studentId: string) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          surchargeOpen: !current.surchargeOpen,
+        },
+      };
+    });
+  };
+
   const handleBookToggle = (studentId: string) => {
     setRecords((prev) => {
-      const isMakeup = makeupStudentIds.includes(studentId);
-      const current = prev[studentId] || {
-        status: "PRESENT",
-        note: isMakeup ? "Học bù" : "",
-        hasBook: false,
-        bookTitle: "Sách Cờ Vua Bài Tập",
-        bookPrice: 80000,
-      };
+      const current = prev[studentId] || getDefaultRecord(studentId);
       return {
         ...prev,
         [studentId]: {
@@ -406,46 +456,96 @@ function AttendanceContent() {
   };
 
   const handleBookTitleChange = (studentId: string, bookTitle: string) => {
-    setRecords((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        bookTitle,
-      },
-    }));
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      // Nếu tên sách trùng với sách tiêu chuẩn, tự động cập nhật đơn giá chuẩn tương ứng
+      const matched = STANDARD_BOOKS.find((b) => b.title.toLowerCase() === bookTitle.toLowerCase());
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          bookTitle,
+          bookPrice: matched ? matched.price : current.bookPrice,
+        },
+      };
+    });
   };
 
   const handleBookPriceChange = (studentId: string, bookPrice: number) => {
     setRecords((prev) => ({
       ...prev,
       [studentId]: {
-        ...prev[studentId],
+        ...(prev[studentId] || getDefaultRecord(studentId)),
         bookPrice,
+      },
+    }));
+  };
+
+  const handleLunchToggle = (studentId: string) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          hasLunch: !current.hasLunch,
+          lunchFee: current.lunchFee || DEFAULT_LUNCH_FEE,
+        },
+      };
+    });
+  };
+
+  const handleLunchFeeChange = (studentId: string, lunchFee: number) => {
+    setRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || getDefaultRecord(studentId)),
+        lunchFee,
+      },
+    }));
+  };
+
+  const handleOtherToggle = (studentId: string) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          hasOther: !current.hasOther,
+        },
+      };
+    });
+  };
+
+  const handleOtherTitleChange = (studentId: string, otherFeeTitle: string) => {
+    setRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || getDefaultRecord(studentId)),
+        otherFeeTitle,
+      },
+    }));
+  };
+
+  const handleOtherPriceChange = (studentId: string, otherFeePrice: number) => {
+    setRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || getDefaultRecord(studentId)),
+        otherFeePrice,
       },
     }));
   };
 
   const setAllPresent = () => {
     setRecords((prev) => {
-      const updated: Record<
-        string,
-        {
-          status: "PRESENT" | "ABSENT";
-          note: string;
-          hasBook: boolean;
-          bookTitle: string;
-          bookPrice: number;
-        }
-      > = { ...prev };
+      const updated = { ...prev };
       sessionStudents.forEach((std) => {
-        const current = prev[std.id];
-        const isMakeup = makeupStudentIds.includes(std.id);
+        const current = prev[std.id] || getDefaultRecord(std.id);
         updated[std.id] = {
+          ...current,
           status: "PRESENT",
-          note: current?.note || (isMakeup ? "Học bù" : ""),
-          hasBook: current?.hasBook || false,
-          bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
-          bookPrice: current?.bookPrice || 80000,
         };
       });
       return updated;
@@ -455,25 +555,12 @@ function AttendanceContent() {
 
   const setAllAbsent = () => {
     setRecords((prev) => {
-      const updated: Record<
-        string,
-        {
-          status: "PRESENT" | "ABSENT";
-          note: string;
-          hasBook: boolean;
-          bookTitle: string;
-          bookPrice: number;
-        }
-      > = { ...prev };
+      const updated = { ...prev };
       sessionStudents.forEach((std) => {
-        const current = prev[std.id];
-        const isMakeup = makeupStudentIds.includes(std.id);
+        const current = prev[std.id] || getDefaultRecord(std.id);
         updated[std.id] = {
+          ...current,
           status: "ABSENT",
-          note: current?.note || (isMakeup ? "Học bù" : ""),
-          hasBook: current?.hasBook || false,
-          bookTitle: current?.bookTitle || "Sách Cờ Vua Bài Tập",
-          bookPrice: current?.bookPrice || 80000,
         };
       });
       return updated;
@@ -514,8 +601,11 @@ function AttendanceContent() {
         studentId: std.id,
         status: finalStatus,
         coachNote: note,
-        bookTitle: current?.hasBook ? (current?.bookTitle || "Sách Cờ Vua Bài Tập") : undefined,
+        bookTitle: current?.hasBook ? (current?.bookTitle || STANDARD_BOOKS[0].title) : undefined,
         bookPrice: current?.hasBook ? (Number(current?.bookPrice) || 0) : undefined,
+        lunchFee: current?.hasLunch ? (Number(current?.lunchFee) || 0) : undefined,
+        otherFeeTitle: current?.hasOther ? (current?.otherFeeTitle || "Phụ phí khác") : undefined,
+        otherFeePrice: current?.hasOther ? (Number(current?.otherFeePrice) || 0) : undefined,
       };
     });
 
@@ -582,11 +672,9 @@ function AttendanceContent() {
       setRecords((prev) => ({
         ...prev,
         [student.id]: {
+          ...getDefaultRecord(student.id),
           status: "PRESENT",
           note: "[Học bù]",
-          hasBook: false,
-          bookTitle: "Sách Cờ Vua Bài Tập",
-          bookPrice: 80000,
         },
       }));
       setIsAddModalOpen(false);
@@ -599,11 +687,9 @@ function AttendanceContent() {
       setRecords((prev) => ({
         ...prev,
         [student.id]: {
+          ...getDefaultRecord(student.id),
           status: "PRESENT",
           note: "",
-          hasBook: false,
-          bookTitle: "Sách Cờ Vua Bài Tập",
-          bookPrice: 80000,
         },
       }));
       setDataRefreshTrigger((prev) => prev + 1);
@@ -643,11 +729,9 @@ function AttendanceContent() {
       setRecords((prev) => ({
         ...prev,
         [newStudent.id]: {
+          ...getDefaultRecord(newStudent.id),
           status: "PRESENT",
           note: "[Học bù]",
-          hasBook: false,
-          bookTitle: "Sách Cờ Vua Bài Tập",
-          bookPrice: 80000,
         },
       }));
 
@@ -680,11 +764,9 @@ function AttendanceContent() {
       setRecords((prev) => ({
         ...prev,
         [newStudent.id]: {
+          ...getDefaultRecord(newStudent.id),
           status: "PRESENT",
           note: "",
-          hasBook: false,
-          bookTitle: "Sách Cờ Vua Bài Tập",
-          bookPrice: 80000,
         },
       }));
       setDataRefreshTrigger((prev) => prev + 1);
@@ -803,10 +885,19 @@ function AttendanceContent() {
   ).length;
   const absentCount = sessionStudents.length - presentCount;
 
-  // Thống kê phát sách trong buổi học
+  // Thống kê phát sách và phụ phí trong buổi học
   const totalBooksInSession = sessionStudents.filter((std) => records[std.id]?.hasBook).length;
   const totalBookPriceInSession = sessionStudents.reduce(
     (sum, std) => sum + (records[std.id]?.hasBook ? Number(records[std.id]?.bookPrice) || 0 : 0),
+    0
+  );
+  const totalLunchInSession = sessionStudents.filter((std) => records[std.id]?.hasLunch).length;
+  const totalLunchFeeInSession = sessionStudents.reduce(
+    (sum, std) => sum + (records[std.id]?.hasLunch ? Number(records[std.id]?.lunchFee) || 0 : 0),
+    0
+  );
+  const totalOtherFeeInSession = sessionStudents.reduce(
+    (sum, std) => sum + (records[std.id]?.hasOther ? Number(records[std.id]?.otherFeePrice) || 0 : 0),
     0
   );
   const coachBookCommissionInSession = Math.round(totalBookPriceInSession * 0.3);
@@ -1084,6 +1175,18 @@ function AttendanceContent() {
                   <BookOpen className="h-3 w-3 text-amber-600" />
                   Phát sách: {totalBooksInSession} cuốn ({totalBookPriceInSession.toLocaleString("vi-VN")} đ)
                 </span>
+                {totalLunchInSession > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800">
+                    <Utensils className="h-3 w-3 text-orange-600" />
+                    Ăn trưa: {totalLunchInSession} ({totalLunchFeeInSession.toLocaleString("vi-VN")} đ)
+                  </span>
+                )}
+                {totalOtherFeeInSession > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded border border-purple-200 bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-800">
+                    <Tag className="h-3 w-3 text-purple-600" />
+                    Khác: {totalOtherFeeInSession.toLocaleString("vi-VN")} đ
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800">
                   Thu nhập sách HLV (+30%): +{coachBookCommissionInSession.toLocaleString("vi-VN")} đ
                 </span>
@@ -1225,90 +1328,253 @@ function AttendanceContent() {
                         </div>
                       </div>
 
-                      {/* Book & Note & Status Toggle */}
-                      <div className="flex flex-1 flex-col gap-2 sm:items-end">
-                        {/* Cột Phát Sách */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <label
-                            className={`flex cursor-pointer select-none items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium transition-all ${
-                              records[std.id]?.hasBook
-                                ? "border-amber-400 bg-amber-50 text-amber-900 shadow-xs"
-                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={!!records[std.id]?.hasBook}
-                              onChange={() => handleBookToggle(std.id)}
-                              className="h-3.5 w-3.5 rounded text-amber-600 focus:ring-amber-500"
-                            />
-                            <BookOpen className="h-3.5 w-3.5 text-amber-600" />
-                            <span>Phát sách</span>
-                          </label>
+                      {/* Surcharge & Note & Status Toggle */}
+                      {(() => {
+                        const rec = records[std.id] || getDefaultRecord(std.id);
+                        const hasAnySurcharge = Boolean(rec.hasBook || rec.hasLunch || rec.hasOther);
+                        const totalSurchargeAmount =
+                          (rec.hasBook ? Number(rec.bookPrice) || 0 : 0) +
+                          (rec.hasLunch ? Number(rec.lunchFee) || 0 : 0) +
+                          (rec.hasOther ? Number(rec.otherFeePrice) || 0 : 0);
 
-                          {records[std.id]?.hasBook && (
-                            <div className="flex flex-wrap items-center gap-1.5 animate-fade-in w-full sm:w-auto">
+                        return (
+                          <div className="flex flex-1 flex-col gap-2 sm:items-end">
+                            {/* Cột Phụ Phí Đa Tùy Chọn */}
+                            <div className="flex flex-col gap-2 w-full sm:items-end">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSurchargeOpenToggle(std.id)}
+                                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all ${
+                                    hasAnySurcharge
+                                      ? "border-amber-400 bg-amber-50 text-amber-900 shadow-xs"
+                                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <Receipt className="h-3.5 w-3.5 text-amber-600" />
+                                  <span>Phụ phí</span>
+                                  {hasAnySurcharge && (
+                                    <span className="rounded-full bg-amber-200/90 px-1.5 py-0.2 text-[10px] font-black text-amber-950">
+                                      +{totalSurchargeAmount.toLocaleString("vi-VN")} đ
+                                    </span>
+                                  )}
+                                  {rec.surchargeOpen ? (
+                                    <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+                                  ) : (
+                                    <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                                  )}
+                                </button>
+
+                                {/* Tags tóm tắt khi thu gọn */}
+                                {!rec.surchargeOpen && hasAnySurcharge && (
+                                  <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                                    {rec.hasBook && (
+                                      <span className="inline-flex items-center gap-1 rounded bg-amber-100/80 px-2 py-0.5 text-amber-900 font-medium border border-amber-200">
+                                        <BookOpen className="h-3 w-3 text-amber-600" />
+                                        {rec.bookTitle}: {(rec.bookPrice || 0).toLocaleString("vi-VN")} đ
+                                      </span>
+                                    )}
+                                    {rec.hasLunch && (
+                                      <span className="inline-flex items-center gap-1 rounded bg-orange-100/80 px-2 py-0.5 text-orange-900 font-medium border border-orange-200">
+                                        <Utensils className="h-3 w-3 text-orange-600" />
+                                        Ăn trưa: {(rec.lunchFee || DEFAULT_LUNCH_FEE).toLocaleString("vi-VN")} đ
+                                      </span>
+                                    )}
+                                    {rec.hasOther && (
+                                      <span className="inline-flex items-center gap-1 rounded bg-purple-100/80 px-2 py-0.5 text-purple-900 font-medium border border-purple-200">
+                                        <Tag className="h-3 w-3 text-purple-600" />
+                                        {rec.otherFeeTitle || "Khác"}: {(rec.otherFeePrice || 0).toLocaleString("vi-VN")} đ
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Panel nhập các mục phụ phí khi bấm mở */}
+                              {rec.surchargeOpen && (
+                                <div className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50/60 p-2.5 animate-fade-in w-full text-xs shadow-xs text-left">
+                                  {/* 1. Phát sách */}
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-amber-200/60 pb-2">
+                                    <label className="flex items-center gap-1.5 font-bold text-amber-950 cursor-pointer min-w-[100px] select-none">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!rec.hasBook}
+                                        onChange={() => handleBookToggle(std.id)}
+                                        className="h-3.5 w-3.5 rounded text-amber-600 focus:ring-amber-500"
+                                      />
+                                      <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                                      <span>Phát sách:</span>
+                                    </label>
+
+                                    {rec.hasBook && (
+                                      <div className="flex flex-1 flex-wrap items-center gap-2">
+                                        <select
+                                          value={STANDARD_BOOKS.some((b) => b.title === rec.bookTitle) ? rec.bookTitle : "CUSTOM"}
+                                          onChange={(e) => {
+                                            if (e.target.value === "CUSTOM") {
+                                              handleBookTitleChange(std.id, "");
+                                            } else {
+                                              const found = STANDARD_BOOKS.find((b) => b.title === e.target.value);
+                                              if (found) {
+                                                handleBookTitleChange(std.id, found.title);
+                                                handleBookPriceChange(std.id, found.price);
+                                              }
+                                            }
+                                          }}
+                                          className="rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800 focus:border-brand-primary focus:outline-none"
+                                        >
+                                          {STANDARD_BOOKS.map((b, idx) => (
+                                            <option key={idx} value={b.title}>
+                                              {b.title} ({b.price.toLocaleString("vi-VN")} đ)
+                                            </option>
+                                          ))}
+                                          <option value="CUSTOM">-- Sách khác (Tự nhập) --</option>
+                                        </select>
+
+                                        {!STANDARD_BOOKS.some((b) => b.title === rec.bookTitle) && (
+                                          <input
+                                            type="text"
+                                            value={rec.bookTitle || ""}
+                                            onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
+                                            placeholder="Tên sách cờ vua..."
+                                            className="flex-1 min-w-[140px] rounded border border-amber-300 bg-white px-2 py-1 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none"
+                                          />
+                                        )}
+
+                                        <div className="relative w-28">
+                                          <input
+                                            type="number"
+                                            step="5000"
+                                            value={rec.bookPrice || 0}
+                                            onChange={(e) => handleBookPriceChange(std.id, Number(e.target.value))}
+                                            placeholder="Giá sách"
+                                            className="w-full rounded border border-amber-300 bg-white py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                                          />
+                                          <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
+                                            đ
+                                          </span>
+                                        </div>
+
+                                        <span className="text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                                          (+30%: {Math.round((rec.bookPrice || 0) * 0.3).toLocaleString("vi-VN")} đ)
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* 2. Ăn trưa */}
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-amber-200/60 pb-2">
+                                    <label className="flex items-center gap-1.5 font-bold text-orange-950 cursor-pointer min-w-[100px] select-none">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!rec.hasLunch}
+                                        onChange={() => handleLunchToggle(std.id)}
+                                        className="h-3.5 w-3.5 rounded text-orange-600 focus:ring-orange-500"
+                                      />
+                                      <Utensils className="h-3.5 w-3.5 text-orange-600" />
+                                      <span>Ăn trưa:</span>
+                                    </label>
+
+                                    {rec.hasLunch && (
+                                      <div className="flex flex-1 items-center gap-2">
+                                        <div className="relative w-36">
+                                          <input
+                                            type="number"
+                                            step="5000"
+                                            value={rec.lunchFee || DEFAULT_LUNCH_FEE}
+                                            onChange={(e) => handleLunchFeeChange(std.id, Number(e.target.value))}
+                                            placeholder="Tiền ăn trưa"
+                                            className="w-full rounded border border-orange-300 bg-white py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                                          />
+                                          <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
+                                            đ/suất
+                                          </span>
+                                        </div>
+                                        <span className="text-[11px] text-slate-500 font-medium">
+                                          (Mặc định 50.000 đ)
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* 3. Tùy chọn khác */}
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <label className="flex items-center gap-1.5 font-bold text-purple-950 cursor-pointer min-w-[100px] select-none">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!rec.hasOther}
+                                        onChange={() => handleOtherToggle(std.id)}
+                                        className="h-3.5 w-3.5 rounded text-purple-600 focus:ring-purple-500"
+                                      />
+                                      <Tag className="h-3.5 w-3.5 text-purple-600" />
+                                      <span>Tùy chọn:</span>
+                                    </label>
+
+                                    {rec.hasOther && (
+                                      <div className="flex flex-1 flex-wrap items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={rec.otherFeeTitle || ""}
+                                          onChange={(e) => handleOtherTitleChange(std.id, e.target.value)}
+                                          placeholder="Tên khoản thu (VD: Đồng phục, Lệ phí giải, Tài liệu)..."
+                                          className="flex-1 min-w-[180px] rounded border border-purple-300 bg-white px-2 py-1 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none"
+                                        />
+                                        <div className="relative w-32">
+                                          <input
+                                            type="number"
+                                            step="10000"
+                                            value={rec.otherFeePrice || 0}
+                                            onChange={(e) => handleOtherPriceChange(std.id, Number(e.target.value))}
+                                            placeholder="Số tiền"
+                                            className="w-full rounded border border-purple-300 bg-white py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                                          />
+                                          <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
+                                            đ
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex w-full items-center gap-2">
+                              {/* Quick Note input */}
                               <input
                                 type="text"
-                                value={records[std.id]?.bookTitle || ""}
-                                onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
-                                placeholder="Tên sách (VD: Sách Cờ vua Bài tập)..."
-                                className="flex-1 min-w-[150px] sm:w-48 rounded border border-amber-300 bg-amber-50/40 px-2 py-1 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
+                                value={currentNote}
+                                onChange={(e) => handleNoteChange(std.id, e.target.value)}
+                                placeholder="Nhận xét buổi học (tùy chọn)..."
+                                className="w-full rounded border border-slate-200 bg-slate-50/50 px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
                               />
-                              <div className="relative flex-1 min-w-[100px] sm:w-28">
-                                <input
-                                  type="number"
-                                  step="10000"
-                                  value={records[std.id]?.bookPrice || 0}
-                                  onChange={(e) => handleBookPriceChange(std.id, Number(e.target.value))}
-                                  placeholder="Giá sách"
-                                  className="w-full rounded border border-amber-300 bg-amber-50/40 py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
-                                />
-                                <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
-                                  đ
-                                </span>
-                              </div>
-                              <span className="text-[11px] font-bold text-emerald-600 whitespace-nowrap">
-                                (+30%: {Math.round((records[std.id]?.bookPrice || 0) * 0.3).toLocaleString("vi-VN")} đ)
-                              </span>
+
+                              {/* 1-Click Big Button */}
+                              <button
+                                type="button"
+                                onClick={() => toggleStatus(std.id)}
+                                className={`flex min-w-[95px] items-center justify-center gap-1 rounded px-3 py-1 text-xs font-semibold transition-all duration-150 active:scale-95 shadow-xs ${
+                                  isPresent
+                                    ? "bg-brand-primary text-white hover:bg-brand-primary-hover"
+                                    : "bg-brand-secondary text-white hover:bg-brand-secondary-hover"
+                                }`}
+                              >
+                                {isPresent ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5" />
+                                    <span>Có mặt</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="h-3.5 w-3.5" />
+                                    <span>Vắng mặt</span>
+                                  </>
+                                )}
+                              </button>
                             </div>
-                          )}
-                        </div>
-
-                        <div className="flex w-full items-center gap-2">
-                          {/* Quick Note input */}
-                          <input
-                            type="text"
-                            value={currentNote}
-                            onChange={(e) => handleNoteChange(std.id, e.target.value)}
-                            placeholder="Nhận xét buổi học (tùy chọn)..."
-                            className="w-full rounded border border-slate-200 bg-slate-50/50 px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:border-brand-primary focus:bg-white focus:outline-none"
-                          />
-
-                          {/* 1-Click Big Button */}
-                          <button
-                            type="button"
-                            onClick={() => toggleStatus(std.id)}
-                            className={`flex min-w-[95px] items-center justify-center gap-1 rounded px-3 py-1 text-xs font-semibold transition-all duration-150 active:scale-95 shadow-xs ${
-                              isPresent
-                                ? "bg-brand-primary text-white hover:bg-brand-primary-hover"
-                                : "bg-brand-secondary text-white hover:bg-brand-secondary-hover"
-                            }`}
-                          >
-                            {isPresent ? (
-                              <>
-                                <Check className="h-3.5 w-3.5" />
-                                <span>Có mặt</span>
-                              </>
-                            ) : (
-                              <>
-                                <X className="h-3.5 w-3.5" />
-                                <span>Vắng mặt</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })

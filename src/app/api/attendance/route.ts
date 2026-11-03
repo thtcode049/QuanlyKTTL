@@ -33,6 +33,9 @@ export async function GET(request: Request) {
         coachNote: r.coachNote || "",
         bookTitle: r.bookTitle || undefined,
         bookPrice: r.bookPrice || undefined,
+        lunchFee: r.lunchFee || undefined,
+        otherFeeTitle: r.otherFeeTitle || undefined,
+        otherFeePrice: r.otherFeePrice || undefined,
       })),
     }));
 
@@ -126,6 +129,9 @@ export async function POST(request: Request) {
                 coachNote: r.coachNote || null,
                 bookTitle: r.bookTitle || null,
                 bookPrice: r.bookPrice ? parseFloat(r.bookPrice) : null,
+                lunchFee: r.lunchFee ? parseFloat(r.lunchFee) : null,
+                otherFeeTitle: r.otherFeeTitle || null,
+                otherFeePrice: r.otherFeePrice ? parseFloat(r.otherFeePrice) : null,
               },
             });
           }
@@ -142,6 +148,9 @@ export async function POST(request: Request) {
       coachNote: r.coachNote || "",
       bookTitle: r.bookTitle || undefined,
       bookPrice: r.bookPrice || undefined,
+      lunchFee: r.lunchFee || undefined,
+      otherFeeTitle: r.otherFeeTitle || undefined,
+      otherFeePrice: r.otherFeePrice || undefined,
     }));
 
     const newSession = {

@@ -66,7 +66,13 @@ export async function PATCH(request: Request) {
           if (existingDb) {
             await prisma.monthlyInvoice.update({
               where: { id: existingDb.id },
-              data: { status: status as any },
+              data: {
+                status: status as any,
+                tuitionAmount: inv?.tuitionAmount ?? existingDb.tuitionAmount,
+                surchargeAmount: inv?.surchargeAmount ?? existingDb.surchargeAmount,
+                surchargesDetail: inv?.surcharges ? (inv.surcharges as any) : existingDb.surchargesDetail,
+                totalAmount: inv?.totalAmount ?? existingDb.totalAmount,
+              },
             });
           } else {
             const paddedMonth = m.toString().padStart(2, "0");
@@ -80,6 +86,9 @@ export async function PATCH(request: Request) {
                 year: y,
                 presentCount: inv?.presentCount || 0,
                 feePerSession: inv?.feePerSession || clsExists.feePerSession,
+                tuitionAmount: inv?.tuitionAmount || 0,
+                surchargeAmount: inv?.surchargeAmount || 0,
+                surchargesDetail: inv?.surcharges ? (inv.surcharges as any) : undefined,
                 totalAmount: inv?.totalAmount || 0,
                 status: status as any,
               },

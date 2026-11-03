@@ -8,6 +8,8 @@ export interface InvoiceExportRow {
   parentPhone: string;
   presentCount: number;
   feePerSession: number;
+  tuitionAmount?: number;
+  surchargeAmount?: number;
   totalAmount: number;
   statusText: string;
   parentName?: string;
@@ -33,7 +35,9 @@ export function exportInvoicesToExcel(
       "Số Điện Thoại",
       "Số Buổi Có Mặt",
       "Đơn Giá (VNĐ)",
-      "Thành Tiền (VNĐ)",
+      "Tiền Học (VNĐ)",
+      "Phụ Phí (VNĐ)",
+      "Tổng Phải Nộp (VNĐ)",
       "Trạng Thái",
     ],
     ...rows.map((r) => [
@@ -44,6 +48,8 @@ export function exportInvoicesToExcel(
       r.parentPhone,
       r.presentCount,
       r.feePerSession,
+      r.tuitionAmount !== undefined ? r.tuitionAmount : (r.presentCount * r.feePerSession),
+      r.surchargeAmount || 0,
       r.totalAmount,
       r.statusText,
     ]),
@@ -51,6 +57,8 @@ export function exportInvoicesToExcel(
 
   // Tính tổng
   const totalAmount = rows.reduce((sum, r) => sum + r.totalAmount, 0);
+  const totalTuition = rows.reduce((sum, r) => sum + (r.tuitionAmount !== undefined ? r.tuitionAmount : (r.presentCount * r.feePerSession)), 0);
+  const totalSurcharge = rows.reduce((sum, r) => sum + (r.surchargeAmount || 0), 0);
   const totalPresent = rows.reduce((sum, r) => sum + r.presentCount, 0);
   excelData.push([]);
   excelData.push([
@@ -59,9 +67,10 @@ export function exportInvoicesToExcel(
     `${rows.length} Học viên`,
     "",
     "",
-    "",
     `${totalPresent} Buổi`,
     "",
+    totalTuition,
+    totalSurcharge,
     totalAmount,
     "",
   ]);
@@ -74,10 +83,11 @@ export function exportInvoicesToExcel(
     { wch: 14 }, // Mã
     { wch: 25 }, // Họ tên
     { wch: 10 }, // Năm sinh
-    { wch: 22 }, // Phụ huynh
     { wch: 15 }, // SĐT
     { wch: 18 }, // Số buổi
     { wch: 16 }, // Đơn giá
+    { wch: 16 }, // Tiền học
+    { wch: 16 }, // Phụ phí
     { wch: 18 }, // Thành tiền
     { wch: 16 }, // Trạng thái
   ];
