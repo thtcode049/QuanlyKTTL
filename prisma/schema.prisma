@@ -72,6 +72,7 @@ model Classroom {
   feePerSession Float               @default(150000) // Đơn giá học phí / 1 buổi
   schedule      String              // VD: Thứ 3 & Thứ 6 (18:00 - 19:30)
   branchId      String
+  customBranchName String?          // Địa điểm / tên cơ sở riêng của HLV (nếu là lớp riêng hoặc tùy chọn)
   branch        Branch              @relation(fields: [branchId], references: [id])
   coachId       String
   coach         User                @relation(fields: [coachId], references: [id])

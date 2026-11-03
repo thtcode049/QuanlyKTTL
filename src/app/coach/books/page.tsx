@@ -475,11 +475,14 @@ export default function CoachBooksPage() {
             >
               <option value="ALL">Toàn bộ lớp</option>
               <option value="NONE">Ngoài lớp CLB</option>
-              {coachClasses.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
+              {coachClasses.map((cls) => {
+                const isPriv = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
+                return (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name} {isPriv ? "(🔒 Lớp riêng)" : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -728,11 +731,14 @@ export default function CoachBooksPage() {
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-brand-primary focus:outline-none"
                 >
                   <option value="">-- Không chọn lớp (Phát ngoài CLB) --</option>
-                  {coachClasses.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </option>
-                  ))}
+                  {coachClasses.map((cls) => {
+                    const isPriv = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
+                    return (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name} {isPriv ? "(🔒 Lớp riêng)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

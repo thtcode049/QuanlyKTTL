@@ -28,7 +28,8 @@ export async function GET(request: Request) {
       feePerSession: c.feePerSession,
       schedule: c.schedule,
       branchId: c.branchId,
-      branchName: c.branch?.name,
+      customBranchName: c.customBranchName,
+      branchName: c.customBranchName || c.branch?.name,
       coachId: c.coachId,
       coachName: c.coach?.name,
       isActive: c.isActive,
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, level, feePerSession, schedule, branchId, coachId, shareWithAdmin = true } = body;
+    const { id, name, level, feePerSession, schedule, branchId, customBranchName, coachId, shareWithAdmin = true } = body;
 
     if (!name || !branchId || !coachId) {
       return NextResponse.json(
@@ -55,9 +56,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Kiểm tra branchId có tồn tại trong DB không, nếu không lấy branch đầu tiên
+    // Kiểm tra branchId có tồn tại trong DB không, nếu là branch-private đảm bảo đã có trong DB
     let validBranchId = branchId;
-    const branchExists = await prisma.branch.findUnique({ where: { id: branchId } });
+    let branchExists = await prisma.branch.findUnique({ where: { id: branchId } });
+    if (!branchExists && branchId === "branch-private") {
+      branchExists = await prisma.branch.create({
+        data: {
+          id: "branch-private",
+          name: "Lớp riêng của HLV (Dạy kèm / Gia sư / Online)",
+          address: "Tại nhà học viên / Online / Địa điểm riêng",
+        },
+      });
+      validBranchId = "branch-private";
+    }
     if (!branchExists) {
       const firstBranch = await prisma.branch.findFirst();
       if (firstBranch) validBranchId = firstBranch.id;
@@ -85,6 +96,7 @@ export async function POST(request: Request) {
         feePerSession: parseFloat(feePerSession) || 150000,
         schedule: schedule || "Thứ 2 & Thứ 4 (18:00 - 19:30)",
         branchId: validBranchId,
+        customBranchName: customBranchName ? customBranchName.trim() : null,
         coachId: validCoachId,
         shareWithAdmin: shareWithAdmin !== false,
         isActive: true,
@@ -101,7 +113,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, level, feePerSession, schedule, branchId, coachId, shareWithAdmin, isActive } = body;
+    const { id, name, level, feePerSession, schedule, branchId, customBranchName, coachId, shareWithAdmin, isActive } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Thiếu ID lớp học" }, { status: 400 });
@@ -113,6 +125,7 @@ export async function PUT(request: Request) {
     if (feePerSession !== undefined) updateData.feePerSession = parseFloat(feePerSession);
     if (schedule) updateData.schedule = schedule;
     if (branchId) updateData.branchId = branchId;
+    if (customBranchName !== undefined) updateData.customBranchName = customBranchName ? customBranchName.trim() : null;
     if (coachId) updateData.coachId = coachId;
     if (shareWithAdmin !== undefined) updateData.shareWithAdmin = shareWithAdmin;
     if (isActive !== undefined) updateData.isActive = isActive;

@@ -68,6 +68,7 @@ export async function GET(request: Request) {
       feePerSession: c.feePerSession,
       schedule: c.schedule,
       branchId: c.branchId,
+      customBranchName: c.customBranchName,
       coachId: c.coachId,
       isActive: c.isActive,
       shareWithAdmin: c.shareWithAdmin,

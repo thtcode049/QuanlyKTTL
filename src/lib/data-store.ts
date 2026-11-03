@@ -60,6 +60,7 @@ export interface ClassroomData {
   feePerSession: number;
   schedule: string;
   branchId: string;
+  customBranchName?: string; // Tên cơ sở/địa điểm riêng của HLV nếu là lớp riêng hoặc tùy chọn
   coachId: string;
   isActive: boolean;
   shareWithAdmin?: boolean; // false = Lớp riêng của HLV (không chia sẻ quyền quản lý & xem với admin)
@@ -281,6 +282,12 @@ export const initialBranches: BranchData[] = [
     name: "Cơ sở Nguyễn Tuân",
     address: "Liền kề 03-32 KĐT số 90 Nguyễn Tuân, Phường Thanh Xuân Trung, Quận Thanh Xuân, TP Hà Nội",
     phone: "0968.543.141",
+  },
+  {
+    id: "branch-private",
+    name: "Lớp riêng của HLV (Dạy kèm / Gia sư / Online)",
+    address: "Tại nhà học viên / Online / Địa điểm riêng",
+    phone: "",
   },
 ];
 
@@ -763,6 +770,14 @@ class InMemoryDataStore {
             ...b,
             name: cleanBranchName(b.name),
           }));
+          if (!this.branches.some((b) => b.id === "branch-private")) {
+            this.branches.push({
+              id: "branch-private",
+              name: "Lớp riêng của HLV (Dạy kèm / Gia sư / Online)",
+              address: "Tại nhà học viên / Online / Địa điểm riêng",
+              phone: "",
+            });
+          }
         }
         if (Array.isArray(users) && users.length > 0) {
           // Lọc bỏ bất kỳ user nào nằm trong danh sách HLV đã xóa

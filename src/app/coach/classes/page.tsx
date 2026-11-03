@@ -127,6 +127,7 @@ export default function CoachClassesPage() {
   const [newClassLevel, setNewClassLevel] = useState("Nhập môn");
   const [newClassCustomLevel, setNewClassCustomLevel] = useState("");
   const [newClassBranch, setNewClassBranch] = useState("branch-1");
+  const [newClassCustomBranch, setNewClassCustomBranch] = useState("");
   const [newClassSchedule, setNewClassSchedule] = useState("Thứ 4 & Thứ 7 (18:00 - 19:30)");
   const [newClassFee, setNewClassFee] = useState("160000");
   const [newClassShareWithAdmin, setNewClassShareWithAdmin] = useState(true);
@@ -137,6 +138,7 @@ export default function CoachClassesPage() {
   const [editClassLevel, setEditClassLevel] = useState("Nhập môn");
   const [editClassCustomLevel, setEditClassCustomLevel] = useState("");
   const [editClassBranch, setEditClassBranch] = useState("branch-1");
+  const [editClassCustomBranch, setEditClassCustomBranch] = useState("");
   const [editClassSchedule, setEditClassSchedule] = useState("");
   const [editClassFee, setEditClassFee] = useState("");
   const [editClassShareWithAdmin, setEditClassShareWithAdmin] = useState(true);
@@ -290,19 +292,45 @@ export default function CoachClassesPage() {
     }
   };
 
+  // Mở modal tạo lớp mới với dữ liệu reset chuẩn
+  const openCreateClassModal = () => {
+    setNewClassName("");
+    setNewClassLevel("Nhập môn");
+    setNewClassCustomLevel("");
+    setNewClassBranch(dataStore.branches[0]?.id || "branch-1");
+    setNewClassCustomBranch("");
+    setNewClassSchedule("Thứ 4 & Thứ 7 (18:00 - 19:30)");
+    setNewClassFee("160000");
+    setNewClassShareWithAdmin(true);
+    setIsCreateClassOpen(true);
+  };
+
   // Tạo lớp mới
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClassName.trim()) return;
 
     const finalLevel = newClassLevel === "Tùy chỉnh" ? (newClassCustomLevel.trim() || "Tùy chỉnh") : newClassLevel;
+    
+    let resolvedBranchId = newClassBranch;
+    let resolvedCustomBranch: string | undefined = undefined;
+
+    if (newClassBranch === "CUSTOM") {
+      resolvedBranchId = "branch-private";
+      resolvedCustomBranch = newClassCustomBranch.trim() || "Lớp riêng của HLV";
+    } else if (newClassBranch === "branch-private") {
+      resolvedBranchId = "branch-private";
+      resolvedCustomBranch = "Lớp riêng của HLV";
+    }
+
     const newCls: ClassroomData = {
       id: `class-${Date.now()}`,
       name: newClassName.trim(),
       level: finalLevel,
       feePerSession: parseFloat(newClassFee) || 160000,
       schedule: newClassSchedule.trim(),
-      branchId: newClassBranch,
+      branchId: resolvedBranchId,
+      customBranchName: resolvedCustomBranch,
       coachId: currentCoachId,
       isActive: true,
       shareWithAdmin: newClassShareWithAdmin,
@@ -315,6 +343,7 @@ export default function CoachClassesPage() {
     setIsCreateClassOpen(false);
     setNewClassName("");
     setNewClassCustomLevel("");
+    setNewClassCustomBranch("");
     showToast(`Đã tạo lớp học mới: ${newCls.name}!`);
   };
 
@@ -329,7 +358,20 @@ export default function CoachClassesPage() {
       setEditClassLevel("Tùy chỉnh");
       setEditClassCustomLevel(clsToEdit.level);
     }
-    setEditClassBranch(clsToEdit.branchId);
+    
+    if (clsToEdit.branchId === "branch-private") {
+      if (clsToEdit.customBranchName && clsToEdit.customBranchName !== "Lớp riêng của HLV") {
+        setEditClassBranch("CUSTOM");
+        setEditClassCustomBranch(clsToEdit.customBranchName);
+      } else {
+        setEditClassBranch("branch-private");
+        setEditClassCustomBranch("");
+      }
+    } else {
+      setEditClassBranch(clsToEdit.branchId);
+      setEditClassCustomBranch(clsToEdit.customBranchName || "");
+    }
+
     setEditClassSchedule(clsToEdit.schedule);
     setEditClassFee(clsToEdit.feePerSession.toString());
     setEditClassShareWithAdmin(clsToEdit.shareWithAdmin !== false);
@@ -342,10 +384,23 @@ export default function CoachClassesPage() {
     if (!selectedClass || !editClassName.trim()) return;
 
     const finalLevel = editClassLevel === "Tùy chỉnh" ? (editClassCustomLevel.trim() || "Tùy chỉnh") : editClassLevel;
+    
+    let resolvedBranchId = editClassBranch;
+    let resolvedCustomBranch: string | undefined = undefined;
+
+    if (editClassBranch === "CUSTOM") {
+      resolvedBranchId = "branch-private";
+      resolvedCustomBranch = editClassCustomBranch.trim() || "Lớp riêng của HLV";
+    } else if (editClassBranch === "branch-private") {
+      resolvedBranchId = "branch-private";
+      resolvedCustomBranch = "Lớp riêng của HLV";
+    }
+
     await dataStore.updateClass(selectedClass.id, {
       name: editClassName.trim(),
       level: finalLevel,
-      branchId: editClassBranch,
+      branchId: resolvedBranchId,
+      customBranchName: resolvedCustomBranch,
       schedule: editClassSchedule.trim(),
       feePerSession: parseFloat(editClassFee) || selectedClass.feePerSession,
       shareWithAdmin: editClassShareWithAdmin,
@@ -405,7 +460,7 @@ export default function CoachClassesPage() {
         {/* Streamlined Top Actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsCreateClassOpen(true)}
+            onClick={openCreateClassModal}
             className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Plus className="h-4 w-4" />
@@ -442,7 +497,7 @@ export default function CoachClassesPage() {
           </p>
           <button
             type="button"
-            onClick={() => setIsCreateClassOpen(true)}
+            onClick={openCreateClassModal}
             className="mt-5 flex items-center gap-2 rounded bg-brand-primary px-5 py-2.5 text-xs font-semibold text-white hover:bg-brand-primary-hover transition-all"
           >
             <Plus className="h-4 w-4" />
@@ -455,7 +510,9 @@ export default function CoachClassesPage() {
           <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
             {classes.map((cls) => {
               const isSelected = cls.id === selectedClass?.id;
+              const isPrivate = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
               const branch = dataStore.branches.find((b) => b.id === cls.branchId);
+              const branchDisplayName = cls.customBranchName || (cls.branchId === "branch-private" ? "Lớp riêng của HLV" : branch?.name) || "Cơ sở Hà Nội";
               const studentCount = dataStore.students.filter((s) => s.classIds.includes(cls.id)).length;
 
               return (
@@ -481,9 +538,9 @@ export default function CoachClassesPage() {
                       >
                         {cls.level}
                       </span>
-                      {cls.shareWithAdmin === false && (
+                      {isPrivate && (
                         <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
-                          🔒 Riêng tư
+                          🔒 Lớp riêng
                         </span>
                       )}
                     </div>
@@ -499,7 +556,7 @@ export default function CoachClassesPage() {
                   <div className="mt-2 space-y-1 text-xs text-slate-600">
                     <div className="flex items-center gap-1.5 truncate">
                       <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                      <span className="truncate">{branch?.name || "Cơ sở Hà Nội"}</span>
+                      <span className="truncate">{branchDisplayName}</span>
                     </div>
                     <div className="flex items-center gap-1.5 truncate">
                       <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
@@ -568,14 +625,14 @@ export default function CoachClassesPage() {
                 <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
                   Lớp {selectedClass?.name} ({selectedClass?.level})
                 </span>
-                {selectedClass?.shareWithAdmin === false && (
-                  <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                {(selectedClass?.shareWithAdmin === false || selectedClass?.branchId === "branch-private") && (
+                  <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
                     🔒 Lớp riêng (HLV)
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                {branchInfo?.name} • {selectedClass?.schedule} • Đơn giá:{" "}
+                {selectedClass?.customBranchName || (selectedClass?.branchId === "branch-private" ? "Lớp riêng của HLV" : branchInfo?.name)} • {selectedClass?.schedule} • Đơn giá:{" "}
                 <span className="font-semibold text-slate-800">
                   {formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi
                 </span>
@@ -1352,20 +1409,57 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700">Cơ sở đào tạo</label>
+                  <label className="font-semibold text-slate-700">Cơ sở đào tạo / Loại lớp</label>
                   <select
                     value={newClassBranch}
-                    onChange={(e) => setNewClassBranch(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewClassBranch(val);
+                      if (val === "branch-private" || val === "CUSTOM") {
+                        setNewClassShareWithAdmin(false);
+                      } else {
+                        setNewClassShareWithAdmin(true);
+                      }
+                    }}
                     className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   >
-                    {dataStore.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
+                    <optgroup label="🌟 Lớp riêng của Huấn luyện viên">
+                      <option value="branch-private">
+                        🔒 Lớp riêng của HLV (Dạy kèm / Gia sư / Online)
                       </option>
-                    ))}
+                      <option value="CUSTOM">
+                        ✏️ Tùy chọn khác (Tự nhập cơ sở / địa điểm riêng)...
+                      </option>
+                    </optgroup>
+                    <optgroup label="🏢 Các cơ sở CLB Kiện Tướng Tương Lai">
+                      {dataStore.branches
+                        .filter((b) => b.id !== "branch-private")
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                    </optgroup>
                   </select>
                 </div>
               </div>
+
+              {newClassBranch === "CUSTOM" && (
+                <div className="rounded border border-amber-200 bg-amber-50/50 p-2.5">
+                  <label className="font-semibold text-amber-900">Nhập tên cơ sở / địa điểm lớp riêng *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newClassCustomBranch}
+                    onChange={(e) => setNewClassCustomBranch(e.target.value)}
+                    placeholder="VD: Dạy kèm tại nhà học sinh Cún, Học Online qua Zoom..."
+                    className="mt-1 w-full rounded border border-amber-300 bg-white p-2 focus:border-brand-primary focus:outline-none text-xs"
+                  />
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    💡 Địa điểm này sẽ được hiển thị riêng trên thẻ lớp học và báo cáo của bạn.
+                  </p>
+                </div>
+              )}
 
               {newClassLevel === "Tùy chỉnh" && (
                 <div>
@@ -1485,20 +1579,57 @@ export default function CoachClassesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700">Cơ sở đào tạo</label>
+                  <label className="font-semibold text-slate-700">Cơ sở đào tạo / Loại lớp</label>
                   <select
                     value={editClassBranch}
-                    onChange={(e) => setEditClassBranch(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditClassBranch(val);
+                      if (val === "branch-private" || val === "CUSTOM") {
+                        setEditClassShareWithAdmin(false);
+                      } else {
+                        setEditClassShareWithAdmin(true);
+                      }
+                    }}
                     className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none"
                   >
-                    {dataStore.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
+                    <optgroup label="🌟 Lớp riêng của Huấn luyện viên">
+                      <option value="branch-private">
+                        🔒 Lớp riêng của HLV (Dạy kèm / Gia sư / Online)
                       </option>
-                    ))}
+                      <option value="CUSTOM">
+                        ✏️ Tùy chọn khác (Tự nhập cơ sở / địa điểm riêng)...
+                      </option>
+                    </optgroup>
+                    <optgroup label="🏢 Các cơ sở CLB Kiện Tướng Tương Lai">
+                      {dataStore.branches
+                        .filter((b) => b.id !== "branch-private")
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                    </optgroup>
                   </select>
                 </div>
               </div>
+
+              {editClassBranch === "CUSTOM" && (
+                <div className="rounded border border-amber-200 bg-amber-50/50 p-2.5">
+                  <label className="font-semibold text-amber-900">Nhập tên cơ sở / địa điểm lớp riêng *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editClassCustomBranch}
+                    onChange={(e) => setEditClassCustomBranch(e.target.value)}
+                    placeholder="VD: Dạy kèm tại nhà học sinh Cún, Học Online qua Zoom..."
+                    className="mt-1 w-full rounded border border-amber-300 bg-white p-2 focus:border-brand-primary focus:outline-none text-xs"
+                  />
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    💡 Địa điểm này sẽ được hiển thị riêng trên thẻ lớp học và báo cáo của bạn.
+                  </p>
+                </div>
+              )}
 
               {editClassLevel === "Tùy chỉnh" && (
                 <div>

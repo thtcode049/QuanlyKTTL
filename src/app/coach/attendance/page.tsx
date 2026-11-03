@@ -1118,11 +1118,14 @@ function AttendanceContent() {
                   onChange={(e) => handleSelectClass(e.target.value)}
                   className="mt-1 w-full rounded border border-slate-200 bg-slate-50/50 p-2 text-xs font-medium text-slate-900 focus:border-brand-primary focus:bg-white focus:outline-none"
                 >
-                  {classes.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name} ({cls.level})
-                    </option>
-                  ))}
+                  {classes.map((cls) => {
+                    const isPriv = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
+                    return (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name} ({cls.level}){isPriv ? " • 🔒 Lớp riêng" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

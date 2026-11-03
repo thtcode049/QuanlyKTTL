@@ -787,11 +787,14 @@ function InvoicesContent() {
                 <option value="all">
                   🌟 Tất cả các lớp ({classes.length} lớp học)
                 </option>
-                {classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name} ({cls.level}) — {cls.schedule}
-                  </option>
-                ))}
+                {classes.map((cls) => {
+                  const isPriv = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
+                  return (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name} ({cls.level}){isPriv ? " • 🔒 Lớp riêng" : ""} — {cls.schedule}
+                    </option>
+                  );
+                })}
               </select>
         </div>
 
