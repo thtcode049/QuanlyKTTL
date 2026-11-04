@@ -522,7 +522,9 @@ class InMemoryDataStore {
         });
       }
       if (data.classes && Array.isArray(data.classes)) {
+        const demoClassIds = ["class-2", "class-3", "class-4", "class-7"];
         data.classes.forEach((c: ClassroomData) => {
+          if (demoClassIds.includes(c.id)) return;
           const idx = this.classes.findIndex((x) => x.id === c.id);
           if (idx >= 0) this.classes[idx] = { ...this.classes[idx], ...c };
           else this.classes.push(c);
@@ -775,8 +777,9 @@ class InMemoryDataStore {
         }
         if (Array.isArray(classes)) {
           const dbClassIds = new Set(classes.map((c: any) => c.id));
+          const demoClassIds = ["class-1", "class-2", "class-3", "class-4", "class-7"];
           const pendingClasses = this.classes.filter(
-            (c) => c.id.startsWith("class-") && !dbClassIds.has(c.id)
+            (c) => c.id.startsWith("class-") && !dbClassIds.has(c.id) && !demoClassIds.includes(c.id)
           );
           this.classes = [...classes, ...pendingClasses];
         }

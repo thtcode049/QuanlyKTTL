@@ -106,6 +106,9 @@ export async function GET(request: Request) {
         coachNote: r.coachNote || "",
         bookTitle: r.bookTitle || undefined,
         bookPrice: r.bookPrice || undefined,
+        lunchFee: r.lunchFee || undefined,
+        otherFeeTitle: r.otherFeeTitle || undefined,
+        otherFeePrice: r.otherFeePrice || undefined,
       })),
     }));
 

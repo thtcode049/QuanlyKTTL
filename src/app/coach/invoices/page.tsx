@@ -24,7 +24,10 @@ import {
   FolderArchive,
   Layers,
   ReceiptText,
+  Filter,
+  RotateCcw,
 } from "lucide-react";
+import { ExcelColumnFilter, ColumnFilterState } from "@/components/excel-column-filter";
 import {
   dataStore,
   MonthlyInvoiceData,
@@ -83,6 +86,44 @@ function InvoicesContent() {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [invoices, setInvoices] = useState<MonthlyInvoiceData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Bộ lọc Excel đa cột & Sắp xếp
+  const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilterState>>({});
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleFilterChange = (columnKey: string, filter: ColumnFilterState | null) => {
+    setColumnFilters((prev) => {
+      const next = { ...prev };
+      if (!filter) {
+        delete next[columnKey];
+      } else {
+        next[columnKey] = filter;
+      }
+      return next;
+    });
+  };
+
+  const handleSortChange = (columnKey: string, direction: "asc" | "desc" | null) => {
+    if (!direction) {
+      setSortColumn(null);
+    } else {
+      setSortColumn(columnKey);
+      setSortDirection(direction);
+    }
+  };
+
+  const handleClearAllFilters = () => {
+    setColumnFilters({});
+    setSortColumn(null);
+    setSearchTerm("");
+  };
+
+  // Reset bộ lọc khi thay đổi lớp học hoặc tháng/năm
+  useEffect(() => {
+    setColumnFilters({});
+    setSortColumn(null);
+  }, [selectedClassId, selectedMonth, selectedYear]);
 
   // Tải lớp học của riêng HLV hiện tại
   useEffect(() => {
@@ -580,25 +621,333 @@ function InvoicesContent() {
     return result;
   }, [isAllClasses, invoices, classes, selectedMonth, selectedYear]);
 
-  // Bộ lọc tìm kiếm cho danh sách gộp
+  // Tính danh sách distinct values cho bộ lọc Excel ở chế độ Tất cả các lớp
+  const aggregatedDistinctValues = useMemo(() => {
+    const codeMap = new Map<string, number>();
+    const nameMap = new Map<string, number>();
+    const classMap = new Map<string, number>();
+    const phoneMap = new Map<string, number>();
+    const presentMap = new Map<string, number>();
+    const feeMap = new Map<string, number>();
+    const totalMap = new Map<string, number>();
+    const statusMap = new Map<string, number>();
+
+    aggregatedInvoices.forEach((agg) => {
+      // Mã HV
+      codeMap.set(agg.studentCode, (codeMap.get(agg.studentCode) || 0) + 1);
+      // Tên
+      nameMap.set(agg.studentName, (nameMap.get(agg.studentName) || 0) + 1);
+      // Từng lớp học
+      agg.classItems.forEach((c) => {
+        classMap.set(c.className, (classMap.get(c.className) || 0) + 1);
+      });
+      // SĐT
+      const phone = agg.parentPhone ? agg.parentPhone.trim() : "(Trống)";
+      phoneMap.set(phone, (phoneMap.get(phone) || 0) + 1);
+      // Tổng buổi
+      const presStr = `${agg.totalPresentCount} buổi`;
+      presentMap.set(presStr, (presentMap.get(presStr) || 0) + 1);
+      // Đơn giá
+      const feeStr =
+        agg.classItems.length === 1
+          ? formatCurrencyVND(agg.classItems[0].feePerSession)
+          : "Nhiều mức giá";
+      feeMap.set(feeStr, (feeMap.get(feeStr) || 0) + 1);
+      // Tổng tiền
+      const totStr = formatCurrencyVND(agg.totalAmount);
+      totalMap.set(totStr, (totalMap.get(totStr) || 0) + 1);
+      // Trạng thái
+      statusMap.set(agg.status, (statusMap.get(agg.status) || 0) + 1);
+    });
+
+    const toList = (map: Map<string, number>) =>
+      Array.from(map.entries())
+        .map(([value, count]) => ({
+          value,
+          label: value,
+          count,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, "vi", { numeric: true }));
+
+    return {
+      studentCode: toList(codeMap),
+      studentName: toList(nameMap),
+      classes: toList(classMap),
+      parentPhone: toList(phoneMap),
+      totalPresentCount: Array.from(presentMap.entries())
+        .map(([value, count]) => ({
+          value,
+          label: value,
+          count,
+        }))
+        .sort((a, b) => parseInt(a.value) - parseInt(b.value)),
+      feePerSession: toList(feeMap),
+      totalAmount: Array.from(totalMap.entries())
+        .map(([value, count]) => ({
+          value,
+          label: value,
+          count,
+        }))
+        .sort((a, b) => {
+          const numA = parseInt(a.value.replace(/\D/g, "")) || 0;
+          const numB = parseInt(b.value.replace(/\D/g, "")) || 0;
+          return numA - numB;
+        }),
+      status: [
+        { value: "PAID", label: "Đã đóng", count: statusMap.get("PAID") || 0 },
+        { value: "PENDING", label: "Chờ đóng", count: statusMap.get("PENDING") || 0 },
+      ].filter((s) => s.count > 0 || statusMap.size === 0),
+    };
+  }, [aggregatedInvoices]);
+
+  // Tính danh sách distinct values cho bộ lọc Excel ở chế độ xem 1 lớp
+  const singleClassDistinctValues = useMemo(() => {
+    const codeMap = new Map<string, number>();
+    const nameMap = new Map<string, number>();
+    const phoneMap = new Map<string, number>();
+    const presentMap = new Map<string, number>();
+    const feeMap = new Map<string, number>();
+    const totalMap = new Map<string, number>();
+    const statusMap = new Map<string, number>();
+
+    invoices.forEach((inv) => {
+      const s = dataStore.students.find((st) => st.id === inv.studentId);
+      if (!s) return;
+      const code = s.code || "HS";
+      codeMap.set(code, (codeMap.get(code) || 0) + 1);
+      nameMap.set(s.fullName, (nameMap.get(s.fullName) || 0) + 1);
+      const phone = s.parentPhone ? s.parentPhone.trim() : "(Trống)";
+      phoneMap.set(phone, (phoneMap.get(phone) || 0) + 1);
+      const presStr = `${inv.presentCount} buổi`;
+      presentMap.set(presStr, (presentMap.get(presStr) || 0) + 1);
+      const feeStr = formatCurrencyVND(inv.feePerSession);
+      feeMap.set(feeStr, (feeMap.get(feeStr) || 0) + 1);
+      const totStr = formatCurrencyVND(inv.totalAmount);
+      totalMap.set(totStr, (totalMap.get(totStr) || 0) + 1);
+      statusMap.set(inv.status, (statusMap.get(inv.status) || 0) + 1);
+    });
+
+    const toList = (map: Map<string, number>) =>
+      Array.from(map.entries())
+        .map(([value, count]) => ({
+          value,
+          label: value,
+          count,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, "vi", { numeric: true }));
+
+    return {
+      studentCode: toList(codeMap),
+      studentName: toList(nameMap),
+      parentPhone: toList(phoneMap),
+      presentCount: Array.from(presentMap.entries())
+        .map(([value, count]) => ({
+          value,
+          label: value,
+          count,
+        }))
+        .sort((a, b) => parseInt(a.value) - parseInt(b.value)),
+      feePerSession: toList(feeMap),
+      totalAmount: Array.from(totalMap.entries())
+        .map(([value, count]) => ({
+          value,
+          label: value,
+          count,
+        }))
+        .sort((a, b) => {
+          const numA = parseInt(a.value.replace(/\D/g, "")) || 0;
+          const numB = parseInt(b.value.replace(/\D/g, "")) || 0;
+          return numA - numB;
+        }),
+      status: [
+        { value: "PAID", label: "Đã đóng", count: statusMap.get("PAID") || 0 },
+        { value: "PENDING", label: "Chờ đóng", count: statusMap.get("PENDING") || 0 },
+      ].filter((s) => s.count > 0 || statusMap.size === 0),
+    };
+  }, [invoices]);
+
+  // Danh sách gộp sau khi lọc tìm kiếm, bộ lọc Excel theo cột và sắp xếp
   const filteredAggregatedInvoices = useMemo(() => {
     if (!isAllClasses) return [];
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return aggregatedInvoices;
-    return aggregatedInvoices.filter((agg) => {
-      return (
-        agg.studentName.toLowerCase().includes(term) ||
-        agg.studentCode.toLowerCase().includes(term) ||
-        agg.parentPhone.includes(term) ||
-        agg.classItems.some((c) => c.className.toLowerCase().includes(term))
-      );
-    });
-  }, [isAllClasses, aggregatedInvoices, searchTerm]);
+    let list = [...aggregatedInvoices];
 
-  // Xuất file Excel (thông minh: gộp khi chọn Tất cả các lớp)
+    // 1. Text search
+    const term = searchTerm.toLowerCase().trim();
+    if (term) {
+      list = list.filter((agg) => {
+        return (
+          agg.studentName.toLowerCase().includes(term) ||
+          agg.studentCode.toLowerCase().includes(term) ||
+          agg.parentPhone.includes(term) ||
+          agg.classItems.some((c) => c.className.toLowerCase().includes(term))
+        );
+      });
+    }
+
+    // 2. Bộ lọc cột Excel
+    for (const [colKey, filterState] of Object.entries(columnFilters)) {
+      if (!filterState || !filterState.selectedValues || filterState.selectedValues.length === 0) continue;
+      const selected = new Set(filterState.selectedValues);
+
+      list = list.filter((agg) => {
+        switch (colKey) {
+          case "studentCode":
+            return selected.has(agg.studentCode);
+          case "studentName":
+            return selected.has(agg.studentName);
+          case "classes":
+            return agg.classItems.some((c) => selected.has(c.className));
+          case "parentPhone":
+            return selected.has(agg.parentPhone ? agg.parentPhone.trim() : "(Trống)");
+          case "totalPresentCount":
+            return selected.has(`${agg.totalPresentCount} buổi`);
+          case "feePerSession": {
+            const val =
+              agg.classItems.length === 1
+                ? formatCurrencyVND(agg.classItems[0].feePerSession)
+                : "Nhiều mức giá";
+            return selected.has(val);
+          }
+          case "totalAmount":
+            return selected.has(formatCurrencyVND(agg.totalAmount));
+          case "status":
+            return selected.has(agg.status);
+          default:
+            return true;
+        }
+      });
+    }
+
+    // 3. Sắp xếp cột Excel
+    if (sortColumn) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        switch (sortColumn) {
+          case "studentCode":
+            cmp = a.studentCode.localeCompare(b.studentCode, "vi", { numeric: true });
+            break;
+          case "studentName":
+            cmp = a.studentName.localeCompare(b.studentName, "vi");
+            break;
+          case "classes": {
+            const aClass = a.classItems.map((c) => c.className).join(", ");
+            const bClass = b.classItems.map((c) => c.className).join(", ");
+            cmp = aClass.localeCompare(bClass, "vi");
+            break;
+          }
+          case "parentPhone":
+            cmp = (a.parentPhone || "").localeCompare(b.parentPhone || "");
+            break;
+          case "totalPresentCount":
+            cmp = a.totalPresentCount - b.totalPresentCount;
+            break;
+          case "feePerSession": {
+            const aFee = a.classItems[0]?.feePerSession || 0;
+            const bFee = b.classItems[0]?.feePerSession || 0;
+            cmp = aFee - bFee;
+            break;
+          }
+          case "totalAmount":
+            cmp = a.totalAmount - b.totalAmount;
+            break;
+          case "status":
+            cmp = a.status.localeCompare(b.status);
+            break;
+        }
+        return sortDirection === "desc" ? -cmp : cmp;
+      });
+    }
+
+    return list;
+  }, [isAllClasses, aggregatedInvoices, searchTerm, columnFilters, sortColumn, sortDirection]);
+
+  // Danh sách hóa đơn đơn lẻ sau khi lọc tìm kiếm, bộ lọc Excel theo cột và sắp xếp
+  const filteredInvoices = useMemo(() => {
+    if (isAllClasses) return [];
+    let list = invoices
+      .map((inv) => ({
+        inv,
+        student: dataStore.students.find((s) => s.id === inv.studentId),
+      }))
+      .filter((item): item is { inv: MonthlyInvoiceData; student: StudentData } => !!item.student);
+
+    // 1. Text search
+    const term = searchTerm.toLowerCase().trim();
+    if (term) {
+      list = list.filter(({ inv, student }) => {
+        return (
+          student.fullName.toLowerCase().includes(term) ||
+          student.code.toLowerCase().includes(term) ||
+          student.parentPhone.includes(term)
+        );
+      });
+    }
+
+    // 2. Bộ lọc cột Excel
+    for (const [colKey, filterState] of Object.entries(columnFilters)) {
+      if (!filterState || !filterState.selectedValues || filterState.selectedValues.length === 0) continue;
+      const selected = new Set(filterState.selectedValues);
+
+      list = list.filter(({ inv, student }) => {
+        switch (colKey) {
+          case "studentCode":
+            return selected.has(student.code);
+          case "studentName":
+            return selected.has(student.fullName);
+          case "parentPhone":
+            return selected.has(student.parentPhone ? student.parentPhone.trim() : "(Trống)");
+          case "presentCount":
+            return selected.has(`${inv.presentCount} buổi`);
+          case "feePerSession":
+            return selected.has(formatCurrencyVND(inv.feePerSession));
+          case "totalAmount":
+            return selected.has(formatCurrencyVND(inv.totalAmount));
+          case "status":
+            return selected.has(inv.status);
+          default:
+            return true;
+        }
+      });
+    }
+
+    // 3. Sắp xếp cột Excel
+    if (sortColumn) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        switch (sortColumn) {
+          case "studentCode":
+            cmp = a.student.code.localeCompare(b.student.code, "vi", { numeric: true });
+            break;
+          case "studentName":
+            cmp = a.student.fullName.localeCompare(b.student.fullName, "vi");
+            break;
+          case "parentPhone":
+            cmp = (a.student.parentPhone || "").localeCompare(b.student.parentPhone || "");
+            break;
+          case "presentCount":
+            cmp = a.inv.presentCount - b.inv.presentCount;
+            break;
+          case "feePerSession":
+            cmp = a.inv.feePerSession - b.inv.feePerSession;
+            break;
+          case "totalAmount":
+            cmp = a.inv.totalAmount - b.inv.totalAmount;
+            break;
+          case "status":
+            cmp = a.inv.status.localeCompare(b.inv.status);
+            break;
+        }
+        return sortDirection === "desc" ? -cmp : cmp;
+      });
+    }
+
+    return list.map((item) => item.inv);
+  }, [isAllClasses, invoices, searchTerm, columnFilters, sortColumn, sortDirection]);
+
+  // Xuất file Excel (thông minh: xuất theo danh sách đang hiển thị/đã lọc)
   const handleExportExcel = () => {
     if (isAllClasses) {
-      const rows: InvoiceExportRow[] = aggregatedInvoices.map((agg, idx) => {
+      const rows: InvoiceExportRow[] = filteredAggregatedInvoices.map((agg, idx) => {
         const studentInvs = dataStore.invoices.filter(
           (i) => i.studentId === agg.student.id && i.month === selectedMonth && i.year === selectedYear
         );
@@ -629,7 +978,7 @@ function InvoicesContent() {
       return;
     }
 
-    const rows: InvoiceExportRow[] = invoices.map((inv, idx) => {
+    const rows: InvoiceExportRow[] = filteredInvoices.map((inv, idx) => {
       const student = dataStore.students.find((s) => s.id === inv.studentId);
       return {
         stt: idx + 1,
@@ -665,15 +1014,7 @@ function InvoicesContent() {
 
   const totalPending = totalDue - totalPaid;
 
-  const filteredInvoices = invoices.filter((inv) => {
-    const student = dataStore.students.find((s) => s.id === inv.studentId);
-    if (!student) return false;
-    return (
-      student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.parentPhone.includes(searchTerm)
-    );
-  });
+  const activeFilterCount = Object.keys(columnFilters).length + (sortColumn ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -932,17 +1273,105 @@ function InvoicesContent() {
             </p>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo tên học viên, SĐT..."
-              className="w-full rounded border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs focus:border-brand-primary focus:outline-none"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Tìm theo tên học viên, SĐT..."
+                className="w-full rounded border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs focus:border-brand-primary focus:outline-none"
+              />
+            </div>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={handleClearAllFilters}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 active:scale-95 transition-all cursor-pointer"
+                title="Xóa tất cả bộ lọc Excel và sắp xếp"
+              >
+                <RotateCcw className="h-3.5 w-3.5 text-emerald-700" />
+                <span>Bỏ lọc ({activeFilterCount})</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Thanh trạng thái bộ lọc Excel đang áp dụng */}
+        {activeFilterCount > 0 && (
+          <div className="flex items-center justify-between bg-emerald-50/70 border-b border-emerald-100 px-4 py-2 text-xs text-emerald-950 flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold flex items-center gap-1 text-emerald-900">
+                <Filter className="h-3.5 w-3.5 text-emerald-700" />
+                Đang lọc:
+              </span>
+              {Object.entries(columnFilters).map(([k, v]) => (
+                <span
+                  key={k}
+                  className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200 shadow-2xs"
+                >
+                  {k === "studentCode" && "Mã HV"}
+                  {k === "studentName" && "Họ và Tên"}
+                  {k === "classes" && "Lớp học"}
+                  {k === "parentPhone" && "SĐT"}
+                  {k === "totalPresentCount" && "Buổi học"}
+                  {k === "presentCount" && "Buổi học"}
+                  {k === "feePerSession" && "Đơn giá"}
+                  {k === "totalAmount" && "Tổng tiền"}
+                  {k === "status" && "Trạng thái"}
+                  <button
+                    onClick={() => handleFilterChange(k, null)}
+                    className="hover:text-rose-600 ml-0.5 font-bold cursor-pointer"
+                    title="Bỏ lọc cột này"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              {sortColumn && (
+                <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-800 border border-slate-200 shadow-2xs">
+                  Sắp xếp:{" "}
+                  {sortColumn === "studentCode"
+                    ? "Mã HV"
+                    : sortColumn === "studentName"
+                    ? "Họ và Tên"
+                    : sortColumn === "classes"
+                    ? "Lớp học"
+                    : sortColumn === "parentPhone"
+                    ? "SĐT"
+                    : sortColumn === "totalPresentCount" || sortColumn === "presentCount"
+                    ? "Buổi học"
+                    : sortColumn === "feePerSession"
+                    ? "Đơn giá"
+                    : sortColumn === "totalAmount"
+                    ? "Tổng tiền"
+                    : sortColumn === "status"
+                    ? "Trạng thái"
+                    : sortColumn}{" "}
+                  ({sortDirection === "asc" ? "Tăng dần" : "Giảm dần"})
+                  <button
+                    onClick={() => setSortColumn(null)}
+                    className="hover:text-rose-600 ml-0.5 font-bold cursor-pointer"
+                    title="Bỏ sắp xếp"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[11.5px] font-semibold text-emerald-800">
+                Hiển thị {isAllClasses ? filteredAggregatedInvoices.length : filteredInvoices.length} dòng
+              </span>
+              <button
+                onClick={handleClearAllFilters}
+                className="font-bold text-emerald-700 hover:text-emerald-900 underline text-xs cursor-pointer"
+              >
+                Xóa tất cả
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Mobile Invoice Cards (< sm) */}
         <div className="block sm:hidden divide-y divide-slate-100">
@@ -1161,21 +1590,116 @@ function InvoicesContent() {
         </div>
 
         {/* Desktop Table (sm and up) */}
-        <div className="hidden sm:block overflow-x-auto">
+        <div className="hidden sm:block overflow-x-auto min-h-[420px]">
           {isAllClasses ? (
             // Bảng Desktop: Chế độ Toàn Bộ Các Lớp (Gộp học sinh 1 dòng duy nhất)
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Mã HV</th>
-                  <th className="px-4 py-3">Họ và Tên</th>
-                  <th className="px-4 py-3">Các Lớp Theo Học</th>
-                  <th className="px-4 py-3">Số Điện Thoại</th>
-                  <th className="px-4 py-3 text-center">Tổng Buổi Học</th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Mã HV"
+                      columnKey="studentCode"
+                      distinctValues={aggregatedDistinctValues.studentCode}
+                      currentFilter={columnFilters.studentCode}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Họ và Tên"
+                      columnKey="studentName"
+                      distinctValues={aggregatedDistinctValues.studentName}
+                      currentFilter={columnFilters.studentName}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Các Lớp Theo Học"
+                      columnKey="classes"
+                      distinctValues={aggregatedDistinctValues.classes}
+                      currentFilter={columnFilters.classes}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Số Điện Thoại"
+                      columnKey="parentPhone"
+                      distinctValues={aggregatedDistinctValues.parentPhone}
+                      currentFilter={columnFilters.parentPhone}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-center">
+                    <ExcelColumnFilter
+                      title="Tổng Buổi Học"
+                      columnKey="totalPresentCount"
+                      align="center"
+                      isNumericOrDate
+                      distinctValues={aggregatedDistinctValues.totalPresentCount}
+                      currentFilter={columnFilters.totalPresentCount}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
                   <th className="px-4 py-3">Chi Tiết Ngày / Lớp</th>
-                  <th className="px-4 py-3 text-right">Đơn Giá Từng Lớp</th>
-                  <th className="px-4 py-3 text-right">Tổng Học Phí</th>
-                  <th className="px-4 py-3 text-center">Trạng Thái</th>
+                  <th className="px-4 py-3 text-right">
+                    <ExcelColumnFilter
+                      title="Đơn Giá Từng Lớp"
+                      columnKey="feePerSession"
+                      align="right"
+                      isNumericOrDate
+                      distinctValues={aggregatedDistinctValues.feePerSession}
+                      currentFilter={columnFilters.feePerSession}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <ExcelColumnFilter
+                      title="Tổng Học Phí"
+                      columnKey="totalAmount"
+                      align="right"
+                      isNumericOrDate
+                      distinctValues={aggregatedDistinctValues.totalAmount}
+                      currentFilter={columnFilters.totalAmount}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-center">
+                    <ExcelColumnFilter
+                      title="Trạng Thái"
+                      columnKey="status"
+                      align="center"
+                      distinctValues={aggregatedDistinctValues.status}
+                      currentFilter={columnFilters.status}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
                   <th className="px-4 py-3 text-center">Hành Động</th>
                 </tr>
               </thead>
@@ -1376,14 +1900,98 @@ function InvoicesContent() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Mã HV</th>
-                  <th className="px-4 py-3">Họ và Tên</th>
-                  <th className="px-4 py-3">Số Điện Thoại</th>
-                  <th className="px-4 py-3 text-center">Buổi Có Mặt</th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Mã HV"
+                      columnKey="studentCode"
+                      distinctValues={singleClassDistinctValues.studentCode}
+                      currentFilter={columnFilters.studentCode}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Họ và Tên"
+                      columnKey="studentName"
+                      distinctValues={singleClassDistinctValues.studentName}
+                      currentFilter={columnFilters.studentName}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3">
+                    <ExcelColumnFilter
+                      title="Số Điện Thoại"
+                      columnKey="parentPhone"
+                      distinctValues={singleClassDistinctValues.parentPhone}
+                      currentFilter={columnFilters.parentPhone}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-center">
+                    <ExcelColumnFilter
+                      title="Buổi Có Mặt"
+                      columnKey="presentCount"
+                      align="center"
+                      isNumericOrDate
+                      distinctValues={singleClassDistinctValues.presentCount}
+                      currentFilter={columnFilters.presentCount}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
                   <th className="px-4 py-3">Ngày Đi Học</th>
-                  <th className="px-4 py-3 text-right">Đơn Giá</th>
-                  <th className="px-4 py-3 text-right">Tổng Học Phí</th>
-                  <th className="px-4 py-3 text-center">Trạng Thái</th>
+                  <th className="px-4 py-3 text-right">
+                    <ExcelColumnFilter
+                      title="Đơn Giá"
+                      columnKey="feePerSession"
+                      align="right"
+                      isNumericOrDate
+                      distinctValues={singleClassDistinctValues.feePerSession}
+                      currentFilter={columnFilters.feePerSession}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <ExcelColumnFilter
+                      title="Tổng Học Phí"
+                      columnKey="totalAmount"
+                      align="right"
+                      isNumericOrDate
+                      distinctValues={singleClassDistinctValues.totalAmount}
+                      currentFilter={columnFilters.totalAmount}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-center">
+                    <ExcelColumnFilter
+                      title="Trạng Thái"
+                      columnKey="status"
+                      align="center"
+                      distinctValues={singleClassDistinctValues.status}
+                      currentFilter={columnFilters.status}
+                      onFilterChange={handleFilterChange}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  </th>
                   <th className="px-4 py-3 text-center">Hành Động</th>
                 </tr>
               </thead>
