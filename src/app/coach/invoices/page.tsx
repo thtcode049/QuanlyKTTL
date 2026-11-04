@@ -1596,7 +1596,7 @@ function InvoicesContent() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">
+                  <th className="sticky left-0 z-20 bg-slate-50 px-2 py-2.5 w-[65px] min-w-[65px]">
                     <ExcelColumnFilter
                       title="Mã HV"
                       columnKey="studentCode"
@@ -1608,7 +1608,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">
+                  <th className="sticky left-[65px] z-20 bg-slate-50 px-2.5 py-2.5 min-w-[135px] shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)]">
                     <ExcelColumnFilter
                       title="Họ và Tên"
                       columnKey="studentName"
@@ -1620,9 +1620,9 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">
+                  <th className="px-2 py-2.5 max-w-[130px]">
                     <ExcelColumnFilter
-                      title="Các Lớp Theo Học"
+                      title="Lớp"
                       columnKey="classes"
                       distinctValues={aggregatedDistinctValues.classes}
                       currentFilter={columnFilters.classes}
@@ -1632,9 +1632,9 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">
+                  <th className="px-2 py-2.5">
                     <ExcelColumnFilter
-                      title="Số Điện Thoại"
+                      title="SĐT"
                       columnKey="parentPhone"
                       distinctValues={aggregatedDistinctValues.parentPhone}
                       currentFilter={columnFilters.parentPhone}
@@ -1644,9 +1644,9 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-center">
+                  <th className="px-2 py-2.5 text-center">
                     <ExcelColumnFilter
-                      title="Tổng Buổi Học"
+                      title="Buổi Học"
                       columnKey="totalPresentCount"
                       align="center"
                       isNumericOrDate
@@ -1658,10 +1658,10 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">Chi Tiết Ngày / Lớp</th>
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-2 py-2.5 max-w-[125px]">Chi Tiết Ngày</th>
+                  <th className="px-2 py-2.5 text-right">
                     <ExcelColumnFilter
-                      title="Đơn Giá Từng Lớp"
+                      title="Đơn Giá"
                       columnKey="feePerSession"
                       align="right"
                       isNumericOrDate
@@ -1673,7 +1673,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-2.5 py-2.5 text-right">
                     <ExcelColumnFilter
                       title="Tổng Học Phí"
                       columnKey="totalAmount"
@@ -1687,7 +1687,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-center">
+                  <th className="px-2 py-2.5 text-center">
                     <ExcelColumnFilter
                       title="Trạng Thái"
                       columnKey="status"
@@ -1700,89 +1700,92 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-center">Hành Động</th>
+                  <th className="px-2 py-2.5 text-center">Hành Động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredAggregatedInvoices.map((agg) => {
                   return (
-                    <tr key={agg.studentId} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                    <tr key={agg.studentId} className="group hover:bg-slate-50/80 transition-colors">
+                      <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-2 py-2 font-mono font-bold text-slate-700 whitespace-nowrap">
                         {agg.studentCode}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="sticky left-[65px] z-10 bg-white group-hover:bg-slate-50 px-2.5 py-2 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)]">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-900">{agg.studentName}</span>
+                          <span className="font-bold text-slate-900 whitespace-nowrap">{agg.studentName}</span>
                           {agg.classItems.length > 1 && (
-                            <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.5 text-[9.5px] font-extrabold border border-teal-200">
-                              Học {agg.classItems.length} lớp
+                            <span className="rounded bg-teal-100 text-teal-800 px-1 py-0.2 text-[9px] font-extrabold border border-teal-200">
+                              {agg.classItems.length} lớp
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1 max-w-[220px]">
+                      <td className="px-2 py-2 max-w-[130px]">
+                        <div className="flex flex-wrap gap-1">
                           {agg.classItems.map((c) => (
                             <span
                               key={c.classId}
-                              className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-brand-primary border border-emerald-200"
+                              className="inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-primary border border-emerald-200 truncate max-w-[120px]"
+                              title={`${c.className} (${c.presentCount} buổi)`}
                             >
                               {c.className} ({c.presentCount}b)
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-2 whitespace-nowrap">
                         <span className="font-mono text-xs font-bold text-slate-800">
                           {agg.parentPhone}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 font-extrabold text-brand-primary border border-emerald-200">
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-extrabold text-brand-primary border border-emerald-200 text-[11px]">
                           {agg.totalPresentCount} buổi
                         </span>
                         {agg.classItems.length > 1 && (
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                            ({agg.classItems.map((c) => `${c.presentCount}b`).join(" + ")})
+                          <p className="text-[9.5px] text-slate-400 font-mono">
+                            ({agg.classItems.map((c) => `${c.presentCount}b`).join("+")})
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-[11px] text-slate-600 max-w-[220px]">
-                        <div className="space-y-1">
+                      <td className="px-2 py-2 text-[11px] text-slate-600 max-w-[125px]">
+                        <div className="space-y-0.5">
                           {agg.classItems.map((c) => (
-                            <div key={c.classId} className="truncate" title={`${c.className}: ${c.presentDates.join(", ")}`}>
-                              <strong className="text-slate-800">{c.className}:</strong>{" "}
-                              {c.presentDates.length > 0 ? c.presentDates.join(", ") : "Chưa có"}
+                            <div key={c.classId} className="truncate" title={`${c.className}: ${c.presentDates.length > 0 ? c.presentDates.join(", ") : "Chưa có"}`}>
+                              <strong className="text-slate-800 text-[10.5px]">{c.className}:</strong>{" "}
+                              <span className="font-mono text-[10px] text-slate-600">
+                                {c.presentDates.length > 0 ? c.presentDates.join(", ") : "0b"}
+                              </span>
                             </div>
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
                         {agg.classItems.length === 1 ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="font-bold text-slate-800">
+                          <div className="flex items-center justify-end gap-1">
+                            <span className="font-bold text-slate-800 text-[11.5px]">
                               {formatCurrencyVND(agg.classItems[0].feePerSession)}
                             </span>
                             <button
                               onClick={() => handleOpenEditFee(agg.student, agg.classItems[0].feePerSession)}
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
                               title="Sửa đơn giá học phí"
                             >
-                              <Edit3 className="h-3.5 w-3.5" />
+                              <Edit3 className="h-3 w-3" />
                             </button>
                           </div>
                         ) : (
-                          <div className="space-y-0.5 text-[10.5px]">
+                          <div className="space-y-0.5 text-[10px]">
                             {agg.classItems.map((c) => (
-                              <div key={c.classId} className="text-slate-600 font-medium">
+                              <div key={c.classId} className="text-slate-600 font-medium truncate">
                                 {formatCurrencyVND(c.feePerSession)}/b
                               </div>
                             ))}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <p className="font-black text-slate-900 text-sm">
+                      <td className="px-2.5 py-2 text-right whitespace-nowrap">
+                        <p className="font-black text-slate-900 text-[13px]">
                           {formatCurrencyVND(agg.totalAmount)}
                         </p>
                         {(() => {
@@ -1792,16 +1795,16 @@ function InvoicesContent() {
                           const totalSurcharge = studentInvs.reduce((sum, i) => sum + (i.surchargeAmount || 0), 0);
                           if (totalSurcharge <= 0) return null;
                           return (
-                            <span className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                              +Phụ phí {formatCurrencyVND(totalSurcharge)}
+                            <span className="inline-flex items-center rounded bg-amber-50 border border-amber-200 px-1 py-0.2 text-[9.5px] font-bold text-amber-800">
+                              +{formatCurrencyVND(totalSurcharge)}
                             </span>
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
                         <button
                           onClick={() => toggleAggregatedPaymentStatus(agg)}
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ${
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold transition-all ${
                             agg.status === "PAID"
                               ? "bg-emerald-100 text-brand-primary hover:bg-emerald-200"
                               : "bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -1821,12 +1824,12 @@ function InvoicesContent() {
                           )}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
                           {/* Nút Xem & In Phiếu Thu */}
                           <button
                             onClick={() => handleOpenReceipt(buildAggregatedInvoiceCardData(agg))}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200 transition-colors hover:bg-emerald-100 shadow-2xs active:scale-95"
+                            className="flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-1 text-[10.5px] font-bold text-emerald-800 border border-emerald-200 transition-colors hover:bg-emerald-100 shadow-2xs active:scale-95"
                             title="Xem & In phiếu thu học phí có mã VietQR động của học sinh này"
                           >
                             <ReceiptText className="h-3.5 w-3.5 text-emerald-600" />
@@ -1836,16 +1839,16 @@ function InvoicesContent() {
                           {/* Nút VietQR Gộp */}
                           <button
                             onClick={() => handleOpenAggregatedVietQr(agg)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
+                            className="flex h-6 w-6 items-center justify-center rounded bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
                             title="Xem mã VietQR tổng hợp đủ các lớp của học viên này"
                           >
-                            <QrCode className="h-4 w-4" />
+                            <QrCode className="h-3.5 w-3.5" />
                           </button>
 
                           {/* Nút Tải Ảnh Thẻ Gộp */}
                           <button
                             onClick={() => downloadInvoiceCardPng(buildAggregatedInvoiceCardData(agg))}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                            className="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
                             title="Tải 1 ảnh PNG thẻ học phí tổng hợp đủ các lớp của em này"
                           >
                             <FileImage className="h-3.5 w-3.5 text-emerald-600" />
@@ -1857,7 +1860,7 @@ function InvoicesContent() {
                               setSelectedStudentForParentModal(agg.studentId);
                               setZaloParentModalOpen(true);
                             }}
-                            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold shadow-xs transition-all active:scale-95 ${
+                            className={`flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold shadow-xs transition-all active:scale-95 ${
                               agg.zaloSentAt
                                 ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
                                 : "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -1871,7 +1874,7 @@ function InvoicesContent() {
                             {agg.zaloSentAt ? (
                               <>
                                 <Check className="h-3 w-3 text-emerald-600" />
-                                <span>Đã gửi Tool</span>
+                                <span>Đã gửi</span>
                               </>
                             ) : (
                               <>
@@ -1900,7 +1903,7 @@ function InvoicesContent() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">
+                  <th className="sticky left-0 z-20 bg-slate-50 px-2 py-2.5 w-[65px] min-w-[65px]">
                     <ExcelColumnFilter
                       title="Mã HV"
                       columnKey="studentCode"
@@ -1912,7 +1915,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">
+                  <th className="sticky left-[65px] z-20 bg-slate-50 px-2.5 py-2.5 min-w-[135px] shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)]">
                     <ExcelColumnFilter
                       title="Họ và Tên"
                       columnKey="studentName"
@@ -1924,9 +1927,9 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">
+                  <th className="px-2 py-2.5">
                     <ExcelColumnFilter
-                      title="Số Điện Thoại"
+                      title="SĐT"
                       columnKey="parentPhone"
                       distinctValues={singleClassDistinctValues.parentPhone}
                       currentFilter={columnFilters.parentPhone}
@@ -1936,7 +1939,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-center">
+                  <th className="px-2 py-2.5 text-center">
                     <ExcelColumnFilter
                       title="Buổi Có Mặt"
                       columnKey="presentCount"
@@ -1950,8 +1953,8 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3">Ngày Đi Học</th>
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-2 py-2.5 max-w-[130px]">Ngày Đi Học</th>
+                  <th className="px-2 py-2.5 text-right">
                     <ExcelColumnFilter
                       title="Đơn Giá"
                       columnKey="feePerSession"
@@ -1965,7 +1968,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-2.5 py-2.5 text-right">
                     <ExcelColumnFilter
                       title="Tổng Học Phí"
                       columnKey="totalAmount"
@@ -1979,7 +1982,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-center">
+                  <th className="px-2 py-2.5 text-center">
                     <ExcelColumnFilter
                       title="Trạng Thái"
                       columnKey="status"
@@ -1992,7 +1995,7 @@ function InvoicesContent() {
                       onSortChange={handleSortChange}
                     />
                   </th>
-                  <th className="px-4 py-3 text-center">Hành Động</th>
+                  <th className="px-2 py-2.5 text-center">Hành Động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -2010,78 +2013,78 @@ function InvoicesContent() {
                     : [];
 
                   return (
-                    <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                    <tr key={inv.id} className="group hover:bg-slate-50/80 transition-colors">
+                      <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-2 py-2 font-mono font-bold text-slate-700 whitespace-nowrap">
                         {student?.code}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="sticky left-[65px] z-10 bg-white group-hover:bg-slate-50 px-2.5 py-2 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)]">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-900">{student?.fullName}</span>
+                          <span className="font-bold text-slate-900 whitespace-nowrap">{student?.fullName}</span>
                           {otherInvs.length > 0 && (
                             <span
-                              className="rounded bg-teal-50 text-teal-700 px-1.5 py-0.5 text-[9.5px] font-extrabold border border-teal-200"
+                              className="rounded bg-teal-50 text-teal-700 px-1 py-0.2 text-[9px] font-extrabold border border-teal-200"
                               title={`Học sinh này còn tham gia ${otherInvs.length} lớp khác trong tháng`}
                             >
-                              Học {1 + otherInvs.length} lớp
+                              +{otherInvs.length} lớp
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-2 whitespace-nowrap">
                         <span className="font-mono text-xs font-bold text-slate-800">{student?.parentPhone}</span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 font-extrabold text-brand-primary border border-emerald-200">
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-extrabold text-brand-primary border border-emerald-200 text-[11px]">
                           {inv.presentCount} / {classSessions.length} buổi
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[11px] text-slate-600">
-                        {presentDates.length > 0 ? presentDates.join(", ") : "Chưa có"}
+                      <td className="px-2 py-2 text-[11px] text-slate-600 max-w-[130px] truncate" title={presentDates.join(", ")}>
+                        <span className="font-mono text-[10.5px] text-slate-700">
+                          {presentDates.length > 0 ? presentDates.join(", ") : "Chưa có"}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
                           <div className="text-right">
-                            <p className="font-bold text-slate-800">{formatCurrencyVND(inv.feePerSession)}</p>
+                            <p className="font-bold text-slate-800 text-[11.5px]">{formatCurrencyVND(inv.feePerSession)}</p>
                             {student?.customFeePerSession !== undefined && student?.customFeePerSession !== null ? (
                               student.customFeePerSession === 0 ? (
-                                <span className="inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                                  0đ (Học bổng)
+                                <span className="inline-block rounded bg-emerald-50 px-1 py-0.2 text-[9px] font-bold text-emerald-700 border border-emerald-200">
+                                  Học bổng
                                 </span>
                               ) : (
-                                <span className="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                <span className="inline-block rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-700 border border-amber-200">
                                   Giá riêng
                                 </span>
                               )
-                            ) : (
-                              <span className="text-[10px] text-slate-400">Giá lớp</span>
-                            )}
+                            ) : null}
                           </div>
                           <button
                             onClick={() => student && handleOpenEditFee(student, inv.feePerSession)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-brand-primary transition-colors"
                             title="Sửa đơn giá học phí cho học viên này"
                           >
-                            <Edit3 className="h-3.5 w-3.5" />
+                            <Edit3 className="h-3 w-3" />
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <p className="font-black text-slate-900 text-sm">
+                      <td className="px-2.5 py-2 text-right whitespace-nowrap">
+                        <p className="font-black text-slate-900 text-[13px]">
                           {formatCurrencyVND(inv.totalAmount)}
                         </p>
                         {inv.surchargeAmount && inv.surchargeAmount > 0 ? (
                           <span
-                            className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                            className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1 py-0.2 text-[9.5px] font-bold text-amber-800"
                             title={inv.surcharges?.map((s) => `${s.title}: ${formatCurrencyVND(s.amount)}`).join(", ")}
                           >
-                            +Phụ phí {formatCurrencyVND(inv.surchargeAmount)}
+                            +{formatCurrencyVND(inv.surchargeAmount)}
                           </span>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
                         <button
                           onClick={() => togglePaymentStatus(inv.id)}
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ${
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold transition-all ${
                             inv.status === "PAID"
                               ? "bg-emerald-100 text-brand-primary hover:bg-emerald-200"
                               : "bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -2101,12 +2104,12 @@ function InvoicesContent() {
                           )}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
                           {/* Nút Xem & In Phiếu Thu */}
                           <button
                             onClick={() => student && handleOpenReceipt(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200 transition-colors hover:bg-emerald-100 shadow-2xs active:scale-95"
+                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-1.5 py-1 text-[10.5px] font-bold text-emerald-800 border border-emerald-200 transition-colors hover:bg-emerald-100 shadow-2xs active:scale-95"
                             title="Xem & In phiếu thu học phí có mã VietQR động của học sinh này"
                           >
                             <ReceiptText className="h-3.5 w-3.5 text-emerald-600" />
@@ -2116,7 +2119,7 @@ function InvoicesContent() {
                           {/* Nút VietQR */}
                           <button
                             onClick={() => student && handleOpenVietQr(inv, student)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-brand-primary transition-colors hover:bg-emerald-100"
                             title={
                               otherInvs.length > 0 && preferConsolidatedCards
                                 ? "Xem mã VietQR tổng hợp đủ các lớp của em này"
@@ -2129,7 +2132,7 @@ function InvoicesContent() {
                           {/* Nút Tải Ảnh Thẻ Học Phí PNG */}
                           <button
                             onClick={() => student && downloadInvoiceCardPng(buildInvoiceCardData(inv, student, preferConsolidatedCards))}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
                             title={
                               otherInvs.length > 0 && preferConsolidatedCards
                                 ? "Tải ảnh thẻ PNG tổng hợp đủ các lớp của em này"
@@ -2147,7 +2150,7 @@ function InvoicesContent() {
                                 setZaloParentModalOpen(true);
                               }
                             }}
-                            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold shadow-xs transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10.5px] font-bold shadow-xs transition-all active:scale-95 ${
                               inv.zaloSentAt
                                 ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
                                 : "bg-emerald-600 text-white hover:bg-emerald-700"
