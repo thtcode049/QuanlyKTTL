@@ -66,7 +66,7 @@ export function getInvoicesForMonth(month = 10, year = 2026, classId?: string) {
         parentPhone: student.parentPhone,
         className: cls.name,
         classId: cls.id,
-        branchName: branch?.name || 'Cơ sở CLB',
+        branchName: cls.customBranchName || (cls.branchId === 'branch-private' ? 'Lớp riêng của HLV' : branch?.name) || 'Cơ sở CLB',
         month,
         year,
         presentCount: inv.presentCount,

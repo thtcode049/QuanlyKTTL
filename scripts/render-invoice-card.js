@@ -257,7 +257,7 @@ function buildInvoiceHtml(data) {
       </div>
       <div class="row">
         <span class="label">Lớp học:</span>
-        <span class="value">${data.className} – ${data.branchName}</span>
+        <span class="value">${data.className}${data.branchName ? ` – ${data.branchName.replace('Lớp riêng của HLV (Dạy kèm / Gia sư / Online)', 'Lớp riêng của HLV')}` : ''}</span>
       </div>
       <div class="row">
         <span class="label">Số buổi học:</span>

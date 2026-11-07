@@ -321,7 +321,8 @@ export async function generateInvoiceCardCanvas(
       ctx.fillStyle = "#0F172A";
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      const titleText = `${idx + 1}. ${clsItem.className}${clsItem.branchName ? ` (${clsItem.branchName})` : ""}`;
+      const bName = clsItem.branchName?.replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")?.trim();
+      const titleText = `${idx + 1}. ${clsItem.className}${bName ? ` (${bName})` : ""}`;
       ctx.fillText(truncateText(ctx, titleText, cardW - 170), padLeft + 8, curY + 6);
 
       ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -348,7 +349,9 @@ export async function generateInvoiceCardCanvas(
 
     renderRow("Tổng số buổi học:", `${data.presentCount} buổi`, true, "#047857", 16);
   } else {
-    renderRow("Lớp học:", `${data.className} – ${data.branchName}`, false, "#1E293B", 15);
+    const displayBranch = data.branchName?.replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")?.trim();
+    const classDisplay = displayBranch ? `${data.className} – ${displayBranch}` : data.className;
+    renderRow("Lớp học:", classDisplay, false, "#1E293B", 15);
     renderRow("Số buổi học:", `${data.presentCount} buổi`, true, "#047857", 16.5);
 
     const datesStr =

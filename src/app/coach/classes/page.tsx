@@ -34,6 +34,7 @@ import {
   StudentData,
   resolveCanonicalCoachId,
   getCoachClasses,
+  getClassBranchName,
 } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
@@ -511,8 +512,7 @@ export default function CoachClassesPage() {
             {classes.map((cls) => {
               const isSelected = cls.id === selectedClass?.id;
               const isPrivate = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
-              const branch = dataStore.branches.find((b) => b.id === cls.branchId);
-              const branchDisplayName = cls.customBranchName || (cls.branchId === "branch-private" ? "Lớp riêng của HLV" : branch?.name) || "Cơ sở Hà Nội";
+              const branchDisplayName = getClassBranchName(cls) || "Cơ sở Hà Nội";
               const studentCount = dataStore.students.filter((s) => s.classIds.includes(cls.id)).length;
 
               return (
@@ -632,7 +632,7 @@ export default function CoachClassesPage() {
                 )}
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                {selectedClass?.customBranchName || (selectedClass?.branchId === "branch-private" ? "Lớp riêng của HLV" : branchInfo?.name)} • {selectedClass?.schedule} • Đơn giá:{" "}
+                {getClassBranchName(selectedClass) || "Cơ sở"} • {selectedClass?.schedule} • Đơn giá:{" "}
                 <span className="font-semibold text-slate-800">
                   {formatCurrencyVND(selectedClass?.feePerSession || 150000)}/buổi
                 </span>

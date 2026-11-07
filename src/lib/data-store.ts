@@ -307,6 +307,7 @@ export function cleanBranchName(name?: string): string {
   if (cleaned.includes("Quang Trung") || cleaned.includes("Hà Đông")) return "Cơ sở Hà Đông";
   if (cleaned.toLowerCase().includes("gamuda")) return "Cơ sở Gamuda Gardens";
   if (cleaned.includes("Nguyễn Tuân") || cleaned.includes("Thanh Xuân")) return "Cơ sở Nguyễn Tuân";
+  if (cleaned.includes("Lớp riêng của HLV")) return "Lớp riêng của HLV";
 
   return cleaned;
 }
@@ -1956,6 +1957,11 @@ class InMemoryDataStore {
   public getAdminClasses(): ClassroomData[] {
     return this.classes.filter((c) => c.shareWithAdmin !== false);
   }
+
+  // Lấy tên hiển thị cơ sở/địa điểm của lớp học
+  public getClassBranchName(clsOrId?: ClassroomData | string | null): string {
+    return getClassBranchName(clsOrId);
+  }
 }
 
 // Global singleton instance
@@ -2080,3 +2086,27 @@ export function getCoachStudents(coachId?: string, coachEmail?: string): Student
 export function getAdminClasses(): ClassroomData[] {
   return dataStore.classes.filter((c) => c.shareWithAdmin !== false);
 }
+
+/**
+ * Lấy tên hiển thị cơ sở/địa điểm của lớp học:
+ * 1. Ưu tiên tên cơ sở tùy chọn của HLV (customBranchName), VD: "Gia sư", "Dạy kèm tại nhà",...
+ * 2. Nếu là lớp riêng mà không có tên riêng thì trả về "Lớp riêng của HLV"
+ * 3. Ngược lại lấy theo tên cơ sở trong hệ thống
+ */
+export function getClassBranchName(clsOrId?: ClassroomData | string | null): string {
+  if (!clsOrId) return "";
+  const cls =
+    typeof clsOrId === "string"
+      ? dataStore.classes.find((c) => c.id === clsOrId)
+      : clsOrId;
+  if (!cls) return "";
+  if (cls.customBranchName && cls.customBranchName.trim()) {
+    return cls.customBranchName.trim();
+  }
+  if (cls.branchId === "branch-private") {
+    return "Lớp riêng của HLV";
+  }
+  const br = dataStore.branches.find((b) => b.id === cls.branchId);
+  return br?.name ? cleanBranchName(br.name) : "";
+}
+

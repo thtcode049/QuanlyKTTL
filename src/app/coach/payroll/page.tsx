@@ -13,7 +13,7 @@ import {
   ShoppingBag,
   ArrowRight,
 } from "lucide-react";
-import { dataStore, resolveCanonicalCoachId, getCoachClasses } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId, getCoachClasses, getClassBranchName } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function CoachPayrollPage() {
@@ -65,7 +65,7 @@ export default function CoachPayrollPage() {
 
   // Chi tiết từng lớp HLV phụ trách
   const classBreakdowns = coachClasses.map((cls) => {
-    const branch = dataStore.branches.find((b) => b.id === cls.branchId);
+    const branchName = getClassBranchName(cls);
     const clsInvoices = dataStore.invoices.filter(
       (inv) => inv.classId === cls.id && inv.month === month && inv.year === year
     );
@@ -93,7 +93,7 @@ export default function CoachPayrollPage() {
 
     return {
       class: cls,
-      branch,
+      branchName,
       studentCount: clsInvoices.length,
       sessionCount: clsSessions.length,
       tuition: clsTuition,
@@ -231,7 +231,7 @@ export default function CoachPayrollPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">{b.class.name}</h4>
-                  <p className="text-xs text-slate-500">{b.branch?.name} • {b.class.schedule}</p>
+                  <p className="text-xs text-slate-500">{b.branchName} • {b.class.schedule}</p>
                 </div>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 whitespace-nowrap">
                   {b.studentCount} HV
@@ -285,7 +285,7 @@ export default function CoachPayrollPage() {
                     {b.class.name}
                     <span className="block text-[10px] font-normal text-slate-500">{b.class.schedule}</span>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{b.branch?.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{b.branchName}</td>
                   <td className="px-4 py-3 text-center font-semibold">{b.studentCount} HV</td>
                   <td className="px-4 py-3 text-right font-medium text-slate-700">{formatCurrencyVND(b.tuition)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</td>
@@ -317,7 +317,7 @@ export default function CoachPayrollPage() {
         <div className="block sm:hidden divide-y divide-slate-100">
           {coachSessions.map((sess, idx) => {
             const cls = dataStore.classes.find((c) => c.id === sess.classId);
-            const branch = dataStore.branches.find((b) => b.id === cls?.branchId);
+            const branchName = getClassBranchName(cls);
             const pCount = sess.records.filter((r) => r.status === "PRESENT").length;
 
             const booksInSess = sess.records.filter((r) => r.bookPrice && r.bookPrice > 0);
@@ -340,7 +340,7 @@ export default function CoachPayrollPage() {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
-                      })} • {branch?.name}
+                      })} • {branchName}
                     </p>
                   </div>
                 </div>
@@ -387,7 +387,7 @@ export default function CoachPayrollPage() {
             <tbody className="divide-y divide-slate-100">
               {coachSessions.map((sess, idx) => {
                 const cls = dataStore.classes.find((c) => c.id === sess.classId);
-                const branch = dataStore.branches.find((b) => b.id === cls?.branchId);
+                const branchName = getClassBranchName(cls);
                 const pCount = sess.records.filter((r) => r.status === "PRESENT").length;
 
                 const booksInSess = sess.records.filter((r) => r.bookPrice && r.bookPrice > 0);
@@ -406,7 +406,7 @@ export default function CoachPayrollPage() {
                       })}
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-800">{cls?.name}</td>
-                    <td className="px-4 py-3 text-slate-600">{branch?.name}</td>
+                    <td className="px-4 py-3 text-slate-600">{branchName}</td>
                     <td className="px-4 py-3 text-slate-700 italic">{sess.topic}</td>
                     <td className="px-4 py-3 text-center">
                       <span className="rounded bg-emerald-50 px-2 py-0.5 font-semibold text-brand-primary border border-emerald-200">

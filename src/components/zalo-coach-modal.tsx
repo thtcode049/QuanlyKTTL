@@ -71,7 +71,7 @@ export default function ZaloCoachModal({
       return {
         id: cls.id,
         name: cls.name,
-        branchName: branch?.name || "Cơ sở CLB",
+        branchName: cls.customBranchName?.trim() || (cls.branchId === "branch-private" ? "Lớp riêng của HLV" : branch?.name) || "Cơ sở CLB",
         studentCount: students.length,
         totalAmount,
         students,

@@ -152,7 +152,7 @@ def build_invoice_html(data: dict) -> str:
     student_code = data.get("studentCode", "HS")
     custom_title = data.get("customTitle")
     class_name = data.get("className", "Lớp Cờ vua")
-    branch_name = data.get("branchName", "CLB Kiện Tướng Tương Lai")
+    branch_name = data.get("branchName", "CLB Kiện Tướng Tương Lai").replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")
     month = data.get("month", datetime.now().month)
     year = data.get("year", datetime.now().year)
     present_count = data.get("presentCount", 0)

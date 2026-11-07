@@ -949,7 +949,10 @@ export default function ZaloParentSenderModal({
                           <div className="flex justify-between">
                             <span className="text-slate-500">Lớp học:</span>
                             <span className="font-semibold text-slate-900 text-right max-w-[65%]">
-                              {previewStudent.className} – {previewStudent.branchName}
+                              {previewStudent.className}
+                              {previewStudent.branchName
+                                ? ` – ${previewStudent.branchName.replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")}`
+                                : ""}
                             </span>
                           </div>
 

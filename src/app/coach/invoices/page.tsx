@@ -35,6 +35,7 @@ import {
   StudentData,
   resolveCanonicalCoachId,
   getCoachClasses,
+  getClassBranchName,
 } from "@/lib/data-store";
 import { formatCurrencyVND, generateVietQrUrl, formatTuitionTransferContent } from "@/lib/vietqr";
 import { exportInvoicesToExcel, InvoiceExportRow } from "@/lib/excel";
@@ -195,8 +196,11 @@ function InvoicesContent() {
     student: StudentData,
     includeOtherClasses: boolean = preferConsolidatedCards
   ): InvoiceCardData => {
-    const targetClass = classes.find((c) => c.id === inv.classId) || selectedClass;
-    const targetBranch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+    const targetClass =
+      classes.find((c) => c.id === inv.classId) ||
+      dataStore.classes.find((c) => c.id === inv.classId) ||
+      selectedClass;
+    const targetBranchName = getClassBranchName(targetClass);
     const classCoachId = targetClass?.coachId || currentCoachId;
     const bank = dataStore.getCoachBankConfig(classCoachId);
     const transferContent = formatTuitionTransferContent(student.fullName, selectedMonth);
@@ -211,10 +215,9 @@ function InvoicesContent() {
         const cls =
           classes.find((c) => c.id === otherInv.classId) ||
           dataStore.classes.find((c) => c.id === otherInv.classId);
-        const br = dataStore.branches.find((b) => b.id === cls?.branchId);
         return {
           className: cls?.name || "Lớp học",
-          branchName: br?.name || "",
+          branchName: getClassBranchName(cls),
           presentCount: otherInv.presentCount,
           presentDates: getPresentDatesForStudent(student.id, otherInv.classId),
           feePerSession: otherInv.feePerSession,
@@ -246,7 +249,7 @@ function InvoicesContent() {
         studentCode: student.code,
         studentName: student.fullName,
         className: `Tổng hợp ${classList.length} lớp (${classNames})`,
-        branchName: targetBranch?.name || "",
+        branchName: targetBranchName,
         month: selectedMonth,
         year: selectedYear,
         presentCount: totalPresent,
@@ -282,7 +285,7 @@ function InvoicesContent() {
       studentCode: student.code,
       studentName: student.fullName,
       className: targetClass?.name || "",
-      branchName: targetBranch?.name || "",
+      branchName: targetBranchName,
       month: selectedMonth,
       year: selectedYear,
       presentCount: inv.presentCount,
@@ -303,7 +306,9 @@ function InvoicesContent() {
   // Helper tạo dữ liệu thẻ học phí gộp cho học sinh học nhiều lớp
   const buildAggregatedInvoiceCardData = (agg: AggregatedStudentInvoice): InvoiceCardData => {
     const primaryClass = agg.classItems[0];
-    const targetCls = classes.find((c) => c.id === primaryClass?.classId);
+    const targetCls =
+      classes.find((c) => c.id === primaryClass?.classId) ||
+      dataStore.classes.find((c) => c.id === primaryClass?.classId);
     const classCoachId = targetCls?.coachId || currentCoachId;
     const bank = dataStore.getCoachBankConfig(classCoachId);
     const classNames = agg.classItems.map((c) => c.className).join(", ");
@@ -324,7 +329,7 @@ function InvoicesContent() {
         agg.classItems.length === 1
           ? primaryClass.className
           : `Tổng hợp ${agg.classItems.length} lớp (${classNames})`,
-      branchName: primaryClass?.branchName || "",
+      branchName: getClassBranchName(targetCls) || primaryClass?.branchName || "",
       month: selectedMonth,
       year: selectedYear,
       presentCount: agg.totalPresentCount,
@@ -551,15 +556,16 @@ function InvoicesContent() {
       const student = dataStore.students.find((s) => s.id === inv.studentId);
       if (!student) return;
 
-      const targetClass = classes.find((c) => c.id === inv.classId);
-      const targetBranch = dataStore.branches.find((b) => b.id === targetClass?.branchId);
+      const targetClass =
+        classes.find((c) => c.id === inv.classId) ||
+        dataStore.classes.find((c) => c.id === inv.classId);
       const presentDates = getPresentDatesForStudent(student.id, inv.classId);
 
       const classItem = {
         invoiceId: inv.id,
         classId: inv.classId,
         className: targetClass?.name || "Lớp học",
-        branchName: targetBranch?.name || "",
+        branchName: getClassBranchName(targetClass),
         presentCount: inv.presentCount,
         presentDates,
         feePerSession: inv.feePerSession,
@@ -1269,7 +1275,7 @@ function InvoicesContent() {
             <p className="text-xs text-slate-500">
               {isAllClasses
                 ? `Toàn bộ ${classes.length} lớp học của Huấn luyện viên`
-                : `${selectedClass?.name} (${branchInfo?.name || "Cơ sở"})`}
+                : `${selectedClass?.name} (${getClassBranchName(selectedClass) || "Cơ sở"})`}
             </p>
           </div>
 
@@ -2318,7 +2324,16 @@ function InvoicesContent() {
             shareWithAdmin: true,
           }
         }
-        branch={branchInfo || null}
+        branch={
+          selectedClass
+            ? {
+                id: selectedClass.branchId || "",
+                name: getClassBranchName(selectedClass) || branchInfo?.name || "Cơ sở",
+                address: branchInfo?.address || "",
+                phone: branchInfo?.phone || null,
+              }
+            : branchInfo || null
+        }
         month={selectedMonth}
         year={selectedYear}
         initialStudentId={selectedStudentForParentModal}
@@ -2379,7 +2394,7 @@ function InvoicesContent() {
                   parentPhone: student?.parentPhone || "",
                   cleanParentPhone: (student?.parentPhone || "").replace(/[^0-9]/g, ""),
                   className: cardData?.className || selectedClass?.name || "",
-                  branchName: branchInfo?.name || "",
+                  branchName: cardData?.branchName || getClassBranchName(selectedClass) || "",
                   month: selectedMonth,
                   year: selectedYear,
                   presentCount: cardData?.presentCount ?? inv.presentCount,
