@@ -13,7 +13,7 @@ import {
   ShoppingBag,
   ArrowRight,
 } from "lucide-react";
-import { dataStore, resolveCanonicalCoachId, getCoachClasses, getClassBranchName } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId, getCoachClasses, getClassBranchName, isPrivateClass } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function CoachPayrollPage() {
@@ -64,13 +64,19 @@ export default function CoachPayrollPage() {
   const totalSessions = coachPayroll?.totalSessions || 0;
 
   // Chi tiết từng lớp HLV phụ trách
+  const coachTuitionPct = coachPayroll?.tuitionRatePercent ?? 50;
+  const coachBookPct = coachPayroll?.bookRatePercent ?? 30;
+
   const classBreakdowns = coachClasses.map((cls) => {
+    const isPriv = isPrivateClass(cls);
     const branchName = getClassBranchName(cls);
     const clsInvoices = dataStore.invoices.filter(
       (inv) => inv.classId === cls.id && inv.month === month && inv.year === year
     );
     const clsTuition = clsInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-    const clsCommission = Math.round(clsTuition * 0.5);
+    // Nếu là lớp riêng: HLV nhận đủ 100% học phí, không bị chia %. Nếu lớp cơ sở CLB: theo tỷ lệ của HLV (mặc định 50%)
+    const tuitionPct = isPriv ? 100 : coachTuitionPct;
+    const clsCommission = isPriv ? clsTuition : Math.round(clsTuition * (tuitionPct / 100));
 
     // Sách phát trong lớp
     const clsSessions = dataStore.sessions.filter((s) => {
@@ -89,11 +95,13 @@ export default function CoachPayrollPage() {
         }
       });
     });
-    const clsBookCommission = Math.round(clsBookRevenue * 0.3);
+    const clsBookCommission = Math.round(clsBookRevenue * (coachBookPct / 100));
 
     return {
       class: cls,
+      isPrivate: isPriv,
       branchName,
+      tuitionPct,
       studentCount: clsInvoices.length,
       sessionCount: clsSessions.length,
       tuition: clsTuition,
@@ -123,7 +131,7 @@ export default function CoachPayrollPage() {
             Thu Nhập HLV
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Công thức: Thu nhập HLV = Tổng học phí × 50% + Tiền sách × 30%
+            Công thức: Lớp cơ sở CLB ({coachTuitionPct}% Học phí + {coachBookPct}% Sách) • Lớp riêng HLV (Nhận đủ 100% Học phí, không chia %)
           </p>
         </div>
 
@@ -164,19 +172,19 @@ export default function CoachPayrollPage() {
           </p>
         </div>
 
-        {/* Card 2: 50% Học Phí */}
+        {/* Card 2: Học Phí HLV */}
         <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-medium text-slate-500">50% Học Phí Lớp</p>
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500">Thù Lao Học Phí</p>
             <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-primary border border-emerald-100">
-              50%
+              CLB: {coachTuitionPct}% | Riêng: 100%
             </span>
           </div>
           <p className="mt-1 text-xl sm:text-2xl font-bold text-brand-primary tracking-tight">
             {formatCurrencyVND(tuitionCommission)}
           </p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
-            Tổng: {formatCurrencyVND(totalTuition)}
+            Tổng học phí: {formatCurrencyVND(totalTuition)}
           </p>
         </div>
 
@@ -220,7 +228,7 @@ export default function CoachPayrollPage() {
             Chi Tiết Thu Nhập Theo Từng Lớp Phụ Trách
           </h3>
           <p className="text-xs text-slate-500">
-            Đối soát học phí (50%) và doanh thu phát sách (30%) của từng lớp.
+            Lớp riêng nhận đủ 100% học phí không chia %. Lớp cơ sở CLB nhận {coachTuitionPct}% học phí và {coachBookPct}% tiền sách.
           </p>
         </div>
 
@@ -230,7 +238,14 @@ export default function CoachPayrollPage() {
             <div key={b.class.id} className="p-3.5 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">{b.class.name}</h4>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="font-bold text-slate-900 text-sm">{b.class.name}</h4>
+                    {b.isPrivate && (
+                      <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-bold text-amber-800">
+                        🔒 Lớp riêng (100% HP)
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500">{b.branchName} • {b.class.schedule}</p>
                 </div>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 whitespace-nowrap">
@@ -240,12 +255,14 @@ export default function CoachPayrollPage() {
 
               <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">50% Học phí</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">
+                    {b.tuitionPct}% Học phí {b.isPrivate ? "(Nhận đủ 100%)" : ""}
+                  </span>
                   <span className="font-bold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</span>
                   <span className="text-[10px] text-slate-400 block">/ {formatCurrencyVND(b.tuition)}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">30% Tiền sách ({b.booksCount})</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">{coachBookPct}% Tiền sách ({b.booksCount})</span>
                   <span className="font-bold text-amber-700">{formatCurrencyVND(b.bookCommission)}</span>
                   <span className="text-[10px] text-slate-400 block">/ {formatCurrencyVND(b.bookRevenue)}</span>
                 </div>
@@ -271,10 +288,10 @@ export default function CoachPayrollPage() {
                 <th className="px-4 py-2.5">Cơ Sở</th>
                 <th className="px-4 py-2.5 text-center">Sĩ Số</th>
                 <th className="px-4 py-2.5 text-right">Tổng Học Phí</th>
-                <th className="px-4 py-2.5 text-right text-brand-primary">50% Học Phí</th>
+                <th className="px-4 py-2.5 text-right text-brand-primary">Thù Lao Học Phí</th>
                 <th className="px-4 py-2.5 text-center">Sách Đã Phát</th>
                 <th className="px-4 py-2.5 text-right">Tổng Tiền Sách</th>
-                <th className="px-4 py-2.5 text-right text-amber-700">30% Tiền Sách</th>
+                <th className="px-4 py-2.5 text-right text-amber-700">{coachBookPct}% Sách</th>
                 <th className="px-4 py-2.5 text-right font-bold">Thu Nhập Lớp</th>
               </tr>
             </thead>
@@ -282,13 +299,25 @@ export default function CoachPayrollPage() {
               {classBreakdowns.map((b) => (
                 <tr key={b.class.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-4 py-3 font-semibold text-slate-900">
-                    {b.class.name}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span>{b.class.name}</span>
+                      {b.isPrivate && (
+                        <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-bold text-amber-800">
+                          🔒 Lớp riêng (100%)
+                        </span>
+                      )}
+                    </div>
                     <span className="block text-[10px] font-normal text-slate-500">{b.class.schedule}</span>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{b.branchName}</td>
                   <td className="px-4 py-3 text-center font-semibold">{b.studentCount} HV</td>
                   <td className="px-4 py-3 text-right font-medium text-slate-700">{formatCurrencyVND(b.tuition)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-brand-primary">{formatCurrencyVND(b.tuitionCommission)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-brand-primary">
+                    {formatCurrencyVND(b.tuitionCommission)}
+                    <span className="block text-[10px] font-normal text-slate-400">
+                      ({b.tuitionPct}%)
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-center font-medium text-slate-800">{b.booksCount} cuốn</td>
                   <td className="px-4 py-3 text-right font-medium text-slate-700">{formatCurrencyVND(b.bookRevenue)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-amber-700">{formatCurrencyVND(b.bookCommission)}</td>

@@ -402,8 +402,8 @@ export default function AdminCoachesPage() {
                   <span className="font-semibold text-emerald-950">Mức lương HLV:</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-brand-primary">
-                    <b>{tuitionPct}%</b> Học phí
+                  <span className="font-semibold text-brand-primary" title="Lớp cơ sở CLB nhận theo %, Lớp riêng nhận đủ 100%">
+                    <b>{tuitionPct}%</b> Học phí CLB <span className="text-[10px] text-amber-700 font-normal">(Riêng: 100%)</span>
                   </span>
                   <span className="text-slate-300">•</span>
                   <span className="font-semibold text-amber-700">
@@ -645,9 +645,12 @@ export default function AdminCoachesPage() {
                 {/* % Học phí */}
                 <div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700">% Chia Sẻ Học Phí:</span>
+                    <span className="font-semibold text-slate-700">% Chia Sẻ Học Phí Lớp Cơ Sở CLB:</span>
                     <span className="font-bold text-brand-primary text-sm">{editTuitionRate}%</span>
                   </div>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    💡 Áp dụng cho các lớp mở tại cơ sở CLB. Các lớp riêng của HLV (dạy kèm/gia sư/online) HLV sẽ nhận đủ 100% học phí, không bị chia %.
+                  </p>
                   <input
                     type="range"
                     min="0"
@@ -881,7 +884,7 @@ export default function AdminCoachesPage() {
               {/* % Lương & Sách */}
               <div className="grid grid-cols-2 gap-3 rounded bg-slate-50 p-2.5 border border-slate-100">
                 <div>
-                  <label className="font-semibold text-slate-700">% Học phí HLV nhận</label>
+                  <label className="font-semibold text-slate-700">% Học phí lớp cơ sở</label>
                   <input
                     type="number"
                     min="0"
@@ -891,6 +894,7 @@ export default function AdminCoachesPage() {
                     onChange={(e) => setTuitionRate(Number(e.target.value))}
                     className="mt-1 w-full rounded border border-slate-200 p-2 font-bold text-brand-primary"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">Lớp riêng HLV nhận đủ 100%</p>
                 </div>
                 <div>
                   <label className="font-semibold text-slate-700">% Tiền sách HLV nhận</label>

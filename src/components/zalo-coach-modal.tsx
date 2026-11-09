@@ -18,7 +18,7 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
-import { dataStore, getCoachClasses } from "@/lib/data-store";
+import { dataStore, getCoachClasses, isPrivateClass } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 interface ZaloCoachModalProps {
@@ -68,10 +68,12 @@ export default function ZaloCoachModal({
         };
       });
 
+      const isPriv = isPrivateClass(cls);
       return {
         id: cls.id,
         name: cls.name,
-        branchName: cls.customBranchName?.trim() || (cls.branchId === "branch-private" ? "Lớp riêng của HLV" : branch?.name) || "Cơ sở CLB",
+        isPrivate: isPriv,
+        branchName: cls.customBranchName?.trim() || (isPriv ? "Lớp riêng của HLV" : branch?.name) || "Cơ sở CLB",
         studentCount: students.length,
         totalAmount,
         students,
@@ -89,7 +91,8 @@ export default function ZaloCoachModal({
     ];
 
     classesInfo.forEach((cls, idx) => {
-      lines.push(`📚 ${idx + 1}. ${cls.name} (${cls.branchName})`);
+      const privTag = cls.isPrivate ? " [🔒 Lớp riêng - HLV nhận 100%]" : "";
+      lines.push(`📚 ${idx + 1}. ${cls.name} (${cls.branchName})${privTag}`);
       lines.push(`- Sĩ số: ${cls.studentCount} học viên | Tổng học phí: ${cls.totalAmount.toLocaleString("vi-VN")} đ`);
       cls.students.forEach((st) => {
         const statusText = st.status === "PAID" ? "✅ Đã đóng" : "⏳ Chờ thu";

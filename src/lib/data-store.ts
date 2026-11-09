@@ -1361,7 +1361,24 @@ class InMemoryDataStore {
         const tuitionRate = coach.tuitionRatePercent !== undefined ? coach.tuitionRatePercent : 50;
         const bookRate = coach.bookRatePercent !== undefined ? coach.bookRatePercent : 30;
 
-        const tuitionCommission = Math.round(totalTuition * (tuitionRate / 100));
+        // Tính hoa hồng học phí theo từng lớp:
+        // - Lớp riêng của HLV (không thuộc cơ sở CLB: branchId === "branch-private" hoặc shareWithAdmin === false): HLV hưởng trọn 100% học phí!
+        // - Lớp thuộc cơ sở CLB: HLV hưởng theo tỷ lệ % quy định (mặc định 50%)
+        let totalClubTuition = 0;
+        let totalPrivateTuition = 0;
+        let tuitionCommission = 0;
+
+        coachInvoices.forEach((inv) => {
+          const cls = coachClasses.find((c) => c.id === inv.classId);
+          const isPriv = isPrivateClass(cls);
+          if (isPriv) {
+            totalPrivateTuition += inv.totalAmount;
+            tuitionCommission += inv.totalAmount; // Nhận đủ 100% học phí lớp riêng
+          } else {
+            totalClubTuition += inv.totalAmount;
+            tuitionCommission += Math.round(inv.totalAmount * (tuitionRate / 100)); // Theo % thoả thuận
+          }
+        });
 
         // 1. Tiền sách phát cho học viên trong các buổi dạy của HLV trong tháng
         let totalClassBooksCount = 0;
@@ -1411,6 +1428,8 @@ class InMemoryDataStore {
           branchName: this.branches.find((b) => b.id === coach.branchId)?.name || "Chưa gán",
           totalSessions,
           totalTuition,
+          totalClubTuition,
+          totalPrivateTuition,
           tuitionRatePercent: tuitionRate,
           tuitionCommission,
           totalBooksCount,
@@ -2085,6 +2104,22 @@ export function getCoachStudents(coachId?: string, coachEmail?: string): Student
  */
 export function getAdminClasses(): ClassroomData[] {
   return dataStore.classes.filter((c) => c.shareWithAdmin !== false);
+}
+
+/**
+ * Kiểm tra xem một lớp học có phải là "Lớp riêng của HLV không thuộc cơ sở nào của CLB" hay không.
+ * Các lớp này:
+ * - Có branchId === "branch-private" HOẶC shareWithAdmin === false
+ * - HLV nhận đủ 100% học phí, không bị trừ/chia % với CLB
+ */
+export function isPrivateClass(clsOrId?: ClassroomData | string | null): boolean {
+  if (!clsOrId) return false;
+  const cls =
+    typeof clsOrId === "string"
+      ? dataStore.classes.find((c) => c.id === clsOrId)
+      : clsOrId;
+  if (!cls) return false;
+  return cls.branchId === "branch-private" || cls.shareWithAdmin === false;
 }
 
 /**

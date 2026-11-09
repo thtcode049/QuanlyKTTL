@@ -133,7 +133,7 @@ export default function AdminPayrollPage() {
             Thu Nhập & Bảng Lương HLV
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Công thức: Thu nhập HLV = 50% Tổng học phí + 30% Tiền sách phát. Tự động tính toán và xuất Excel.
+            Công thức: Lớp cơ sở tính theo % thỏa thuận ({tuitionRateInput ?? 50}% Học phí, {bookRateInput ?? 30}% Sách) • Lớp riêng HLV nhận đủ 100% học phí không chia %.
           </p>
         </div>
 
@@ -244,12 +244,12 @@ export default function AdminPayrollPage() {
           </p>
         </div>
 
-        {/* Card 2: 50% Học Phí */}
+        {/* Card 2: Học Phí */}
         <div className="rounded bg-white p-4 border border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-slate-500">50% Quỹ Học Phí HLV</p>
+            <p className="text-xs font-medium text-slate-500">Quỹ Thù Lao Học Phí HLV</p>
             <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-primary border border-emerald-100">
-              50%
+              CLB % / Riêng 100%
             </span>
           </div>
           <p className="mt-1.5 text-2xl font-bold text-brand-primary tracking-tight">
@@ -498,32 +498,51 @@ export default function AdminPayrollPage() {
               </div>
 
               {/* Tính thử thu nhập với mức mới */}
-              <div className="rounded border border-emerald-100 bg-emerald-50/50 p-3 space-y-1">
-                <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
-                  Dự tính thu nhập Tháng {month} với mức mới:
-                </p>
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-600">Học phí ({tuitionRateInput}% x {formatCurrencyVND(editingRateCoach.totalTuition)}):</span>
-                  <span className="font-bold text-emerald-800">
-                    {formatCurrencyVND(Math.round(editingRateCoach.totalTuition * (tuitionRateInput / 100)))}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600">Tiền sách ({bookRateInput}% x {formatCurrencyVND(editingRateCoach.totalBookRevenue)}):</span>
-                  <span className="font-bold text-amber-800">
-                    {formatCurrencyVND(Math.round(editingRateCoach.totalBookRevenue * (bookRateInput / 100)))}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm font-bold border-t border-emerald-100 pt-1 text-slate-900">
-                  <span>Tổng thu nhập mới:</span>
-                  <span className="text-emerald-700">
-                    {formatCurrencyVND(
-                      Math.round(editingRateCoach.totalTuition * (tuitionRateInput / 100)) +
-                      Math.round(editingRateCoach.totalBookRevenue * (bookRateInput / 100))
+              {(() => {
+                const privTuition = Number(editingRateCoach.totalPrivateTuition) || 0;
+                const clubTuition = Number(editingRateCoach.totalClubTuition) || (editingRateCoach.totalTuition - privTuition);
+                const calcTuitionComm = Math.round(clubTuition * (tuitionRateInput / 100)) + privTuition;
+                const calcBookComm = Math.round(editingRateCoach.totalBookRevenue * (bookRateInput / 100));
+                const calcTotal = calcTuitionComm + calcBookComm;
+
+                return (
+                  <div className="rounded border border-emerald-100 bg-emerald-50/50 p-3 space-y-1">
+                    <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                      Dự tính thu nhập Tháng {month} với mức mới:
+                    </p>
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-slate-600">
+                        Học phí lớp cơ sở ({tuitionRateInput}% x {formatCurrencyVND(clubTuition)}):
+                      </span>
+                      <span className="font-bold text-emerald-800">
+                        {formatCurrencyVND(Math.round(clubTuition * (tuitionRateInput / 100)))}
+                      </span>
+                    </div>
+                    {privTuition > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-amber-800 font-medium">
+                          🔒 Lớp riêng (Nhận đủ 100%):
+                        </span>
+                        <span className="font-bold text-amber-800">
+                          +{formatCurrencyVND(privTuition)}
+                        </span>
+                      </div>
                     )}
-                  </span>
-                </div>
-              </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600">Tiền sách ({bookRateInput}% x {formatCurrencyVND(editingRateCoach.totalBookRevenue)}):</span>
+                      <span className="font-bold text-amber-800">
+                        {formatCurrencyVND(calcBookComm)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm font-bold border-t border-emerald-100 pt-1 text-slate-900">
+                      <span>Tổng thu nhập mới:</span>
+                      <span className="text-emerald-700">
+                        {formatCurrencyVND(calcTotal)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="mt-4 flex items-center justify-end gap-2 pt-2.5 border-t border-slate-100">
                 <button

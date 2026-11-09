@@ -341,10 +341,11 @@ export default function ProfilePageContent({ userRole }: ProfilePageContentProps
                 <p className="mt-0.5 text-sm font-bold text-brand-primary">{elo || 2000}</p>
               </div>
               <div className="rounded bg-emerald-50/50 p-2.5 border border-emerald-100 text-center">
-                <p className="text-[10px] font-medium text-emerald-700">Mức Học Phí</p>
+                <p className="text-[10px] font-medium text-emerald-700">Mức Học Phí CLB</p>
                 <p className="mt-0.5 text-sm font-bold text-brand-primary">
                   {currentUser?.tuitionRatePercent ?? 50}%
                 </p>
+                <p className="text-[9px] text-amber-700 font-semibold">Riêng: 100%</p>
               </div>
               <div className="rounded bg-amber-50/50 p-2.5 border border-amber-100 text-center">
                 <p className="text-[10px] font-medium text-amber-700">Mức Tiền Sách</p>
@@ -578,10 +579,11 @@ export default function ProfilePageContent({ userRole }: ProfilePageContentProps
                   </div>
                   <div className="grid grid-cols-2 gap-2.5 text-xs">
                     <div className="rounded bg-white p-2.5 border border-emerald-100">
-                      <p className="text-[11px] text-slate-500 font-medium">Tỷ lệ % Học phí</p>
+                      <p className="text-[11px] text-slate-500 font-medium">Học phí lớp cơ sở CLB</p>
                       <p className="text-lg font-bold text-brand-primary">
                         {currentUser?.tuitionRatePercent ?? 50}%
                       </p>
+                      <p className="text-[10px] text-amber-700 mt-0.5 font-medium">Lớp riêng: Nhận 100%</p>
                     </div>
                     <div className="rounded bg-white p-2.5 border border-emerald-100">
                       <p className="text-[11px] text-slate-500 font-medium">Tỷ lệ % Tiền sách</p>

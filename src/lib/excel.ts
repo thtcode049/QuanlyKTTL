@@ -117,7 +117,7 @@ export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, ye
   const excelData = [
     ["CLB CỜ VUA KIỆN TƯỚNG TƯƠNG LAI (KTTL)"],
     [`BẢNG THANH TOÁN THU NHẬP HUẤN LUYỆN VIÊN THÁNG ${month}/${year}`],
-    ["Công thức: Thu nhập HLV = 50% Tổng học phí + 30% Tiền sách phát"],
+    ["Quy chế: Lớp cơ sở tính theo % thỏa thuận • Lớp riêng HLV nhận đủ 100% học phí không chia %"],
     [],
     [
       "STT",
@@ -126,10 +126,10 @@ export function exportPayrollToExcel(rows: PayrollExportRow[], month: number, ye
       "Cơ Sở Phụ Trách",
       "Số Ca Dạy",
       "Tổng Học Phí (VNĐ)",
-      "50% Học Phí (VNĐ)",
+      "Thù Lao Học Phí (VNĐ)",
       "Số Sách Phát",
       "Tiền Sách (VNĐ)",
-      "30% Tiền Sách (VNĐ)",
+      "Hoa Hồng Sách (VNĐ)",
       "Tổng Thu Nhập HLV (VNĐ)",
     ],
     ...rows.map((r) => [
