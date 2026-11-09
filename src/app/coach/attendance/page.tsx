@@ -31,6 +31,8 @@ import {
   Utensils,
   Tag,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   dataStore,
@@ -176,6 +178,10 @@ function AttendanceContent() {
   const [sessionDate, setSessionDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [topic, setTopic] = useState<string>(
     "Chiến thuật Cờ vua: Đòn Chĩa Đôi & Phối hợp Chiếu Hết"
   );
@@ -917,7 +923,28 @@ function AttendanceContent() {
   };
 
   const scheduleStatus = getTodayScheduleStatus(selectedClass?.schedule || "");
-  const monthlyDates = getMonthlyClassDates(selectedClass?.schedule || "");
+  const targetMonthDate = useMemo(() => {
+    if (!selectedMonth) return new Date();
+    const [y, m] = selectedMonth.split("-").map(Number);
+    return new Date(y, m - 1, 1);
+  }, [selectedMonth]);
+
+  const monthlyDates = useMemo(() => {
+    return getMonthlyClassDates(selectedClass?.schedule || "", targetMonthDate);
+  }, [selectedClass?.schedule, targetMonthDate]);
+
+  const handlePrevMonth = () => {
+    const cur = new Date(targetMonthDate);
+    cur.setMonth(cur.getMonth() - 1);
+    setSelectedMonth(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`);
+  };
+
+  const handleNextMonth = () => {
+    const cur = new Date(targetMonthDate);
+    cur.setMonth(cur.getMonth() + 1);
+    setSelectedMonth(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`);
+  };
+
   const todayStr = new Date().toISOString().split("T")[0];
 
   return (
@@ -1055,18 +1082,51 @@ function AttendanceContent() {
           </div>
 
           {/* Quick Schedule Session Picker (Các buổi học chuẩn theo lịch trong tháng) */}
-          {monthlyDates.length > 0 && (
-            <div className="rounded-md bg-white p-3 shadow-xs border border-slate-200/80">
-              <div className="flex items-center justify-between mb-2">
+          <div className="rounded-md bg-white p-3 shadow-xs border border-slate-200/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 text-brand-primary" />
                   <span>Các buổi học theo lịch trong tháng của lớp ({monthlyDates.length} buổi):</span>
                 </span>
-                <span className="text-[11px] text-slate-400">
-                  Chạm vào ngày để nhảy ngay đến buổi học đó
-                </span>
+
+                {/* Chọn tháng */}
+                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    title="Tháng trước"
+                    className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 active:scale-95 transition-all"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedMonth(e.target.value);
+                      }
+                    }}
+                    className="bg-transparent text-xs font-bold text-brand-primary border-none p-0.5 focus:outline-none cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    title="Tháng sau"
+                    className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 active:scale-95 transition-all"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
+              <span className="text-[11px] text-slate-400">
+                Chạm vào ngày để nhảy ngay đến buổi học đó
+              </span>
+            </div>
+
+            {monthlyDates.length > 0 ? (
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
                 {monthlyDates.map((item) => {
                   const isSelected = item.dateStr === sessionDate;
@@ -1104,8 +1164,12 @@ function AttendanceContent() {
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-slate-400 py-1 italic">
+                Không có buổi học nào theo lịch trong tháng {selectedMonth.split("-")[1]}/{selectedMonth.split("-")[0]}.
+              </p>
+            )}
+          </div>
 
           {/* Session Configuration Card */}
           <div className="rounded-md bg-white p-4 shadow-xs border border-slate-200/80">
