@@ -148,7 +148,8 @@ function getMonthlyClassDates(schedule: string, targetDate = new Date()) {
   const month = targetDate.getMonth();
   const totalDays = new Date(year, month + 1, 0).getDate();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const todayStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
   const dayNames = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
   const list: { dateStr: string; label: string; isToday: boolean }[] = [];
