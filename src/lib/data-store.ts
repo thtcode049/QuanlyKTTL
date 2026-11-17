@@ -78,6 +78,7 @@ export interface StudentData {
   eloRating?: number; // Đã loại bỏ khỏi UI/hệ thống đánh giá
   notes?: string;
   classIds: string[];
+  classJoinedDates?: Record<string, string>; // Ngày học viên tham gia từng lớp (YYYY-MM-DD)
   customFeePerSession?: number | null; // Đơn giá học phí riêng theo từng học viên (ưu đãi, học bổng hoặc kèm riêng)
   avatar?: string; // Ảnh profile học viên (base64 hoặc URL)
   address?: string; // Địa chỉ nhà
@@ -970,6 +971,13 @@ class InMemoryDataStore {
 
   // Thêm học viên mới (đồng bộ Supabase DB)
   public async addStudent(student: StudentData): Promise<StudentData> {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const joinedDates: Record<string, string> = { ...(student.classJoinedDates || {}) };
+    (student.classIds || []).forEach((cid) => {
+      if (!joinedDates[cid]) joinedDates[cid] = todayStr;
+    });
+    student.classJoinedDates = joinedDates;
+
     const existingIdx = this.students.findIndex((s) => s.id === student.id);
     if (existingIdx >= 0) {
       this.students[existingIdx] = student;
@@ -1076,6 +1084,14 @@ class InMemoryDataStore {
   public async updateStudent(studentId: string, data: Partial<StudentData>): Promise<StudentData | null> {
     const student = this.students.find((s) => s.id === studentId);
     if (student) {
+      if (data.classIds) {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const nextJoined = { ...(student.classJoinedDates || {}), ...(data.classJoinedDates || {}) };
+        data.classIds.forEach((cid) => {
+          if (!nextJoined[cid]) nextJoined[cid] = todayStr;
+        });
+        student.classJoinedDates = nextJoined;
+      }
       Object.assign(student, data);
       if (data.customFeePerSession !== undefined) {
         this.recalculateAllInvoices(10, 2026);

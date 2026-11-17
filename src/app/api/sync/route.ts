@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       }),
       prisma.student.findMany({
         include: {
-          classes: { select: { classId: true } },
+          classes: { select: { classId: true, joinedAt: true } },
         },
         orderBy: { fullName: "asc" },
       }),
@@ -86,6 +86,9 @@ export async function GET(request: Request) {
       currentLevel: s.currentLevel || "Nhập môn",
       notes: s.notes || "",
       classIds: s.classes.map((cs) => cs.classId),
+      classJoinedDates: Object.fromEntries(
+        s.classes.map((cs) => [cs.classId, cs.joinedAt.toISOString().split("T")[0]])
+      ),
       customFeePerSession: s.customFeePerSession !== null && s.customFeePerSession !== undefined ? s.customFeePerSession : undefined,
       avatar: s.avatar || undefined,
       address: s.address || undefined,

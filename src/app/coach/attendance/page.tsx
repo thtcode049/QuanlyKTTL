@@ -303,6 +303,8 @@ function AttendanceContent() {
         otherFeeTitle: string;
         otherFeePrice: number;
         surchargeOpen?: boolean;
+        notInOriginalSession?: boolean;
+        joinedLaterDate?: string;
       }
     >
   >({});
@@ -346,6 +348,8 @@ function AttendanceContent() {
         otherFeeTitle: string;
         otherFeePrice: number;
         surchargeOpen?: boolean;
+        notInOriginalSession?: boolean;
+        joinedLaterDate?: string;
       }
     > = {};
 
@@ -354,12 +358,13 @@ function AttendanceContent() {
       allStds.forEach((std) => {
         const r = existingSession.records.find((rec) => rec.studentId === std.id);
         const isMakeup = initialMakeupIds.includes(std.id);
+        const notInOriginalSession = !r && !isMakeup;
         const hasBook = !!(r?.bookTitle && r?.bookPrice);
         const hasLunch = !!(r?.lunchFee && r.lunchFee > 0);
         const hasOther = !!(r?.otherFeePrice && r.otherFeePrice > 0);
 
         initial[std.id] = {
-          status: r ? r.status : "PRESENT",
+          status: r ? r.status : "ABSENT",
           note: r?.coachNote || (isMakeup ? "Học bù" : ""),
           hasBook,
           bookTitle: r?.bookTitle || STANDARD_BOOKS[0].title,
@@ -370,13 +375,16 @@ function AttendanceContent() {
           otherFeeTitle: r?.otherFeeTitle || "",
           otherFeePrice: r?.otherFeePrice || 0,
           surchargeOpen: hasBook || hasLunch || hasOther,
+          notInOriginalSession,
         };
       });
     } else {
       allStds.forEach((std) => {
         const isMakeup = initialMakeupIds.includes(std.id);
+        const joinedDate = std.classJoinedDates?.[selectedClass.id];
+        const isBeforeJoinDate = Boolean(!isMakeup && joinedDate && sessionDate < joinedDate);
         initial[std.id] = {
-          status: "PRESENT", // Mặc định [Có mặt] theo đặc tả
+          status: isBeforeJoinDate ? "ABSENT" : "PRESENT",
           note: isMakeup ? "Học bù" : "",
           hasBook: false,
           bookTitle: STANDARD_BOOKS[0].title,
@@ -387,6 +395,7 @@ function AttendanceContent() {
           otherFeeTitle: "",
           otherFeePrice: 0,
           surchargeOpen: false,
+          joinedLaterDate: isBeforeJoinDate ? joinedDate : undefined,
         };
       });
     }
@@ -591,30 +600,47 @@ function AttendanceContent() {
   const handleSaveAttendance = () => {
     if (!selectedClass) return;
 
-    const sessionRecords = sessionStudents.map((std) => {
-      const current = records[std.id];
-      const finalStatus: "PRESENT" | "ABSENT" =
-        current?.status === "ABSENT" ? "ABSENT" : "PRESENT";
+    const sessionRecords = sessionStudents
+      .filter((std) => {
+        const current = records[std.id];
+        if (!current) return false;
+        // Nếu học viên mới vào lớp sau buổi học cũ và vẫn ở trạng thái mặc định Nghỉ + không có phụ phí/ghi chú -> không ghi thừa
+        if (
+          current.notInOriginalSession &&
+          current.status === "ABSENT" &&
+          !current.hasBook &&
+          !current.hasLunch &&
+          !current.hasOther &&
+          !(current.note || "").trim()
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map((std) => {
+        const current = records[std.id];
+        const finalStatus: "PRESENT" | "ABSENT" =
+          current?.status === "ABSENT" ? "ABSENT" : "PRESENT";
 
-      const isMakeup = makeupStudentIds.includes(std.id);
-      let note = current?.note || "";
-      if (isMakeup && !note.includes("Học bù")) {
-        note = note ? `[Học bù] ${note}` : "[Học bù]";
-      }
+        const isMakeup = makeupStudentIds.includes(std.id);
+        let note = current?.note || "";
+        if (isMakeup && !note.includes("Học bù")) {
+          note = note ? `[Học bù] ${note}` : "[Học bù]";
+        }
 
-      return {
-        id: `rec-${Date.now()}-${std.id}`,
-        sessionId: `sess-${selectedClass.id}-${sessionDate}`,
-        studentId: std.id,
-        status: finalStatus,
-        coachNote: note,
-        bookTitle: current?.hasBook ? (current?.bookTitle || STANDARD_BOOKS[0].title) : undefined,
-        bookPrice: current?.hasBook ? (Number(current?.bookPrice) || 0) : undefined,
-        lunchFee: current?.hasLunch ? (Number(current?.lunchFee) || 0) : undefined,
-        otherFeeTitle: current?.hasOther ? (current?.otherFeeTitle || "Phụ phí khác") : undefined,
-        otherFeePrice: current?.hasOther ? (Number(current?.otherFeePrice) || 0) : undefined,
-      };
-    });
+        return {
+          id: `rec-${Date.now()}-${std.id}`,
+          sessionId: `sess-${selectedClass.id}-${sessionDate}`,
+          studentId: std.id,
+          status: finalStatus,
+          coachNote: note,
+          bookTitle: current?.hasBook ? (current?.bookTitle || STANDARD_BOOKS[0].title) : undefined,
+          bookPrice: current?.hasBook ? (Number(current?.bookPrice) || 0) : undefined,
+          lunchFee: current?.hasLunch ? (Number(current?.lunchFee) || 0) : undefined,
+          otherFeeTitle: current?.hasOther ? (current?.otherFeeTitle || "Phụ phí khác") : undefined,
+          otherFeePrice: current?.hasOther ? (Number(current?.otherFeePrice) || 0) : undefined,
+        };
+      });
 
     const existingIndex = dataStore.sessions.findIndex(
       (s) => s.classId === selectedClass.id && s.date === sessionDate
@@ -1360,6 +1386,16 @@ function AttendanceContent() {
                               {isMakeup && (
                                 <span className="inline-flex items-center gap-1 rounded bg-purple-100 border border-purple-300 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
                                   ✨ Học bù (1 buổi)
+                                </span>
+                              )}
+                              {records[std.id]?.notInOriginalSession && (
+                                <span className="inline-flex items-center gap-1 rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                  Mới vào lớp sau buổi này
+                                </span>
+                              )}
+                              {!records[std.id]?.notInOriginalSession && records[std.id]?.joinedLaterDate && (
+                                <span className="inline-flex items-center gap-1 rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                  Vào lớp từ {records[std.id].joinedLaterDate!.slice(8, 10)}/{records[std.id].joinedLaterDate!.slice(5, 7)}
                                 </span>
                               )}
                               {std.customFeePerSession && (
