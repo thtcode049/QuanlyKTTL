@@ -420,11 +420,44 @@ export default function ZaloParentSenderModal({
     }
   };
 
-  const sentCount = Object.keys(sentMap).length;
-  const unsentCount = Math.max(0, students.length - sentCount);
+  // Kiểm tra phụ huynh đã có SĐT hợp lệ chưa (>= 9 chữ số)
+  const hasValidParentPhone = (st: StudentParentInvoiceItem) => {
+    const digits = (st.cleanParentPhone || st.parentPhone || "").replace(/[^0-9]/g, "");
+    return digits.length >= 9;
+  };
+
+  // Helper chuyển StudentParentInvoiceItem -> InvoiceCardData
+  const toInvoiceCardData = (st: StudentParentInvoiceItem): InvoiceCardData => ({
+    studentCode: st.studentCode,
+    studentName: st.studentName,
+    className: st.className,
+    branchName: st.branchName,
+    month: st.month,
+    year: st.year,
+    presentCount: st.presentCount,
+    presentDates: st.presentDates,
+    feePerSession: st.feePerSession,
+    tuitionAmount: st.tuitionAmount,
+    surchargeAmount: st.surchargeAmount,
+    surcharges: st.surcharges,
+    totalAmount: st.totalAmount,
+    bankName: st.bankName,
+    bankAccount: st.bankAccount,
+    accountHolder: st.accountHolder,
+    transferContent: st.transferContent,
+    vietQrUrl: st.vietQrUrl,
+    customTitle: st.customTitle,
+    classList: st.classList,
+  });
+
+  const sendableStudents = students.filter(hasValidParentPhone);
+  const missingPhoneStudents = students.filter((st) => !hasValidParentPhone(st));
+
+  const sentCount = sendableStudents.filter((st) => !!sentMap[st.studentId]).length;
+  const unsentCount = Math.max(0, sendableStudents.length - sentCount);
   const totalAmount = students.reduce((sum, s) => sum + s.totalAmount, 0);
 
-  const filteredStudents = students.filter((st) => {
+  const filteredStudents = sendableStudents.filter((st) => {
     if (filterTab === "UNSENT") return !sentMap[st.studentId];
     if (filterTab === "SENT") return !!sentMap[st.studentId];
     return true;
@@ -448,7 +481,7 @@ export default function ZaloParentSenderModal({
         </div>
       )}
 
-      <div className="relative w-full max-w-5xl rounded-lg bg-white shadow-xl border border-slate-200 my-auto overflow-hidden flex flex-col max-h-[94vh]">
+      <div className="relative w-full max-w-7xl rounded-lg bg-white shadow-xl border border-slate-200 my-auto overflow-hidden flex flex-col max-h-[94vh]">
         {/* Header Modal */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-3.5">
           <div className="flex items-center gap-2.5">
@@ -703,7 +736,7 @@ export default function ZaloParentSenderModal({
         {/* Content Body */}
         <div className="overflow-y-auto p-4 sm:p-5 space-y-4 flex-1">
           {/* Banner Xác Nhận Đã Gửi Xong Cho Cả Lớp */}
-          {sentCount === students.length && (
+          {students.length > 0 && students.every((st) => !!sentMap[st.studentId]) && (
             <div className="rounded border border-emerald-300 bg-emerald-50/80 p-3.5 text-emerald-950 shadow-xs animate-in fade-in">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded bg-emerald-600 text-white shadow-xs flex-shrink-0">
@@ -714,20 +747,39 @@ export default function ZaloParentSenderModal({
                     🎉 Toàn Bộ Phụ Huynh Trong Lớp Đã Được Xác Nhận Gửi Thẻ Học Phí!
                   </h4>
                   <p className="text-[11px] text-emerald-700 mt-0.5">
-                    Đã hoàn tất gửi {sentCount}/{students.length} học viên tháng {month}/{year}. Toàn bộ thẻ học phí đã được chuyển tới phụ huynh.
+                    Đã hoàn tất gửi {students.length}/{students.length} học viên tháng {month}/{year}. Toàn bộ thẻ học phí đã được chuyển tới phụ huynh.
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Main Grid: Student List (Left) + Card Visual Preview (Right) */}
+          {/* Main 3-Column Grid: Sendable Students (5) + Missing Phone Students (3) + Card Visual Preview (4) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Left Column: Student List (7 cols) */}
-            <div className="lg:col-span-7 space-y-2.5">
+            {/* Column 1: Sendable Students List (5 cols) */}
+            <div className="lg:col-span-5 space-y-2.5">
               {/* Header with Filter Tabs & Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    📱 Gửi tự động — Có SĐT ({sendableStudents.length})
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={markAllStudentsAsSent}
+                      className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 transition-colors"
+                      title="Đánh dấu đã gửi thành công toàn bộ học viên bằng Tool"
+                    >
+                      Đánh dấu cả lớp
+                    </button>
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {formatCurrencyVND(totalAmount)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded w-fit">
                   <button
                     type="button"
                     onClick={() => setFilterTab("ALL")}
@@ -737,7 +789,7 @@ export default function ZaloParentSenderModal({
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    Tất cả ({students.length})
+                    Tất cả ({sendableStudents.length})
                   </button>
                   <button
                     type="button"
@@ -761,20 +813,6 @@ export default function ZaloParentSenderModal({
                   >
                     <span>✅ Đã gửi ({sentCount})</span>
                   </button>
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <button
-                    type="button"
-                    onClick={markAllStudentsAsSent}
-                    className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 transition-colors"
-                    title="Đánh dấu đã gửi thành công toàn bộ học viên bằng Tool"
-                  >
-                    Đánh dấu đã gửi cả lớp
-                  </button>
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    Tổng: {formatCurrencyVND(totalAmount)}
-                  </span>
                 </div>
               </div>
 
@@ -835,7 +873,7 @@ export default function ZaloParentSenderModal({
                                 </span>
                               ) : (
                                 <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-medium text-slate-500">
-                                  ⚪ Chờ gửi qua Tool
+                                  ⚪ Chờ gửi
                                 </span>
                               )}
                             </div>
@@ -888,17 +926,155 @@ export default function ZaloParentSenderModal({
                 {filteredStudents.length === 0 && (
                   <div className="rounded border border-dashed border-slate-200 p-8 text-center text-slate-400 text-xs">
                     {filterTab === "UNSENT"
-                      ? "Tuyệt vời! Toàn bộ phụ huynh đã nhận thẻ học phí."
+                      ? "Tuyệt vời! Toàn bộ phụ huynh có SĐT đã nhận thẻ học phí."
                       : filterTab === "SENT"
                       ? "Chưa có phụ huynh nào được gửi qua Tool trong tháng này."
-                      : "Không tìm thấy học sinh nào."}
+                      : "Không có học viên nào có SĐT."}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Right Column: Card Visual Preview & Download (5 cols) */}
-            <div className="lg:col-span-5 space-y-3">
+            {/* Column 2: Missing Phone Students Column for Manual Download & Messaging (3 cols) */}
+            <div className="lg:col-span-3 space-y-2.5">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-1.5">
+                  <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                    ⚠️ Học viên thiếu SĐT ({missingPhoneStudents.length})
+                  </h3>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-snug">
+                  Tải ảnh thẻ xuống để nhắn thủ công cho phụ huynh chưa có SĐT trên hệ thống.
+                </p>
+                {missingPhoneStudents.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        showToast(`⏳ Đang tạo ${missingPhoneStudents.length} ảnh thẻ PNG cho học viên thiếu SĐT...`);
+                        const cardList = missingPhoneStudents.map(toInvoiceCardData);
+                        const safeClass = (classroom?.name || "Lop").replace(/[^a-zA-Z0-9\-_]/g, "_");
+                        await batchExportInvoiceCardsAsZip(
+                          cardList,
+                          `KTTL_ThieuSDT_${safeClass}_T${month}_${year}.zip`,
+                          (curr, tot) => {
+                            if (curr === tot) {
+                              showToast(`✅ Đã tải ${tot} ảnh thẻ học viên thiếu SĐT (.zip)!`);
+                            }
+                          }
+                        );
+                      } catch (e) {
+                        showToast("Lỗi khi xuất bộ ảnh thiếu SĐT!");
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 rounded bg-amber-500 hover:bg-amber-400 px-2.5 py-1.5 text-xs font-bold text-slate-950 shadow-xs transition-all active:scale-95"
+                  >
+                    <FolderArchive className="h-3.5 w-3.5" />
+                    <span>Tải tất cả ảnh thiếu SĐT (.zip)</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                {missingPhoneStudents.map((st) => {
+                  const isSelected = previewStudent?.studentId === st.studentId;
+                  const sentTimeIso = sentMap[st.studentId];
+                  const isSent = !!sentTimeIso;
+
+                  return (
+                    <div
+                      key={st.studentId}
+                      onClick={() => setSelectedStudent(st)}
+                      className={`cursor-pointer rounded p-2.5 transition-all border ${
+                        isSelected
+                          ? "border-amber-500 bg-amber-50/70 ring-1 ring-amber-500"
+                          : isSent
+                          ? "border-emerald-200 bg-emerald-50/20 hover:border-emerald-300"
+                          : "border-amber-200 bg-amber-50/30 hover:border-amber-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                              {st.studentCode}
+                            </span>
+                            <h4 className="font-bold text-slate-900 text-xs truncate">
+                              {st.studentName}
+                            </h4>
+                          </div>
+                          <p className="mt-1 text-[11px] text-slate-600">
+                            {st.presentCount} buổi •{" "}
+                            <strong className="text-emerald-700">{formatCurrencyVND(st.totalAmount)}</strong>
+                          </p>
+                          <p className="text-[10px] text-rose-600 font-medium mt-0.5">
+                            {st.parentPhone?.trim() ? `SĐT chưa hợp lệ: ${st.parentPhone}` : "Chưa có SĐT phụ huynh"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        className="mt-2 flex items-center gap-1 flex-wrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            downloadInvoiceCardPng(toInvoiceCardData(st));
+                            showToast(`📥 Đã tải ảnh thẻ em ${st.studentName}!`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1 rounded bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-[11px] font-semibold text-white transition-colors"
+                          title="Tải ảnh thẻ PNG về máy để nhắn thủ công"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span>Tải ảnh</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await copyInvoiceCardToClipboard(toInvoiceCardData(st));
+                            showToast(ok ? `📋 Đã copy ảnh em ${st.studentName}!` : "Hãy dùng nút Tải ảnh!");
+                          }}
+                          className="flex items-center justify-center gap-1 rounded border border-slate-200 bg-white hover:bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 transition-colors"
+                          title="Sao chép ảnh thẻ vào Clipboard"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isSent) {
+                              unmarkStudentAsSent(st.studentId);
+                            } else {
+                              markStudentAsSent(st.studentId);
+                              showToast(`Đã đánh dấu đã nhắn em ${st.studentName}!`);
+                            }
+                          }}
+                          className={`flex items-center justify-center gap-1 rounded px-2 py-1 text-[11px] font-semibold border transition-colors ${
+                            isSent
+                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700"
+                          }`}
+                          title={isSent ? "Đã nhắn thủ công (bấm để hủy)" : "Đánh dấu đã nhắn thủ công"}
+                        >
+                          <Check className="h-3 w-3" />
+                          <span>{isSent ? "Đã nhắn" : "Xong"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {missingPhoneStudents.length === 0 && (
+                  <div className="rounded border border-dashed border-emerald-200 bg-emerald-50/30 p-6 text-center text-emerald-700 text-xs">
+                    ✅ Tất cả học viên trong danh sách đều đã có SĐT phụ huynh!
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Column 3: Card Visual Preview & Download (4 cols) */}
+            <div className="lg:col-span-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                   <ImageIcon className="h-3.5 w-3.5 text-emerald-600" />
@@ -1079,25 +1255,7 @@ export default function ZaloParentSenderModal({
                       <button
                         type="button"
                         onClick={async () => {
-                          const cardData: InvoiceCardData = {
-                            studentCode: previewStudent.studentCode,
-                            studentName: previewStudent.studentName,
-                            className: previewStudent.className,
-                            branchName: previewStudent.branchName,
-                            month: previewStudent.month,
-                            year: previewStudent.year,
-                            presentCount: previewStudent.presentCount,
-                            presentDates: previewStudent.presentDates,
-                            feePerSession: previewStudent.feePerSession,
-                            totalAmount: previewStudent.totalAmount,
-                            bankName: previewStudent.bankName,
-                            bankAccount: previewStudent.bankAccount,
-                            accountHolder: previewStudent.accountHolder,
-                            transferContent: previewStudent.transferContent,
-                            vietQrUrl: previewStudent.vietQrUrl,
-                            classList: previewStudent.classList,
-                          };
-                          const success = await copyInvoiceCardToClipboard(cardData);
+                          const success = await copyInvoiceCardToClipboard(toInvoiceCardData(previewStudent));
                           if (success) {
                             showToast(`📋 Đã chép ảnh thẻ em ${previewStudent.studentName} vào Clipboard!`);
                           } else {
@@ -1113,25 +1271,7 @@ export default function ZaloParentSenderModal({
                       <button
                         type="button"
                         onClick={() => {
-                          const cardData: InvoiceCardData = {
-                            studentCode: previewStudent.studentCode,
-                            studentName: previewStudent.studentName,
-                            className: previewStudent.className,
-                            branchName: previewStudent.branchName,
-                            month: previewStudent.month,
-                            year: previewStudent.year,
-                            presentCount: previewStudent.presentCount,
-                            presentDates: previewStudent.presentDates,
-                            feePerSession: previewStudent.feePerSession,
-                            totalAmount: previewStudent.totalAmount,
-                            bankName: previewStudent.bankName,
-                            bankAccount: previewStudent.bankAccount,
-                            accountHolder: previewStudent.accountHolder,
-                            transferContent: previewStudent.transferContent,
-                            vietQrUrl: previewStudent.vietQrUrl,
-                            classList: previewStudent.classList,
-                          };
-                          downloadInvoiceCardPng(cardData);
+                          downloadInvoiceCardPng(toInvoiceCardData(previewStudent));
                           showToast(`📥 Đã tải ảnh PNG thẻ học phí em ${previewStudent.studentName}!`);
                         }}
                         className="flex items-center justify-center gap-1 rounded border border-emerald-300 bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-98 transition-all shadow-xs"

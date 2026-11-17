@@ -16,6 +16,7 @@ import os
 import queue
 import random
 import re
+import shutil
 import sys
 import threading
 import time
@@ -130,6 +131,14 @@ def normalize_phone(raw: str) -> str | None:
         return None
     m = PHONE_NORMAL_RE.match(re.sub(r"\D", "", str(raw)))
     return "0" + m.group(1) if m else None
+
+
+def has_valid_phone(item: dict) -> bool:
+    """Kiểm tra học viên đã có SĐT phụ huynh hợp lệ để gửi tự động chưa."""
+    clean = re.sub(r"\D", "", str(item.get("cleanParentPhone") or ""))
+    if len(clean) >= 9 and normalize_phone(clean):
+        return True
+    return normalize_phone(item.get("parentPhone", "")) is not None
 
 
 def spin(text: str) -> str:
@@ -662,6 +671,8 @@ class ZaloWorker(threading.Thread):
                             self._ensure_logged_in()
                         elif cmd == "render_card":
                             self._render_single_card(**kw)
+                        elif cmd == "export_cards":
+                            self._export_cards_batch(**kw)
                         elif cmd == "send_cards":
                             self._send_cards_batch(**kw)
                         elif cmd == "send_text":
@@ -837,11 +848,34 @@ class ZaloWorker(threading.Thread):
 
     def _render_single_card(self, item: dict):
         try:
-            self._ensure_page()
             path = self.render_card_image(item)
             self.emit("card_rendered", {"studentCode": item.get("studentCode"), "path": str(path)})
         except Exception as e:
             self.log(f"Lỗi tạo ảnh cho {item.get('studentName')}: {e}", "error")
+
+    def _export_cards_batch(self, items: list[dict], dest_dir: str):
+        dest = Path(dest_dir)
+        dest.mkdir(parents=True, exist_ok=True)
+        total = len(items)
+        saved_paths: list[str] = []
+        for idx, item in enumerate(items, 1):
+            if self.stop_event.is_set():
+                break
+            name = item.get("studentName", "HocVien")
+            code = item.get("studentCode", "HS")
+            month = item.get("month", datetime.now().month)
+            year = item.get("year", datetime.now().year)
+            self.emit("status", f"[{idx}/{total}] Đang tạo ảnh tải xuống cho {name}...")
+            try:
+                src_path = self.render_card_image(item)
+                clean_name = re.sub(r"[^\w\d_-]", "_", name)
+                out_file = dest / f"{code}_{clean_name}_T{month}_{year}.png"
+                shutil.copy2(src_path, out_file)
+                saved_paths.append(str(out_file))
+                self.emit("card_rendered", {"studentCode": code, "path": str(src_path)})
+            except Exception as e:
+                self.log(f"Lỗi xuất ảnh {name}: {e}", "error")
+        self.emit("cards_exported", {"count": len(saved_paths), "dest_dir": str(dest)})
 
     # --- TÌM KIẾM VÀ MỞ CHAT VỚI SĐT (ĐA TẦNG, AN TOÀN TUYỆT ĐỐI) ---
     def _open_chat_by_phone(self, phone: str, timeout: float = 8.0) -> bool:
@@ -1204,8 +1238,8 @@ class App(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         self.title("Zalo Bulk Sender • CLB Cờ vua Kiện Tướng Tương Lai")
-        self.geometry("1240x840")
-        self.minsize(1050, 720)
+        self.geometry("1380x860")
+        self.minsize(1140, 740)
 
         register_windows_protocol()
 
@@ -1216,6 +1250,8 @@ class App(ctk.CTk):
         self.busy = False
         self.all_invoice_items: list[dict] = []
         self.invoice_items: list[dict] = []
+        self.sendable_items: list[dict] = []
+        self.missing_phone_items: list[dict] = []
         self.selected_item: dict | None = None
         self.preview_image_path: Path | None = None
         self.counts = {"OK": 0, "NOT_FOUND": 0, "ERROR": 0, "NO_PHONE": 0}
@@ -1312,13 +1348,14 @@ class App(ctk.CTk):
 
     # ---------- TAB 1: GỬI THẺ BÁO HỌC PHÍ ----------
     def _build_invoices_tab(self, tab):
-        tab.grid_columnconfigure(0, weight=6)
-        tab.grid_columnconfigure(1, weight=4)
+        tab.grid_columnconfigure(0, weight=4)
+        tab.grid_columnconfigure(1, weight=3)
+        tab.grid_columnconfigure(2, weight=4)
         tab.grid_rowconfigure(1, weight=1)
 
         # Thanh công cụ nạp file
         toolbar = ctk.CTkFrame(tab, fg_color="transparent")
-        toolbar.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        toolbar.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 8))
 
         ctk.CTkButton(toolbar, text="📂 Mở file dữ liệu học phí (.json / .xlsx)", command=self._open_file_dialog,
                       fg_color="#7c3aed", hover_color="#8b5cf6", height=32, corner_radius=8, font=self.f_h).pack(side="left")
@@ -1340,18 +1377,49 @@ class App(ctk.CTk):
         self.lbl_class_info = ctk.CTkLabel(toolbar, text="Chưa nạp danh sách học sinh nào.", font=self.f_body, text_color=C_MUTED)
         self.lbl_class_info.pack(side="left", padx=8)
 
-        # Cột trái: Danh sách học viên
+        # Cột 1: Danh sách học viên có SĐT (gửi tự động)
         left_box = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
-        left_box.grid(row=1, column=0, sticky="nsew", padx=(0, 6))
+        left_box.grid(row=1, column=0, sticky="nsew", padx=(0, 5))
         left_box.grid_columnconfigure(0, weight=1)
-        left_box.grid_rowconfigure(0, weight=1)
+        left_box.grid_rowconfigure(1, weight=1)
+
+        self.lbl_sendable_hdr = ctk.CTkLabel(
+            left_box, text="📱 Gửi tự động — Có SĐT (0)", font=self.f_h, text_color="#e6edf7"
+        )
+        self.lbl_sendable_hdr.grid(row=0, column=0, sticky="w", padx=12, pady=(8, 4))
 
         self.scroll_students = ctk.CTkScrollableFrame(left_box, fg_color="transparent")
-        self.scroll_students.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+        self.scroll_students.grid(row=1, column=0, sticky="nsew", padx=4, pady=4)
 
-        # Cột phải: Xem trước thẻ ảnh
+        # Cột 2: Học viên thiếu SĐT (tải ảnh để nhắn thủ công)
+        mid_box = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=10, border_width=1, border_color="#78350f")
+        mid_box.grid(row=1, column=1, sticky="nsew", padx=5)
+        mid_box.grid_columnconfigure(0, weight=1)
+        mid_box.grid_rowconfigure(2, weight=1)
+
+        self.lbl_missing_hdr = ctk.CTkLabel(
+            mid_box, text="⚠️ Học viên thiếu SĐT (0)", font=self.f_h, text_color=C_WARN
+        )
+        self.lbl_missing_hdr.grid(row=0, column=0, sticky="w", padx=12, pady=(8, 2))
+
+        self.b_export_missing = ctk.CTkButton(
+            mid_box,
+            text="💾 Tải tất cả ảnh thiếu SĐT",
+            command=self._download_all_missing_phone_cards,
+            fg_color="#b45309",
+            hover_color=C_WARN,
+            height=30,
+            corner_radius=8,
+            font=self.f_body,
+        )
+        self.b_export_missing.grid(row=1, column=0, sticky="ew", padx=10, pady=(2, 6))
+
+        self.scroll_missing_phone = ctk.CTkScrollableFrame(mid_box, fg_color="transparent")
+        self.scroll_missing_phone.grid(row=2, column=0, sticky="nsew", padx=4, pady=4)
+
+        # Cột 3: Xem trước thẻ ảnh & Lưu ảnh
         right_box = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
-        right_box.grid(row=1, column=1, sticky="nsew", padx=(6, 0))
+        right_box.grid(row=1, column=2, sticky="nsew", padx=(5, 0))
         right_box.grid_columnconfigure(0, weight=1)
         right_box.grid_rowconfigure(1, weight=1)
 
@@ -1362,10 +1430,22 @@ class App(ctk.CTk):
                                            font=self.f_body, text_color=C_MUTED)
         self.lbl_preview_img.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Nút render thẻ đang chọn
-        self.b_render_preview = ctk.CTkButton(right_box, text="🎨 Render ảnh học viên này", command=self._render_current_preview,
-                                             fg_color="#334155", hover_color="#475569", height=32, corner_radius=8)
-        self.b_render_preview.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 10))
+        preview_actions = ctk.CTkFrame(right_box, fg_color="transparent")
+        preview_actions.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 10))
+        preview_actions.grid_columnconfigure(0, weight=1)
+        preview_actions.grid_columnconfigure(1, weight=1)
+
+        self.b_render_preview = ctk.CTkButton(
+            preview_actions, text="🎨 Render xem trước", command=self._render_current_preview,
+            fg_color="#334155", hover_color="#475569", height=32, corner_radius=8
+        )
+        self.b_render_preview.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+
+        self.b_save_preview = ctk.CTkButton(
+            preview_actions, text="💾 Tải ảnh về máy", command=self._download_current_preview,
+            fg_color="#059669", hover_color="#10b981", height=32, corner_radius=8
+        )
+        self.b_save_preview.grid(row=0, column=1, sticky="ew", padx=(4, 0))
 
     # ---------- TAB 2: GỬI TIN NHẮN TEXT (SPINTAX) ----------
     def _build_text_tab(self, tab):
@@ -1490,6 +1570,9 @@ class App(ctk.CTk):
         else:
             self.invoice_items = list(self.all_invoice_items)
 
+        self.sendable_items = [s for s in self.invoice_items if has_valid_phone(s)]
+        self.missing_phone_items = [s for s in self.invoice_items if not has_valid_phone(s)]
+
         first = self.invoice_items[0] if self.invoice_items else (self.all_invoice_items[0] if self.all_invoice_items else {})
         cls_name = getattr(self, "_loaded_bundle_class", "") or first.get("className", "")
         if len(cls_name) > 36:
@@ -1497,12 +1580,24 @@ class App(ctk.CTk):
         m = first.get("month", "")
         y = first.get("year", "")
         total_money = format_money(sum(float(s.get("totalAmount") or 0) for s in self.invoice_items))
-        info_str = f"{cls_name + ' • ' if cls_name else ''}Tháng {m}/{y} • {len(self.invoice_items)} HV ({total_money})"
+        info_str = (
+            f"{cls_name + ' • ' if cls_name else ''}Tháng {m}/{y} • "
+            f"{len(self.sendable_items)} có SĐT / {len(self.missing_phone_items)} thiếu SĐT ({total_money})"
+        )
         self.lbl_class_info.configure(text=info_str, text_color=C_OK if self.invoice_items else C_WARN)
+        self.lbl_sendable_hdr.configure(text=f"📱 Gửi tự động — Có SĐT ({len(self.sendable_items)})")
+        self.lbl_missing_hdr.configure(text=f"⚠️ Học viên thiếu SĐT ({len(self.missing_phone_items)})")
+        self.b_export_missing.configure(
+            state="normal" if self.missing_phone_items else "disabled",
+            text=f"💾 Tải tất cả ảnh thiếu SĐT ({len(self.missing_phone_items)})",
+        )
 
         self._render_students_list()
-        if self.invoice_items:
-            self._select_student(self.invoice_items[0])
+        self._render_missing_phone_list()
+        if self.sendable_items:
+            self._select_student(self.sendable_items[0])
+        elif self.missing_phone_items:
+            self._select_student(self.missing_phone_items[0])
         else:
             self.selected_item = None
             self.lbl_preview_img.configure(image="", text="Không có học viên nào khớp bộ lọc.")
@@ -1511,7 +1606,16 @@ class App(ctk.CTk):
         for w in self.scroll_students.winfo_children():
             w.destroy()
 
-        for item in self.invoice_items:
+        if not self.sendable_items:
+            ctk.CTkLabel(
+                self.scroll_students,
+                text="Không có học viên nào có SĐT để gửi tự động.",
+                font=self.f_body,
+                text_color=C_MUTED,
+            ).pack(pady=24)
+            return
+
+        for item in self.sendable_items:
             f = ctk.CTkFrame(self.scroll_students, fg_color=C_CARD, corner_radius=8, border_width=1, border_color=C_BORDER)
             f.pack(fill="x", padx=2, pady=3)
 
@@ -1541,6 +1645,86 @@ class App(ctk.CTk):
             f.bind("<Button-1>", lambda e, it=item: self._select_student(it))
             for child in (badge, info):
                 child.bind("<Button-1>", lambda e, it=item: self._select_student(it))
+
+    def _render_missing_phone_list(self):
+        for w in self.scroll_missing_phone.winfo_children():
+            w.destroy()
+
+        if not self.missing_phone_items:
+            ctk.CTkLabel(
+                self.scroll_missing_phone,
+                text="✅ Tất cả học viên đều đã có SĐT!",
+                font=self.f_body,
+                text_color=C_OK,
+            ).pack(pady=24)
+            return
+
+        for item in self.missing_phone_items:
+            f = ctk.CTkFrame(
+                self.scroll_missing_phone,
+                fg_color="#1f1a14",
+                corner_radius=8,
+                border_width=1,
+                border_color="#78350f",
+            )
+            f.pack(fill="x", padx=2, pady=3)
+
+            name = item.get("studentName", "")
+            code = item.get("studentCode", "")
+            amount = format_money(item.get("totalAmount", 0))
+            count = item.get("presentCount", 0)
+            raw_phone = str(item.get("parentPhone") or "").strip()
+            phone_note = f"SĐT lỗi: {raw_phone}" if raw_phone else "Chưa có SĐT phụ huynh"
+
+            info = ctk.CTkFrame(f, fg_color="transparent")
+            info.pack(side="left", fill="x", expand=True, padx=8, pady=6)
+            ctk.CTkLabel(info, text=f"{name} ({code})", font=self.f_h, text_color="#fef3c7", anchor="w").pack(fill="x")
+            ctk.CTkLabel(info, text=f"{count} buổi • {amount} | {phone_note}",
+                         font=self.f_body, text_color="#fbbf24", anchor="w").pack(fill="x")
+
+            btn_dl = ctk.CTkButton(
+                f,
+                text="💾 Tải ảnh",
+                width=78,
+                height=28,
+                corner_radius=6,
+                fg_color="#059669",
+                hover_color="#10b981",
+                font=self.f_body,
+                command=lambda it=item: self._download_single_card(it),
+            )
+            btn_dl.pack(side="right", padx=8, pady=8)
+
+            f.bind("<Button-1>", lambda e, it=item: self._select_student(it))
+            info.bind("<Button-1>", lambda e, it=item: self._select_student(it))
+
+    def _get_missing_export_dir(self, items: list[dict]) -> Path:
+        first = items[0] if items else {}
+        m = first.get("month", datetime.now().month)
+        y = first.get("year", datetime.now().year)
+        return Path.home() / "Downloads" / f"KTTL_ThieuSDT_T{m}_{y}"
+
+    def _download_single_card(self, item: dict):
+        self._select_student(item)
+        dest_dir = self._get_missing_export_dir([item])
+        self.log(f"Đang xuất ảnh thẻ cho em {item.get('studentName')}...", "info")
+        self.worker.submit("export_cards", items=[item], dest_dir=str(dest_dir))
+
+    def _download_current_preview(self):
+        if not self.selected_item:
+            messagebox.showinfo("Chưa chọn học viên", "Hãy chọn một học viên để tải ảnh.")
+            return
+        dest_dir = Path.home() / "Downloads"
+        self.log(f"Đang lưu ảnh thẻ em {self.selected_item.get('studentName')} vào Downloads...", "info")
+        self.worker.submit("export_cards", items=[self.selected_item], dest_dir=str(dest_dir))
+
+    def _download_all_missing_phone_cards(self):
+        if not self.missing_phone_items:
+            messagebox.showinfo("Thông báo", "Không có học viên nào thiếu SĐT.")
+            return
+        dest_dir = self._get_missing_export_dir(self.missing_phone_items)
+        self.log(f"Đang xuất {len(self.missing_phone_items)} ảnh thẻ thiếu SĐT vào {dest_dir}...", "info")
+        self.worker.submit("export_cards", items=self.missing_phone_items, dest_dir=str(dest_dir))
 
     def _select_student(self, item: dict):
         self.selected_item = item
@@ -1587,12 +1771,21 @@ class App(ctk.CTk):
             if not self.invoice_items:
                 messagebox.showwarning("Thiếu dữ liệu", "Chưa có danh sách học sinh. Hãy nạp file từ Web hoặc Downloads.")
                 return
-            if not messagebox.askyesno("Xác nhận gửi", f"Gửi Thẻ Báo Học Phí dạng ảnh cho {len(self.invoice_items)} phụ huynh?"):
+            if not self.sendable_items:
+                messagebox.showwarning(
+                    "Không có SĐT hợp lệ",
+                    "Tất cả học viên hiện tại đều thiếu SĐT. Hãy dùng cột 'Học viên thiếu SĐT' để tải ảnh xuống và nhắn thủ công.",
+                )
+                return
+            confirm_msg = f"Gửi Thẻ Báo Học Phí tự động cho {len(self.sendable_items)} phụ huynh có SĐT?"
+            if self.missing_phone_items:
+                confirm_msg += f"\n\n(Lưu ý: {len(self.missing_phone_items)} học viên thiếu SĐT đã được tách riêng sang cột giữa để bạn tải ảnh gửi thủ công.)"
+            if not messagebox.askyesno("Xác nhận gửi", confirm_msg):
                 return
             self._set_busy(True)
             self.worker.stop_event.clear()
             self.worker.pause_event.clear()
-            self.worker.submit("send_cards", items=self.invoice_items, cfg=cfg)
+            self.worker.submit("send_cards", items=self.sendable_items, cfg=cfg)
         else:
             phones_text = self.txt_text_phones.get("1.0", "end")
             phones, _, _ = parse_phones(phones_text)
@@ -1658,6 +1851,16 @@ class App(ctk.CTk):
                 elif kind == "card_rendered":
                     if self.selected_item and self.selected_item.get("studentCode") == p.get("studentCode"):
                         self._display_preview_image(Path(p.get("path")))
+                elif kind == "cards_exported":
+                    cnt = p.get("count", 0)
+                    dest_dir = p.get("dest_dir", "")
+                    self.log(f"Đã tải xuống {cnt} ảnh thẻ vào: {dest_dir}", "ok")
+                    self.lbl_status.configure(text=f"Đã lưu {cnt} ảnh thẻ vào {dest_dir}")
+                    try:
+                        if sys.platform == "win32" and dest_dir:
+                            os.startfile(dest_dir)
+                    except Exception:
+                        pass
                 elif kind == "result":
                     i, total = p["i"], p["total"]
                     self.progress.set(i / total)
