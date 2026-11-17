@@ -281,16 +281,16 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: true, message: "Đã xóa học sinh khỏi lớp thành công" });
     }
 
-    // Nếu không truyền classId -> Xóa hoàn toàn học sinh
+    // Nếu không truyền classId -> Xóa mềm ở hồ sơ (giữ lại lịch sử điểm danh và học phí các tháng trước)
     await prisma.classStudent.deleteMany({ where: { studentId: id } });
-    await prisma.attendanceRecord.deleteMany({ where: { studentId: id } });
-    await prisma.monthlyInvoice.deleteMany({ where: { studentId: id } });
-    await prisma.studentEvaluation.deleteMany({ where: { studentId: id } });
-    await prisma.student.delete({ where: { id } }).catch((err) => {
+    await prisma.student.update({
+      where: { id },
+      data: { status: "DELETED" },
+    }).catch((err) => {
       console.warn("Học sinh có thể đã bị xóa trước đó:", err);
     });
 
-    return NextResponse.json({ success: true, message: "Đã xóa học sinh thành công" });
+    return NextResponse.json({ success: true, message: "Đã xóa học sinh khỏi hệ thống (bảo lưu lịch sử)" });
   } catch (error: any) {
     console.error("Lỗi DELETE /api/students:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

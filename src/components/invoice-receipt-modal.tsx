@@ -98,7 +98,8 @@ export default function InvoiceReceiptModal({
     window.print();
   };
 
-  const hasMultipleClasses = Boolean(data.classList && data.classList.length > 1);
+  const activeClassList = (data.classList || []).filter((c) => c.presentCount > 0);
+  const hasMultipleClasses = activeClassList.length > 1;
 
   return (
     <>
@@ -273,7 +274,7 @@ export default function InvoiceReceiptModal({
               {hasMultipleClasses && (
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Chi tiết các lớp tham gia ({data.classList!.length} lớp):
+                    Chi tiết các lớp tham gia ({activeClassList.length} lớp):
                   </h4>
                   <div className="border border-slate-200 rounded-lg overflow-hidden text-xs">
                     <table className="w-full text-left">
@@ -287,7 +288,7 @@ export default function InvoiceReceiptModal({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {data.classList!.map((cls, idx) => (
+                        {activeClassList.map((cls, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50">
                             <td className="p-2.5 font-medium text-slate-800">{cls.className}</td>
                             <td className="p-2.5 text-center font-bold text-slate-700">{cls.presentCount}</td>

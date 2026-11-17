@@ -92,8 +92,8 @@ export default function AdminDashboardPage() {
 
   // Tổng số học viên
   const activeStudentsCount = selectedBranchId === "ALL"
-    ? dataStore.students.length
-    : dataStore.students.filter((s) => s.classIds.some((cid) => branchClassIds.has(cid))).length;
+    ? dataStore.students.filter((s) => s.status !== "DELETED").length
+    : dataStore.students.filter((s) => s.status !== "DELETED" && s.classIds.some((cid) => branchClassIds.has(cid))).length;
   const activeClassesCount = branchClasses.length;
   const coachesCount = selectedBranchId === "ALL"
     ? dataStore.users.filter((u) => u.role === "COACH").length
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
       paid,
       pending: revenue - paid,
       studentsCount: dataStore.students.filter((s) =>
-        s.classIds.some((cid) => bClasses.includes(cid))
+        s.status !== "DELETED" && s.classIds.some((cid) => bClasses.includes(cid))
       ).length,
     };
   });

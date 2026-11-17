@@ -428,12 +428,16 @@ export default function CoachClassesPage() {
   };
 
   const handleRemoveStudentFromClass = async (student: StudentData) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi lớp này không?`)) {
+    if (
+      window.confirm(
+        `Bạn có chắc chắn muốn bỏ học viên "${student.fullName}" khỏi lớp này không?\n(Hồ sơ học viên vẫn được giữ lại trong mục Hồ Sơ Học Viên)`
+      )
+    ) {
       await dataStore.deleteStudent(student.id, selectedClass.id);
       const myClasses = getCoachClasses(currentCoachId, currentCoachEmail);
       const myClassIds = myClasses.map((c) => c.id);
-      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
-      showToast(`Đã xóa học viên ${student.fullName} khỏi lớp!`);
+      setStudents(dataStore.students.filter((s) => s.status !== "DELETED" && s.classIds.some((cid) => myClassIds.includes(cid))));
+      showToast(`Đã bỏ học viên ${student.fullName} khỏi lớp (hồ sơ vẫn được giữ lại)!`);
     }
   };
 
@@ -513,7 +517,7 @@ export default function CoachClassesPage() {
               const isSelected = cls.id === selectedClass?.id;
               const isPrivate = cls.branchId === "branch-private" || cls.shareWithAdmin === false;
               const branchDisplayName = getClassBranchName(cls) || "Cơ sở Hà Nội";
-              const studentCount = dataStore.students.filter((s) => s.classIds.includes(cls.id)).length;
+              const studentCount = dataStore.students.filter((s) => s.status !== "DELETED" && s.classIds.includes(cls.id)).length;
 
               return (
                 <div
@@ -1128,7 +1132,7 @@ export default function CoachClassesPage() {
                 }`}
               >
                 <Users className="h-3.5 w-3.5 text-brand-primary" />
-                <span>Có Sẵn ({dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length})</span>
+                <span>Có Sẵn ({dataStore.students.filter((s) => s.status !== "DELETED" && !s.classIds.includes(selectedClass?.id || "")).length})</span>
               </button>
 
               <button
@@ -1178,7 +1182,7 @@ export default function CoachClassesPage() {
 
                 <div className="max-h-64 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100">
                   {dataStore.students
-                    .filter((s) => !s.classIds.includes(selectedClass?.id || ""))
+                    .filter((s) => s.status !== "DELETED" && !s.classIds.includes(selectedClass?.id || ""))
                     .filter(
                       (s) =>
                         s.fullName.toLowerCase().includes(existingSearch.toLowerCase()) ||
@@ -1233,7 +1237,7 @@ export default function CoachClassesPage() {
                         );
                       })}
 
-                    {dataStore.students.filter((s) => !s.classIds.includes(selectedClass?.id || "")).length === 0 && (
+                    {dataStore.students.filter((s) => s.status !== "DELETED" && !s.classIds.includes(selectedClass?.id || "")).length === 0 && (
                       <div className="py-8 text-center text-xs text-slate-500">
                         Tất cả học viên trong CLB đã được ghi danh vào lớp này.
                       </div>
@@ -1302,7 +1306,7 @@ export default function CoachClassesPage() {
                       className="mt-1 w-full rounded border border-slate-200 p-2 focus:border-brand-primary focus:outline-none font-mono"
                     />
                     {newParentPhone.trim().length >= 8 &&
-                      dataStore.students.some((s) => s.parentPhone.includes(newParentPhone.trim())) && (
+                      dataStore.students.some((s) => s.status !== "DELETED" && s.parentPhone.includes(newParentPhone.trim())) && (
                         <div className="mt-1.5 rounded bg-amber-50 p-2 text-[11px] text-amber-800 border border-amber-200 flex items-center justify-between">
                           <span>
                             ℹ️ Phát hiện SĐT này đã có học viên trong CLB.

@@ -43,12 +43,19 @@ import { BatchImportStudentsModal } from "@/components/batch-import-students-mod
 export default function StudentsDirectoryPage() {
   const { message, modal } = App.useApp();
   const [currentCoachId, setCurrentCoachId] = useState<string>("");
+  const [currentCoachEmail, setCurrentCoachEmail] = useState<string>("");
   const [coachClasses, setCoachClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClass, setFilterClass] = useState("ALL");
   const [filterLevel, setFilterLevel] = useState("ALL");
   const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
+
+  const refreshCoachStudents = (coachId = currentCoachId, coachEmail = currentCoachEmail) => {
+    const myClasses = getCoachClasses(coachId, coachEmail);
+    setCoachClasses(myClasses);
+    setStudents(getCoachStudents(coachId, coachEmail));
+  };
 
   // Tải danh sách lớp và học viên của riêng HLV này
   useEffect(() => {
@@ -63,12 +70,10 @@ export default function StudentsDirectoryPage() {
       } catch (e) {}
     }
     setCurrentCoachId(coachId);
+    setCurrentCoachEmail(coachEmail);
 
     const updateDisplay = () => {
-      const myClasses = getCoachClasses(coachId, coachEmail);
-      setCoachClasses(myClasses);
-      const myStudents = getCoachStudents(coachId, coachEmail);
-      setStudents(myStudents);
+      refreshCoachStudents(coachId, coachEmail);
     };
 
     updateDisplay();
@@ -130,8 +135,7 @@ export default function StudentsDirectoryPage() {
   };
 
   const handleStudentUpdated = (updated: StudentData) => {
-    const myClassIds = coachClasses.map((c) => c.id);
-    setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
+    refreshCoachStudents();
     setSelectedStudent(updated);
     message.success(`Đã cập nhật hồ sơ học viên ${updated.fullName}!`);
   };
@@ -153,15 +157,14 @@ export default function StudentsDirectoryPage() {
 
   const handleRemoveStudent = (student: StudentData) => {
     modal.confirm({
-      title: "Xác nhận xóa học viên",
-      content: `Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi hệ thống không?`,
+      title: "Xác nhận xóa vĩnh viễn học viên",
+      content: `Bạn có chắc chắn muốn xóa học viên "${student.fullName}" khỏi hệ thống không? Học viên sẽ bị gỡ khỏi mọi lớp và danh sách CLB (lịch sử điểm danh và học phí các tháng trước vẫn được bảo lưu).`,
       okText: "Xác nhận xóa",
       okType: "danger",
       cancelText: "Hủy",
       async onOk() {
         await dataStore.deleteStudent(student.id);
-        const myClassIds = coachClasses.map((c) => c.id);
-        setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
+        refreshCoachStudents();
         message.success(`Đã xóa học viên ${student.fullName}!`);
       },
     });
@@ -176,8 +179,7 @@ export default function StudentsDirectoryPage() {
     if (input !== null) {
       const parsed = parseFloat(input.trim());
       await dataStore.updateStudentFee(student.id, isNaN(parsed) || parsed <= 0 ? null : parsed);
-      const myClassIds = coachClasses.map((c) => c.id);
-      setStudents(dataStore.students.filter((s) => s.classIds.some((cid) => myClassIds.includes(cid))));
+      refreshCoachStudents();
       message.success(`Đã cập nhật học phí học viên ${student.fullName}!`);
     }
   };

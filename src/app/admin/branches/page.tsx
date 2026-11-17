@@ -231,7 +231,7 @@ export default function AdminBranchesAndClassesPage() {
                 selectedBranchId === "all" ? "border-white/20 text-emerald-100" : "border-slate-100 text-slate-600"
               }`}>
                 <span>{classes.length} lớp học</span>
-                <span>{dataStore.students.length} học viên</span>
+                <span>{dataStore.students.filter((s) => s.status !== "DELETED").length} học viên</span>
               </div>
             </div>
           )}
@@ -243,7 +243,7 @@ export default function AdminBranchesAndClassesPage() {
             const branchClasses = classes.filter((c) => c.branchId === b.id);
             const branchClassIds = branchClasses.map((c) => c.id);
             const studentCount = dataStore.students.filter((s) =>
-              s.classIds.some((cid) => branchClassIds.includes(cid))
+              s.status !== "DELETED" && s.classIds.some((cid) => branchClassIds.includes(cid))
             ).length;
 
             return (
@@ -367,7 +367,7 @@ export default function AdminBranchesAndClassesPage() {
                   u.id === cls.coachId ||
                   resolveCanonicalCoachId(u.id || u.email) === resolveCanonicalCoachId(cls.coachId)
               );
-              const students = dataStore.students.filter((s) => s.classIds.includes(cls.id));
+              const students = dataStore.students.filter((s) => s.status !== "DELETED" && s.classIds.includes(cls.id));
               const sessions = dataStore.sessions.filter((s) => s.classId === cls.id);
 
               return (

@@ -211,19 +211,21 @@ function InvoicesContent() {
     );
 
     if (includeOtherClasses && studentInvsInMonth.length > 1) {
-      const classList: InvoiceClassItem[] = studentInvsInMonth.map((otherInv) => {
-        const cls =
-          classes.find((c) => c.id === otherInv.classId) ||
-          dataStore.classes.find((c) => c.id === otherInv.classId);
-        return {
-          className: cls?.name || "Lớp học",
-          branchName: getClassBranchName(cls),
-          presentCount: otherInv.presentCount,
-          presentDates: getPresentDatesForStudent(student.id, otherInv.classId),
-          feePerSession: otherInv.feePerSession,
-          totalAmount: otherInv.totalAmount,
-        };
-      });
+      const classList: InvoiceClassItem[] = studentInvsInMonth
+        .filter((otherInv) => otherInv.presentCount > 0)
+        .map((otherInv) => {
+          const cls =
+            classes.find((c) => c.id === otherInv.classId) ||
+            dataStore.classes.find((c) => c.id === otherInv.classId);
+          return {
+            className: cls?.name || "Lớp học",
+            branchName: getClassBranchName(cls),
+            presentCount: otherInv.presentCount,
+            presentDates: getPresentDatesForStudent(student.id, otherInv.classId),
+            feePerSession: otherInv.feePerSession,
+            totalAmount: otherInv.totalAmount,
+          };
+        });
       const totalAmount = studentInvsInMonth.reduce((s, i) => s + i.totalAmount, 0);
       const totalPresent = studentInvsInMonth.reduce((s, i) => s + i.presentCount, 0);
       const totalTuition = studentInvsInMonth.reduce((s, i) => s + (i.tuitionAmount ?? (i.presentCount * i.feePerSession)), 0);
@@ -231,6 +233,13 @@ function InvoicesContent() {
       const allSurcharges = studentInvsInMonth.flatMap((i) => i.surcharges || []);
       const allDates = classList.flatMap((c) => c.presentDates);
       const classNames = classList.map((c) => c.className).join(", ");
+      const displayClassName =
+        classList.length === 1
+          ? classList[0].className
+          : classList.length > 1
+            ? `Tổng hợp ${classList.length} lớp (${classNames})`
+            : targetClass?.name || "";
+      const displayFeePerSession = classList.length === 1 ? classList[0].feePerSession : 0;
 
       const vietQrUrl =
         bank.useCustomQr && bank.customQrImage
@@ -248,13 +257,13 @@ function InvoicesContent() {
       return {
         studentCode: student.code,
         studentName: student.fullName,
-        className: `Tổng hợp ${classList.length} lớp (${classNames})`,
-        branchName: targetBranchName,
+        className: displayClassName,
+        branchName: classList.length === 1 ? (classList[0].branchName || targetBranchName) : targetBranchName,
         month: selectedMonth,
         year: selectedYear,
         presentCount: totalPresent,
         presentDates: allDates,
-        feePerSession: 0,
+        feePerSession: displayFeePerSession,
         tuitionAmount: totalTuition,
         surchargeAmount: totalSurcharges,
         surcharges: allSurcharges,
@@ -305,14 +314,15 @@ function InvoicesContent() {
 
   // Helper tạo dữ liệu thẻ học phí gộp cho học sinh học nhiều lớp
   const buildAggregatedInvoiceCardData = (agg: AggregatedStudentInvoice): InvoiceCardData => {
-    const primaryClass = agg.classItems[0];
+    const activeClassItems = agg.classItems.filter((c) => c.presentCount > 0);
+    const primaryClass = activeClassItems[0] || agg.classItems[0];
     const targetCls =
       classes.find((c) => c.id === primaryClass?.classId) ||
       dataStore.classes.find((c) => c.id === primaryClass?.classId);
     const classCoachId = targetCls?.coachId || currentCoachId;
     const bank = dataStore.getCoachBankConfig(classCoachId);
-    const classNames = agg.classItems.map((c) => c.className).join(", ");
-    const allDates = agg.classItems.flatMap((c) => c.presentDates);
+    const classNames = activeClassItems.map((c) => c.className).join(", ");
+    const allDates = activeClassItems.flatMap((c) => c.presentDates);
 
     // Lấy các hóa đơn thành phần để tính phụ phí gộp
     const studentInvs = dataStore.invoices.filter(
@@ -326,15 +336,15 @@ function InvoicesContent() {
       studentCode: agg.studentCode,
       studentName: agg.studentName,
       className:
-        agg.classItems.length === 1
-          ? primaryClass.className
-          : `Tổng hợp ${agg.classItems.length} lớp (${classNames})`,
+        activeClassItems.length <= 1
+          ? primaryClass?.className || "Lớp học"
+          : `Tổng hợp ${activeClassItems.length} lớp (${classNames})`,
       branchName: getClassBranchName(targetCls) || primaryClass?.branchName || "",
       month: selectedMonth,
       year: selectedYear,
       presentCount: agg.totalPresentCount,
       presentDates: allDates,
-      feePerSession: agg.classItems.length === 1 ? primaryClass.feePerSession : 0,
+      feePerSession: activeClassItems.length <= 1 ? (primaryClass?.feePerSession || 0) : 0,
       tuitionAmount: totalTuition,
       surchargeAmount: totalSurcharges,
       surcharges: allSurcharges,
@@ -356,7 +366,7 @@ function InvoicesContent() {
               amount: agg.totalAmount,
               description: agg.transferContent,
             })),
-      classList: agg.classItems.map((c) => ({
+      classList: activeClassItems.map((c) => ({
         className: c.className,
         branchName: c.branchName,
         presentCount: c.presentCount,
@@ -2341,8 +2351,9 @@ function InvoicesContent() {
         students={
           isAllClasses
             ? aggregatedInvoices.map((agg) => {
-                const primaryClass = agg.classItems[0];
-                const classNames = agg.classItems.map((c) => c.className).join(", ");
+                const activeClassItems = agg.classItems.filter((c) => c.presentCount > 0);
+                const primaryClass = activeClassItems[0] || agg.classItems[0];
+                const classNames = activeClassItems.map((c) => c.className).join(", ");
                 return {
                   invoiceId: agg.invoiceIds[0] || "",
                   studentId: agg.studentId,
@@ -2352,15 +2363,15 @@ function InvoicesContent() {
                   parentPhone: agg.parentPhone,
                   cleanParentPhone: agg.parentPhone.replace(/[^0-9]/g, ""),
                   className:
-                    agg.classItems.length === 1
+                    activeClassItems.length <= 1
                       ? primaryClass?.className || "Lớp học"
-                      : `Tổng hợp ${agg.classItems.length} lớp (${classNames})`,
+                      : `Tổng hợp ${activeClassItems.length} lớp (${classNames})`,
                   branchName: primaryClass?.branchName || "",
                   month: selectedMonth,
                   year: selectedYear,
                   presentCount: agg.totalPresentCount,
-                  presentDates: agg.classItems.flatMap((c) => c.presentDates),
-                  feePerSession: agg.classItems.length === 1 ? primaryClass?.feePerSession || 0 : 0,
+                  presentDates: activeClassItems.flatMap((c) => c.presentDates),
+                  feePerSession: activeClassItems.length <= 1 ? primaryClass?.feePerSession || 0 : 0,
                   totalAmount: agg.totalAmount,
                   status: agg.status,
                   zaloSentAt: agg.zaloSentAt,
@@ -2369,7 +2380,7 @@ function InvoicesContent() {
                   bankName: dataStore.bankConfig.bankName,
                   bankAccount: dataStore.bankConfig.bankAccount,
                   accountHolder: dataStore.bankConfig.accountHolder,
-                  classList: agg.classItems.map((c) => ({
+                  classList: activeClassItems.map((c) => ({
                     className: c.className,
                     branchName: c.branchName,
                     presentCount: c.presentCount,

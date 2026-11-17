@@ -87,6 +87,9 @@ export async function GET(req: NextRequest) {
                 }
               });
 
+              // Bỏ qua lớp học 0 buổi trong chi tiết phiếu thu
+              if (inv.presentCount <= 0 && inv.totalAmount <= 0) return;
+
               const classItem = {
                 classId: inv.classId,
                 className: cls?.name || "Lớp học",
@@ -116,16 +119,23 @@ export async function GET(req: NextRequest) {
                   feePerSession: inv.feePerSession,
                   totalAmount: inv.totalAmount,
                   status: inv.status,
-                  classList: [classItem],
+                  classList: inv.presentCount > 0 ? [classItem] : [],
                 });
               } else {
                 const existing = studentMap.get(student.id)!;
-                existing.classList.push(classItem);
+                if (inv.presentCount > 0) {
+                  existing.classList.push(classItem);
+                }
                 existing.presentCount += inv.presentCount;
                 existing.totalAmount += inv.totalAmount;
                 existing.presentDates = [...existing.presentDates, ...presentDates];
                 if (inv.status === "PENDING") existing.status = "PENDING";
-                existing.className = `Tổng hợp ${existing.classList.length} lớp (${existing.classList.map((c: any) => c.className).join(", ")})`;
+                if (existing.classList.length === 1) {
+                  existing.className = existing.classList[0].className;
+                  existing.feePerSession = existing.classList[0].feePerSession;
+                } else if (existing.classList.length > 1) {
+                  existing.className = `Tổng hợp ${existing.classList.length} lớp (${existing.classList.map((c: any) => c.className).join(", ")})`;
+                }
               }
             });
 
@@ -355,6 +365,9 @@ export async function GET(req: NextRequest) {
         }
       });
 
+      // Bỏ qua lớp học 0 buổi trong chi tiết phiếu thu
+      if (inv.presentCount <= 0 && inv.totalAmount <= 0) return;
+
       const classItem = {
         classId: inv.classId,
         className: cls?.name || "Lớp học",
@@ -384,16 +397,23 @@ export async function GET(req: NextRequest) {
           feePerSession: inv.feePerSession,
           totalAmount: inv.totalAmount,
           status: inv.status,
-          classList: [classItem],
+          classList: inv.presentCount > 0 ? [classItem] : [],
         });
       } else {
         const existing = studentMap.get(student.id)!;
-        existing.classList.push(classItem);
+        if (inv.presentCount > 0) {
+          existing.classList.push(classItem);
+        }
         existing.presentCount += inv.presentCount;
         existing.totalAmount += inv.totalAmount;
         existing.presentDates = [...existing.presentDates, ...presentDates];
         if (inv.status === "PENDING") existing.status = "PENDING";
-        existing.className = `Tổng hợp ${existing.classList.length} lớp (${existing.classList.map((c: any) => c.className).join(", ")})`;
+        if (existing.classList.length === 1) {
+          existing.className = existing.classList[0].className;
+          existing.feePerSession = existing.classList[0].feePerSession;
+        } else if (existing.classList.length > 1) {
+          existing.className = `Tổng hợp ${existing.classList.length} lớp (${existing.classList.map((c: any) => c.className).join(", ")})`;
+        }
       }
     });
 

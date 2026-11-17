@@ -83,7 +83,7 @@ export interface StudentData {
   address?: string; // Địa chỉ nhà
   school?: string; // Trường học
   joinDate?: string; // Ngày nhập học (YYYY-MM-DD)
-  status?: 'ACTIVE' | 'PAUSED' | 'DROPPED'; // Trạng thái học tập
+  status?: 'ACTIVE' | 'PAUSED' | 'DROPPED' | 'DELETED'; // Trạng thái học tập (DELETED = đã xóa ở hồ sơ, giữ lịch sử)
 }
 
 export interface AttendanceRecordData {
@@ -1110,12 +1110,18 @@ class InMemoryDataStore {
   // Xóa học viên (đồng bộ Supabase DB)
   public async deleteStudent(studentId: string, classId?: string): Promise<boolean> {
     if (classId) {
+      // Bỏ khỏi lớp: Chỉ gỡ liên kết lớp, giữ nguyên hồ sơ học viên
       const s = this.students.find((st) => st.id === studentId);
       if (s) {
         s.classIds = s.classIds.filter((cid) => cid !== classId);
       }
     } else {
-      this.students = this.students.filter((s) => s.id !== studentId);
+      // Xóa ở hồ sơ: Đánh dấu DELETED & gỡ khỏi mọi lớp, vẫn giữ bản ghi để xem lại lịch sử tháng cũ
+      const s = this.students.find((st) => st.id === studentId);
+      if (s) {
+        s.status = "DELETED";
+        s.classIds = [];
+      }
     }
     this.recalculateAllInvoices(10, 2026);
     this.saveToLocalStorage();
@@ -1149,15 +1155,26 @@ class InMemoryDataStore {
         return d.getMonth() + 1 === month && d.getFullYear() === year;
       });
 
-      // Lấy học sinh chính thức của lớp
-      const regularStudents = this.students.filter((s) => s.classIds.includes(cls.id));
+      // Lấy học sinh chính thức đang hoạt động của lớp (bỏ qua học viên đã xóa ở hồ sơ)
+      const regularStudents = this.students.filter(
+        (s) => s.status !== "DELETED" && s.classIds.includes(cls.id)
+      );
 
-      // Lấy thêm những học sinh học bù (có mặt trong records của buổi học nhưng không thuộc lớp chính thức)
+      // Lấy thêm những học sinh học bù hoặc học viên đã xóa hồ sơ nhưng vẫn có dữ liệu điểm danh/phụ phí trong tháng này
       const makeupStudentIds = new Set<string>();
       classSessions.forEach((sess) => {
         sess.records.forEach((r) => {
           if (!regularStudents.some((s) => s.id === r.studentId)) {
-            makeupStudentIds.add(r.studentId);
+            const st = this.students.find((s) => s.id === r.studentId);
+            const hasBillableData =
+              r.status === "PRESENT" ||
+              (r.bookPrice && r.bookPrice > 0) ||
+              (r.lunchFee && r.lunchFee > 0) ||
+              (r.otherFeePrice && r.otherFeePrice > 0);
+            // Nếu học viên đã xóa ở hồ sơ (DELETED), chỉ giữ hóa đơn lịch sử nếu thực sự có buổi học hoặc phụ phí trong tháng
+            if (st && (st.status !== "DELETED" || hasBillableData)) {
+              makeupStudentIds.add(r.studentId);
+            }
           }
         });
       });
@@ -2090,13 +2107,53 @@ export function getCoachClasses(coachId?: string, coachEmail?: string): Classroo
 }
 
 /**
+ * Kiểm tra học viên còn hoạt động trong hệ thống (chưa bị xóa vĩnh viễn ở hồ sơ)
+ */
+export function isActiveStudent(student: StudentData): boolean {
+  return student.status !== "DELETED";
+}
+
+/**
  * Lấy danh sách học viên của riêng Huấn luyện viên
+ * Bao gồm:
+ * - Học viên đang học trong các lớp của HLV
+ * - Học viên chưa xếp lớp (classIds rỗng, VD: vừa bị bỏ khỏi lớp) và không bị gán riêng cho lớp của HLV khác
+ * Loại trừ hoàn toàn học viên đã xóa ở hồ sơ (status === "DELETED").
  */
 export function getCoachStudents(coachId?: string, coachEmail?: string): StudentData[] {
   if (!coachId && !coachEmail) return [];
   const coachClasses = getCoachClasses(coachId, coachEmail);
-  const classIds = coachClasses.map((c) => c.id);
-  return dataStore.students.filter((s) => s.classIds.some((cid) => classIds.includes(cid)));
+  const classIds = new Set(coachClasses.map((c) => c.id));
+
+  // Tập các studentId đã từng có mặt/hóa đơn trong lớp của HLV khác (để không lẫn học viên chưa xếp lớp của HLV khác nếu có)
+  const otherCoachClassIds = new Set(
+    dataStore.classes.filter((c) => !classIds.has(c.id)).map((c) => c.id)
+  );
+  const studentsWithHistoryInMyClasses = new Set<string>();
+  const studentsWithHistoryInOtherClasses = new Set<string>();
+
+  for (const sess of dataStore.sessions) {
+    const inMine = classIds.has(sess.classId);
+    const inOther = otherCoachClassIds.has(sess.classId);
+    for (const r of sess.records) {
+      if (inMine) studentsWithHistoryInMyClasses.add(r.studentId);
+      if (inOther) studentsWithHistoryInOtherClasses.add(r.studentId);
+    }
+  }
+
+  return dataStore.students.filter((s) => {
+    if (s.status === "DELETED") return false;
+    if (s.classIds.some((cid) => classIds.has(cid))) return true;
+    // Học viên chưa có lớp nào (vừa bị bỏ khỏi lớp hoặc mới tạo):
+    // Hiển thị nếu từng học lớp của HLV này, hoặc chưa từng gắn với lớp HLV khác
+    if (s.classIds.length === 0) {
+      return (
+        studentsWithHistoryInMyClasses.has(s.id) ||
+        !studentsWithHistoryInOtherClasses.has(s.id)
+      );
+    }
+    return false;
+  });
 }
 
 /**

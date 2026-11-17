@@ -274,7 +274,7 @@ function AttendanceContent() {
   // Danh sách học viên chính thức của lớp
   const classStudents = useMemo(() => {
     if (!selectedClass) return [];
-    return dataStore.students.filter((s) => s.classIds.includes(selectedClass.id));
+    return dataStore.students.filter((s) => s.status !== "DELETED" && s.classIds.includes(selectedClass.id));
   }, [selectedClass, dataRefreshTrigger]);
 
   // Danh sách học viên học bù trong buổi này
@@ -874,7 +874,7 @@ function AttendanceContent() {
   // Danh sách học sinh có sẵn từ hệ thống để thêm vào buổi học/lớp
   const candidateStudents = useMemo(() => {
     return dataStore.students
-      .filter((s) => !sessionStudents.some((cur) => cur.id === s.id))
+      .filter((s) => s.status !== "DELETED" && !sessionStudents.some((cur) => cur.id === s.id))
       .filter((s) => {
         if (!studentSearchKeyword.trim()) return true;
         const kw = studentSearchKeyword.toLowerCase();

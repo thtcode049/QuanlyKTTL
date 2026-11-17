@@ -154,9 +154,10 @@ export async function generateInvoiceCardCanvas(
 ): Promise<HTMLCanvasElement> {
   const scale = 2;
   const width = 560;
-  const hasMultipleClasses = Boolean(data.classList && data.classList.length > 1);
+  const activeClassList = (data.classList || []).filter((c) => c.presentCount > 0);
+  const hasMultipleClasses = activeClassList.length > 1;
   const extraHeight = hasMultipleClasses
-    ? (data.classList!.length * 62)
+    ? (activeClassList.length * 62)
     : 0;
   const surchargeRowsCount = data.surcharges && data.surcharges.length > 0 ? (data.surcharges.length + 1) : 0;
   const surchargeHeight = surchargeRowsCount * 30;
@@ -301,11 +302,11 @@ export async function generateInvoiceCardCanvas(
     ctx.fillStyle = "#334155";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`Chi tiết các lớp học (${data.classList!.length} lớp):`, padLeft, curY + 12);
+    ctx.fillText(`Chi tiết các lớp học (${activeClassList.length} lớp):`, padLeft, curY + 12);
     curY += 24;
 
     const boxRightX = padLeft + (cardW - 48);
-    data.classList!.forEach((clsItem, idx) => {
+    activeClassList.forEach((clsItem, idx) => {
       const hasDates = clsItem.presentDates && clsItem.presentDates.length > 0;
       const boxH = hasDates ? 48 : 38;
       ctx.fillStyle = "#F8FAFC";

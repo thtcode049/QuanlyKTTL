@@ -919,13 +919,15 @@ export default function ZaloParentSenderModal({
                         </span>
                       </div>
 
-                      {previewStudent.classList && previewStudent.classList.length > 1 ? (
+                      {(() => {
+                        const activeClassList = (previewStudent.classList || []).filter((c) => c.presentCount > 0);
+                        return activeClassList.length > 1 ? (
                         <div className="space-y-1 py-1">
                           <div className="flex justify-between items-center text-[11px] font-bold text-slate-700">
-                            <span>Chi tiết các lớp học ({previewStudent.classList.length} lớp):</span>
+                            <span>Chi tiết các lớp học ({activeClassList.length} lớp):</span>
                             <span className="text-[10px] text-emerald-600 font-bold uppercase">Học phí theo buổi</span>
                           </div>
-                          {previewStudent.classList.map((clsItem, cIdx) => (
+                          {activeClassList.map((clsItem, cIdx) => (
                             <div key={cIdx} className="rounded bg-slate-50 p-2 border border-slate-200/80 text-xs">
                               <div className="flex justify-between items-start">
                                 <span className="font-semibold text-slate-800">{cIdx + 1}. {clsItem.className}</span>
@@ -949,9 +951,9 @@ export default function ZaloParentSenderModal({
                           <div className="flex justify-between">
                             <span className="text-slate-500">Lớp học:</span>
                             <span className="font-semibold text-slate-900 text-right max-w-[65%]">
-                              {previewStudent.className}
-                              {previewStudent.branchName
-                                ? ` – ${previewStudent.branchName.replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")}`
+                              {activeClassList[0]?.className || previewStudent.className}
+                              {(activeClassList[0]?.branchName || previewStudent.branchName)
+                                ? ` – ${(activeClassList[0]?.branchName || previewStudent.branchName).replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")}`
                                 : ""}
                             </span>
                           </div>
@@ -975,11 +977,12 @@ export default function ZaloParentSenderModal({
                           <div className="flex justify-between">
                             <span className="text-slate-500">Đơn giá:</span>
                             <span className="font-semibold text-slate-900">
-                              {formatCurrencyVND(previewStudent.feePerSession)}/buổi
+                              {formatCurrencyVND(activeClassList[0]?.feePerSession || previewStudent.feePerSession)}/buổi
                             </span>
                           </div>
                         </>
-                      )}
+                      );
+                      })()}
 
                       {/* Highlight row */}
                       <div className="my-1.5 flex items-center justify-between rounded bg-emerald-50 px-2.5 py-1.5 border border-emerald-200">
