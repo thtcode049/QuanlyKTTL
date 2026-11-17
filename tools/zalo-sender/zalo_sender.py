@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import base64
 import csv
+import hashlib
+import html
 import json
 import os
 import queue
@@ -144,22 +146,77 @@ def format_money(val: int | float | None) -> str:
     return f"{int(val):,}".replace(",", ".") + " đ"
 
 
+def get_card_image_path(item: dict) -> Path:
+    """Tạo đường dẫn ảnh thẻ kèm mã hash nội dung để tự động render lại nếu học phí hoặc danh sách lớp thay đổi."""
+    code = item.get("studentCode", "HS")
+    month = item.get("month", datetime.now().month)
+    year = item.get("year", datetime.now().year)
+    clean_name = re.sub(r"[^\w\d_-]", "_", item.get("studentName", ""))
+    payload_key = json.dumps(
+        {
+            "c": code,
+            "n": item.get("studentName", ""),
+            "m": month,
+            "y": year,
+            "t": item.get("totalAmount", 0),
+            "p": item.get("presentCount", 0),
+            "d": item.get("presentDates", []),
+            "cl": item.get("classList", []),
+            "sr": item.get("surcharges", []),
+            "ct": item.get("customTitle", ""),
+            "tc": item.get("transferContent", ""),
+            "qr": item.get("vietQrUrl", ""),
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    digest = hashlib.md5(payload_key.encode("utf-8")).hexdigest()[:8]
+    return CARDS_DIR / f"{code}_{clean_name}_T{month}_{year}_{digest}.png"
+
+
 # ----------------------------------------------------------------------------
-# Mẫu HTML Thẻ Báo Học Phí (Chuẩn 100% Mocktest KTTL)
+# Mẫu HTML Thẻ Báo Học Phí (Chuẩn 100% Hệ Thống KTTL - Hỗ trợ nhiều lớp & phụ phí)
 # ----------------------------------------------------------------------------
 def build_invoice_html(data: dict) -> str:
     student_name = data.get("studentName", "Học viên")
     student_code = data.get("studentCode", "HS")
     custom_title = data.get("customTitle")
-    class_name = data.get("className", "Lớp Cờ vua")
-    branch_name = data.get("branchName", "CLB Kiện Tướng Tương Lai").replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV")
     month = data.get("month", datetime.now().month)
     year = data.get("year", datetime.now().year)
-    present_count = data.get("presentCount", 0)
-    present_dates = data.get("presentDates") or []
+
+    # Lọc bỏ hoàn toàn các lớp 0 buổi khỏi phiếu thu
+    raw_class_list = data.get("classList") or []
+    active_classes = [c for c in raw_class_list if (c.get("presentCount") or 0) > 0]
+    has_multiple_classes = len(active_classes) > 1
+
+    if len(active_classes) == 1:
+        single_cls = active_classes[0]
+        class_name = single_cls.get("className") or data.get("className", "Lớp Cờ vua")
+        branch_name = (single_cls.get("branchName") or data.get("branchName") or "CLB Kiện Tướng Tương Lai")
+        present_count = single_cls.get("presentCount", data.get("presentCount", 0))
+        present_dates = single_cls.get("presentDates") or data.get("presentDates") or []
+        fee_per_session_raw = single_cls.get("feePerSession", data.get("feePerSession", 0))
+    else:
+        class_name = data.get("className", "Lớp Cờ vua")
+        branch_name = data.get("branchName", "CLB Kiện Tướng Tương Lai")
+        present_count = data.get("presentCount", 0)
+        present_dates = data.get("presentDates") or []
+        fee_per_session_raw = data.get("feePerSession", 0)
+
+    branch_name = str(branch_name).replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV").strip()
     dates_str = ", ".join(present_dates) if present_dates else "Chưa có buổi học"
-    fee_per_session = format_money(data.get("feePerSession", 0))
+    fee_per_session = format_money(fee_per_session_raw)
+
+    surcharges = [s for s in (data.get("surcharges") or []) if (s.get("amount") or 0) > 0]
+    surcharge_amount_raw = data.get("surchargeAmount")
+    if surcharge_amount_raw is None:
+        surcharge_amount_raw = sum(float(s.get("amount") or 0) for s in surcharges)
+    tuition_amount_raw = data.get("tuitionAmount")
+    if tuition_amount_raw is None:
+        tuition_amount_raw = max(0.0, float(data.get("totalAmount") or 0) - float(surcharge_amount_raw or 0))
+
     total_amount = format_money(data.get("totalAmount", 0))
+    tuition_amount = format_money(tuition_amount_raw)
     bank_name = data.get("bankName", "Ngân hàng TMCP Quân Đội (MBBank)")
     bank_account = data.get("bankAccount", "0987654321")
     account_holder = data.get("accountHolder", "CLB CO VUA KIEN TUONG TUONG LAI")
@@ -170,6 +227,89 @@ def build_invoice_html(data: dict) -> str:
         memo = urllib.parse.quote(transfer_content.strip())
         acc_holder = urllib.parse.quote(account_holder.strip())
         viet_qr_url = f"https://img.vietqr.io/image/MB-0987654321-compact2.png?amount={int(data.get('totalAmount', 0))}&addInfo={memo}&accountName={acc_holder}"
+
+    # Render phần chi tiết lớp học (1 lớp vs nhiều lớp)
+    if has_multiple_classes:
+        class_boxes = []
+        for idx, cls_item in enumerate(active_classes, 1):
+            c_name = html.escape(str(cls_item.get("className", "Lớp học")))
+            b_name = str(cls_item.get("branchName") or "").replace("Lớp riêng của HLV (Dạy kèm / Gia sư / Online)", "Lớp riêng của HLV").strip()
+            c_title = f"{idx}. {c_name}" + (f" ({html.escape(b_name)})" if b_name else "")
+            c_present = int(cls_item.get("presentCount") or 0)
+            c_fee = format_money(cls_item.get("feePerSession", 0))
+            c_total = format_money(cls_item.get("totalAmount", 0))
+            c_dates = cls_item.get("presentDates") or []
+            dates_html = f'<span class="class-dates">Ngày: {html.escape(", ".join(c_dates))}</span>' if c_dates else ""
+            class_boxes.append(f"""
+            <div class="class-card">
+              <div class="class-card-top">
+                <span class="class-card-name">{c_title}</span>
+                <span class="class-card-amount">{c_total}</span>
+              </div>
+              <div class="class-card-sub">
+                <span>{c_present} buổi &times; {c_fee}/b</span>
+                {dates_html}
+              </div>
+            </div>""")
+        total_sessions_sum = sum(int(c.get("presentCount") or 0) for c in active_classes)
+        class_details_html = f"""
+        <div class="multi-class-section">
+          <div class="section-heading">Chi tiết các lớp học ({len(active_classes)} lớp):</div>
+          {"".join(class_boxes)}
+        </div>
+        <div class="row">
+          <span class="label">Tổng số buổi học:</span>
+          <span class="value">{total_sessions_sum} buổi</span>
+        </div>"""
+    else:
+        class_display = f"{html.escape(str(class_name))} &ndash; {html.escape(branch_name)}" if branch_name else html.escape(str(class_name))
+        class_details_html = f"""
+        <div class="row">
+          <span class="label">Lớp học:</span>
+          <span class="value">{class_display}</span>
+        </div>
+        <div class="row">
+          <span class="label">Số buổi thực học:</span>
+          <span class="value">{present_count} buổi</span>
+        </div>
+        <div class="row">
+          <span class="label">Các ngày có mặt:</span>
+          <span class="value">{html.escape(dates_str)}</span>
+        </div>
+        <div class="row">
+          <span class="label">Đơn giá:</span>
+          <span class="value">{fee_per_session}/buổi</span>
+        </div>"""
+
+    # Render phần phụ phí (nếu có)
+    surcharge_html = ""
+    if surcharges:
+        surcharge_rows = []
+        for sr in surcharges:
+            sr_title = html.escape(str(sr.get("title") or "Phụ phí khác"))
+            sr_date = str(sr.get("date") or "").strip()
+            sr_date_str = ""
+            if sr_date:
+                try:
+                    dt = datetime.fromisoformat(sr_date[:10])
+                    sr_date_str = f" ({dt.day}/{dt.month})"
+                except Exception:
+                    sr_date_str = f" ({html.escape(sr_date)})"
+            sr_amt = format_money(sr.get("amount", 0))
+            surcharge_rows.append(f"""
+            <div class="surcharge-row">
+              <span class="surcharge-name">&bull; {sr_title}{sr_date_str}</span>
+              <span class="surcharge-amt">+{sr_amt}</span>
+            </div>""")
+        surcharge_html = f"""
+        <div class="row">
+          <span class="label">Tiền học phí:</span>
+          <span class="value">{tuition_amount}</span>
+        </div>
+        <div class="surcharge-box">
+          <div class="surcharge-title">Chi tiết các khoản phụ phí ({len(surcharges)} khoản):</div>
+          {"".join(surcharge_rows)}
+        </div>"""
 
     return f"""<!DOCTYPE html>
 <html lang="vi">
@@ -297,6 +437,75 @@ def build_invoice_html(data: dict) -> str:
       font-weight: 800;
       letter-spacing: 0.5px;
     }}
+    .multi-class-section {{
+      padding: 10px 0 4px 0;
+    }}
+    .section-heading {{
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 8px;
+    }}
+    .class-card {{
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }}
+    .class-card-top {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }}
+    .class-card-name {{
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }}
+    .class-card-amount {{
+      font-size: 14px;
+      font-weight: 800;
+      color: #059669;
+      flex-shrink: 0;
+    }}
+    .class-card-sub {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      font-size: 12.5px;
+      color: #64748b;
+    }}
+    .class-dates {{
+      color: #94a3b8;
+    }}
+    .surcharge-box {{
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin: 8px 0;
+    }}
+    .surcharge-title {{
+      font-size: 13px;
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 6px;
+    }}
+    .surcharge-row {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      padding: 2px 0;
+      color: #78350f;
+    }}
+    .surcharge-amt {{
+      font-weight: 700;
+      color: #d97706;
+    }}
     .qr-container {{
       margin: 10px 32px 24px 32px;
       background: #f8fafc;
@@ -365,43 +574,29 @@ def build_invoice_html(data: dict) -> str:
     </div>
     <div class="card-header">
       <span class="badge-month">HỌC PHÍ THÁNG {month}/{year}</span>
-      <h1 class="title">{custom_title or f"[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}"}</h1>
+      <h1 class="title">{html.escape(str(custom_title)) if custom_title else f"[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}"}</h1>
       <p class="intro">
-        Kính gửi phụ huynh em <strong>{student_name}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc <em>Thực học - Thực trả</em>.
+        Kính gửi phụ huynh em <strong>{html.escape(str(student_name))}</strong>, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year} theo nguyên tắc <em>Thực học - Thực trả</em>.
       </p>
     </div>
     <div class="details-table">
       <div class="row">
         <span class="label">Học viên:</span>
-        <span class="value">{student_name}</span>
+        <span class="value">{html.escape(str(student_name))}</span>
       </div>
-      <div class="row">
-        <span class="label">Lớp học:</span>
-        <span class="value">{class_name} – {branch_name}</span>
-      </div>
-      <div class="row">
-        <span class="label">Số buổi thực học:</span>
-        <span class="value">{present_count} buổi</span>
-      </div>
-      <div class="row">
-        <span class="label">Các ngày có mặt:</span>
-        <span class="value">{dates_str}</span>
-      </div>
-      <div class="row">
-        <span class="label">Đơn giá:</span>
-        <span class="value">{fee_per_session}/buổi</span>
-      </div>
+      {class_details_html}
+      {surcharge_html}
       <div class="row row-highlight">
-        <span class="label">Tổng học phí:</span>
+        <span class="label">Tổng tiền phải nộp:</span>
         <span class="value">{total_amount}</span>
       </div>
       <div class="row">
         <span class="label">Ngân hàng:</span>
-        <span class="value">{bank_name} – {bank_account}</span>
+        <span class="value">{html.escape(str(bank_name))} &ndash; {html.escape(str(bank_account))}</span>
       </div>
       <div class="row">
         <span class="label">Cú pháp CK:</span>
-        <span class="value syntax-highlight">{transfer_content}</span>
+        <span class="value syntax-highlight">{html.escape(str(transfer_content))}</span>
       </div>
     </div>
     <div class="qr-container">
@@ -586,14 +781,9 @@ class ZaloWorker(threading.Thread):
     # --- RENDER ẢNH THẺ HỌC PHÍ ---
     def render_card_image(self, item: dict) -> Path:
         CARDS_DIR.mkdir(parents=True, exist_ok=True)
-        code = item.get("studentCode", "HS")
-        month = item.get("month", datetime.now().month)
-        year = item.get("year", datetime.now().year)
-        clean_name = re.sub(r"[^\w\d_-]", "_", item.get("studentName", ""))
-        img_name = f"{code}_{clean_name}_T{month}_{year}.png"
-        out_path = CARDS_DIR / img_name
+        out_path = get_card_image_path(item)
 
-        # Nếu đã có ảnh và độ phân giải cao (>= 1200px width), tái sử dụng để tiết kiệm thời gian
+        # Nếu đã có ảnh đúng mã hash nội dung và độ phân giải cao (>= 1200px width), tái sử dụng
         if out_path.exists():
             try:
                 with Image.open(out_path) as im:
@@ -1024,10 +1214,12 @@ class App(ctk.CTk):
         self.worker.start()
 
         self.busy = False
+        self.all_invoice_items: list[dict] = []
         self.invoice_items: list[dict] = []
         self.selected_item: dict | None = None
         self.preview_image_path: Path | None = None
         self.counts = {"OK": 0, "NOT_FOUND": 0, "ERROR": 0, "NO_PHONE": 0}
+        self.var_only_pending = ctk.BooleanVar(value=False)
 
         self.f_title = ctk.CTkFont("Segoe UI", 20, "bold")
         self.f_h = ctk.CTkFont("Segoe UI", 13, "bold")
@@ -1134,6 +1326,17 @@ class App(ctk.CTk):
         ctk.CTkButton(toolbar, text="⚡ Nhận file mới từ Downloads", command=self._load_latest_download,
                       fg_color="#0f766e", hover_color="#14b8a6", height=32, corner_radius=8, font=self.f_h).pack(side="left", padx=8)
 
+        self.chk_only_pending = ctk.CTkCheckBox(
+            toolbar,
+            text="Chỉ lấy chưa đóng (PENDING)",
+            variable=self.var_only_pending,
+            command=self._apply_student_filters,
+            font=self.f_body,
+            checkbox_width=18,
+            checkbox_height=18,
+        )
+        self.chk_only_pending.pack(side="left", padx=8)
+
         self.lbl_class_info = ctk.CTkLabel(toolbar, text="Chưa nạp danh sách học sinh nào.", font=self.f_body, text_color=C_MUTED)
         self.lbl_class_info.pack(side="left", padx=8)
 
@@ -1203,9 +1406,13 @@ class App(ctk.CTk):
         downloads_path = Path.home() / "Downloads"
         if not downloads_path.exists():
             return
-        # Tìm file KTTL_TheHocPhi_*.json tạo trong 30 phút gần nhất
+        # Tìm file KTTL_HocPhi_*.json hoặc KTTL_TheHocPhi_*.json tạo trong 30 phút gần nhất
         now = time.time()
-        files = list(downloads_path.glob("KTTL_TheHocPhi_*.json")) + list(downloads_path.glob("kttl_invoices_*.json"))
+        files = (
+            list(downloads_path.glob("KTTL_HocPhi_*.json"))
+            + list(downloads_path.glob("KTTL_TheHocPhi_*.json"))
+            + list(downloads_path.glob("kttl_invoices_*.json"))
+        )
         recent = [f for f in files if (now - f.stat().st_mtime) < 1800]
         if recent:
             recent.sort(key=lambda f: f.stat().st_mtime, reverse=True)
@@ -1215,7 +1422,12 @@ class App(ctk.CTk):
 
     def _load_latest_download(self):
         downloads_path = Path.home() / "Downloads"
-        files = list(downloads_path.glob("KTTL_TheHocPhi_*.json")) + list(downloads_path.glob("kttl_invoices_*.json")) + list(downloads_path.glob("*.json"))
+        priority_files = (
+            list(downloads_path.glob("KTTL_HocPhi_*.json"))
+            + list(downloads_path.glob("KTTL_TheHocPhi_*.json"))
+            + list(downloads_path.glob("kttl_invoices_*.json"))
+        )
+        files = priority_files if priority_files else list(downloads_path.glob("*.json"))
         if not files:
             messagebox.showinfo("Thông báo", "Không tìm thấy file học phí nào trong thư mục Downloads.")
             return
@@ -1223,13 +1435,14 @@ class App(ctk.CTk):
         self._load_file(str(files[0]))
 
     def _load_file(self, file_path_str: str):
-        # Nếu là URI protocol: kttl-zalo://open?file=...
+        # Nếu là URI protocol: kttl-zalo://open?file=... hoặc kttl-zalo://open
         if file_path_str.startswith("kttl-zalo://"):
             parsed = urllib.parse.urlparse(file_path_str)
             params = urllib.parse.parse_qs(parsed.query)
             if "file" in params:
                 file_path_str = urllib.parse.unquote(params["file"][0])
             else:
+                self._load_latest_download()
                 return
 
         p = Path(file_path_str)
@@ -1245,26 +1458,54 @@ class App(ctk.CTk):
             return
 
         students = []
+        bundle_class_name = ""
         if isinstance(data, list):
             students = data
         elif isinstance(data, dict):
             students = data.get("students") or data.get("customStudents") or []
+            cls_obj = data.get("classroom")
+            if isinstance(cls_obj, dict):
+                bundle_class_name = cls_obj.get("name", "")
 
         if not students:
             messagebox.showwarning("Dữ liệu rỗng", "File không chứa danh sách học sinh.")
             return
 
-        self.invoice_items = students
-        cls_name = students[0].get("className", "")
-        m = students[0].get("month", "")
-        y = students[0].get("year", "")
-        info_str = f"Lớp: {cls_name} • Tháng {m}/{y} • Tổng {len(students)} học viên"
-        self.lbl_class_info.configure(text=info_str, text_color=C_OK)
-        self.log(f"Đã nạp {len(students)} học viên từ {p.name}", "ok")
+        # Lọc bỏ học sinh 0 buổi và 0 đ
+        billable = [s for s in students if (s.get("presentCount") or 0) > 0 or (s.get("totalAmount") or 0) > 0]
+        skipped_zero = len(students) - len(billable)
+        if skipped_zero > 0:
+            self.log(f"Đã tự động bỏ qua {skipped_zero} học viên 0 buổi / 0 đ.", "info")
+
+        self.all_invoice_items = billable
+        self._loaded_file_name = p.name
+        self._loaded_bundle_class = bundle_class_name
+        self._apply_student_filters()
+        self.log(f"Đã nạp {len(self.invoice_items)}/{len(billable)} học viên từ {p.name}", "ok")
+
+    def _apply_student_filters(self):
+        only_pending = bool(self.var_only_pending.get())
+        if only_pending:
+            self.invoice_items = [s for s in self.all_invoice_items if s.get("status", "PENDING") != "PAID"]
+        else:
+            self.invoice_items = list(self.all_invoice_items)
+
+        first = self.invoice_items[0] if self.invoice_items else (self.all_invoice_items[0] if self.all_invoice_items else {})
+        cls_name = getattr(self, "_loaded_bundle_class", "") or first.get("className", "")
+        if len(cls_name) > 36:
+            cls_name = cls_name[:33] + "..."
+        m = first.get("month", "")
+        y = first.get("year", "")
+        total_money = format_money(sum(float(s.get("totalAmount") or 0) for s in self.invoice_items))
+        info_str = f"{cls_name + ' • ' if cls_name else ''}Tháng {m}/{y} • {len(self.invoice_items)} HV ({total_money})"
+        self.lbl_class_info.configure(text=info_str, text_color=C_OK if self.invoice_items else C_WARN)
 
         self._render_students_list()
-        if students:
-            self._select_student(students[0])
+        if self.invoice_items:
+            self._select_student(self.invoice_items[0])
+        else:
+            self.selected_item = None
+            self.lbl_preview_img.configure(image="", text="Không có học viên nào khớp bộ lọc.")
 
     def _render_students_list(self):
         for w in self.scroll_students.winfo_children():
@@ -1279,16 +1520,22 @@ class App(ctk.CTk):
             phone = item.get("parentPhone", "")
             amount = format_money(item.get("totalAmount", 0))
             count = item.get("presentCount", 0)
+            active_classes = [c for c in (item.get("classList") or []) if (c.get("presentCount") or 0) > 0]
+            class_tag = f" • {len(active_classes)} lớp" if len(active_classes) > 1 else ""
+            is_paid = item.get("status") == "PAID"
+            status_tag = " [Đã đóng]" if is_paid else ""
 
             # Left badge
-            badge = ctk.CTkLabel(f, text=code, font=self.f_h, width=50, fg_color="#1e293b", corner_radius=6)
+            badge = ctk.CTkLabel(f, text=code, font=self.f_h, width=54, fg_color="#1e293b", corner_radius=6)
             badge.pack(side="left", padx=8, pady=8)
 
             # Center info
             info = ctk.CTkFrame(f, fg_color="transparent")
             info.pack(side="left", fill="x", expand=True, padx=4)
-            ctk.CTkLabel(info, text=f"{name}  •  {phone}", font=self.f_h, text_color="#f8fafc", anchor="w").pack(fill="x")
-            ctk.CTkLabel(info, text=f"Thực học: {count} buổi  |  Học phí: {amount}", font=self.f_body, text_color=C_MUTED, anchor="w").pack(fill="x")
+            ctk.CTkLabel(info, text=f"{name}  •  {phone}{status_tag}", font=self.f_h,
+                         text_color=C_OK if is_paid else "#f8fafc", anchor="w").pack(fill="x")
+            ctk.CTkLabel(info, text=f"Thực học: {count} buổi{class_tag}  |  Tổng thu: {amount}",
+                         font=self.f_body, text_color=C_MUTED, anchor="w").pack(fill="x")
 
             # Click handler
             f.bind("<Button-1>", lambda e, it=item: self._select_student(it))
@@ -1299,10 +1546,7 @@ class App(ctk.CTk):
         self.selected_item = item
         code = item.get("studentCode", "")
         name = item.get("studentName", "")
-        clean_name = re.sub(r"[^\w\d_-]", "_", name)
-        m = item.get("month", "")
-        y = item.get("year", "")
-        expected_path = CARDS_DIR / f"{code}_{clean_name}_T{m}_{y}.png"
+        expected_path = get_card_image_path(item)
 
         if expected_path.exists():
             self._display_preview_image(expected_path)

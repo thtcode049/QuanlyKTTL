@@ -54,4 +54,6 @@ __pycache__/
 # Executables and archives
 *.exe
 *.zip
+!public/downloads/Zalo_Bulk_Sender.exe
+!public/downloads/Zalo_Bulk_Sender.zip
 

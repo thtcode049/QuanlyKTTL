@@ -1069,7 +1069,7 @@ function InvoicesContent() {
           {/* Nút tải trực tiếp Tool EXE & ZIP */}
           <div className="inline-flex rounded shadow-xs">
             <a
-              href="/api/tool/download"
+              href="/downloads/Zalo_Bulk_Sender.exe"
               download="Zalo_Bulk_Sender.exe"
               className="flex items-center gap-1.5 rounded-l border border-amber-400/60 bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-xs font-semibold text-slate-950 active:scale-95 transition-colors"
               title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
@@ -1078,7 +1078,7 @@ function InvoicesContent() {
               <span>Tải Tool (.exe)</span>
             </a>
             <a
-              href="/api/tool/download?format=zip"
+              href="/downloads/Zalo_Bulk_Sender.zip"
               download="Zalo_Bulk_Sender.zip"
               className="flex items-center rounded-r border-y border-r border-amber-400/60 bg-amber-600 hover:bg-amber-500 px-2 py-1.5 text-[11px] font-semibold text-slate-950 active:scale-95 transition-colors"
               title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
@@ -2354,6 +2354,12 @@ function InvoicesContent() {
                 const activeClassItems = agg.classItems.filter((c) => c.presentCount > 0);
                 const primaryClass = activeClassItems[0] || agg.classItems[0];
                 const classNames = activeClassItems.map((c) => c.className).join(", ");
+                const studentInvs = dataStore.invoices.filter(
+                  (i) => i.studentId === agg.studentId && i.month === selectedMonth && i.year === selectedYear
+                );
+                const totalTuition = studentInvs.reduce((s, i) => s + (i.tuitionAmount ?? (i.presentCount * i.feePerSession)), 0);
+                const totalSurcharges = studentInvs.reduce((s, i) => s + (i.surchargeAmount || 0), 0);
+                const allSurcharges = studentInvs.flatMap((i) => i.surcharges || []);
                 return {
                   invoiceId: agg.invoiceIds[0] || "",
                   studentId: agg.studentId,
@@ -2372,6 +2378,9 @@ function InvoicesContent() {
                   presentCount: agg.totalPresentCount,
                   presentDates: activeClassItems.flatMap((c) => c.presentDates),
                   feePerSession: activeClassItems.length <= 1 ? primaryClass?.feePerSession || 0 : 0,
+                  tuitionAmount: totalTuition,
+                  surchargeAmount: totalSurcharges,
+                  surcharges: allSurcharges,
                   totalAmount: agg.totalAmount,
                   status: agg.status,
                   zaloSentAt: agg.zaloSentAt,
@@ -2411,6 +2420,9 @@ function InvoicesContent() {
                   presentCount: cardData?.presentCount ?? inv.presentCount,
                   presentDates: cardData?.presentDates || getPresentDatesForStudent(student?.id || ""),
                   feePerSession: cardData?.feePerSession ?? inv.feePerSession,
+                  tuitionAmount: cardData?.tuitionAmount ?? (inv.tuitionAmount ?? inv.presentCount * inv.feePerSession),
+                  surchargeAmount: cardData?.surchargeAmount ?? (inv.surchargeAmount || 0),
+                  surcharges: cardData?.surcharges ?? (inv.surcharges || []),
                   totalAmount: cardData?.totalAmount ?? inv.totalAmount,
                   status: inv.status,
                   zaloSentAt: inv.zaloSentAt,
@@ -2419,6 +2431,7 @@ function InvoicesContent() {
                   bankName: cardData?.bankName || dataStore.bankConfig.bankName,
                   bankAccount: cardData?.bankAccount || dataStore.bankConfig.bankAccount,
                   accountHolder: cardData?.accountHolder || dataStore.bankConfig.accountHolder,
+                  customTitle: cardData?.customTitle,
                   classList: cardData?.classList,
                 };
               })

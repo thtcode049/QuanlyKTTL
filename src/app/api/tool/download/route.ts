@@ -9,8 +9,14 @@ export async function GET(req: NextRequest) {
     const filename = isZip ? "Zalo_Bulk_Sender.zip" : "Zalo_Bulk_Sender.exe";
     const mimeType = isZip ? "application/zip" : "application/octet-stream";
 
+    // Ưu tiên redirect sang static CDN (/downloads/...) để tránh giới hạn 4.5MB của Vercel Serverless Function
+    const staticFilePath = path.join(process.cwd(), "public", "downloads", filename);
+    if (fs.existsSync(staticFilePath) || process.env.VERCEL === "1") {
+      return NextResponse.redirect(new URL(`/downloads/${filename}`, req.url), 302);
+    }
+
     const candidatePaths = [
-      path.join(process.cwd(), "public", "downloads", filename),
+      staticFilePath,
       path.join(process.cwd(), "public", filename),
       path.join(process.cwd(), filename),
       path.join(process.cwd(), "tools", "zalo-sender", "dist", filename),

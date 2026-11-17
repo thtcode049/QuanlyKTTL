@@ -23,7 +23,7 @@ import {
   FolderArchive,
 } from "lucide-react";
 import confetti from "canvas-confetti";
-import { ClassroomData, BranchData, dataStore } from "@/lib/data-store";
+import { ClassroomData, BranchData, InvoiceSurchargeItem, dataStore } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 import {
   downloadInvoiceCardPng,
@@ -48,6 +48,9 @@ export interface StudentParentInvoiceItem {
   presentCount: number;
   presentDates: string[];
   feePerSession: number;
+  tuitionAmount?: number;
+  surchargeAmount?: number;
+  surcharges?: InvoiceSurchargeItem[];
   totalAmount: number;
   status: "PENDING" | "PAID";
   zaloSentAt?: string;
@@ -56,6 +59,7 @@ export interface StudentParentInvoiceItem {
   bankName: string;
   bankAccount: string;
   accountHolder: string;
+  customTitle?: string;
   classList?: InvoiceClassItem[];
 }
 
@@ -257,17 +261,20 @@ export default function ZaloParentSenderModal({
 
   // Xuất file JSON dữ liệu học phí để nạp vào Tool Zalo
   const exportInvoicesJsonForTool = () => {
+    const billableStudents = students.filter(
+      (st) => st.presentCount > 0 || st.totalAmount > 0
+    );
     const exportBundle = {
-      version: "2.0",
+      version: "2.1",
       generatedAt: new Date().toISOString(),
       month,
       year,
       classroom: {
-        id: classroom.id,
-        name: classroom.name,
-        level: classroom.level || "Tất cả",
-        feePerSession: classroom.feePerSession || 0,
-        schedule: classroom.schedule || "",
+        id: classroom?.id || "ALL",
+        name: classroom?.name || "Tất cả các lớp",
+        level: classroom?.level || "Tất cả",
+        feePerSession: classroom?.feePerSession || 0,
+        schedule: classroom?.schedule || "",
       },
       branch: branch
         ? {
@@ -282,50 +289,85 @@ export default function ZaloParentSenderModal({
         bankAccount: dataStore.bankConfig.bankAccount,
         accountHolder: dataStore.bankConfig.accountHolder,
       },
-      totalStudents: students.length,
-      totalAmount: students.reduce((sum, s) => sum + s.totalAmount, 0),
-      students: students.map((st) => ({
-        invoiceId: st.invoiceId,
-        studentId: st.studentId,
-        studentCode: st.studentCode,
-        studentName: st.studentName,
-        parentName: st.parentName,
-        parentPhone: st.parentPhone,
-        cleanParentPhone: st.cleanParentPhone,
-        className: st.className,
-        branchName: st.branchName,
-        month: st.month,
-        year: st.year,
-        presentCount: st.presentCount,
-        presentDates: st.presentDates,
-        feePerSession: st.feePerSession,
-        totalAmount: st.totalAmount,
-        status: st.status,
-        transferContent: st.transferContent,
-        vietQrUrl: st.vietQrUrl,
-        bankName: st.bankName,
-        bankAccount: st.bankAccount,
-        accountHolder: st.accountHolder,
-      })),
+      totalStudents: billableStudents.length,
+      totalAmount: billableStudents.reduce((sum, s) => sum + s.totalAmount, 0),
+      students: billableStudents.map((st) => {
+        const activeClasses = (st.classList || []).filter((c) => c.presentCount > 0);
+        return {
+          invoiceId: st.invoiceId,
+          studentId: st.studentId,
+          studentCode: st.studentCode,
+          studentName: st.studentName,
+          parentName: st.parentName,
+          parentPhone: st.parentPhone,
+          cleanParentPhone: st.cleanParentPhone,
+          className: st.className,
+          branchName: st.branchName,
+          month: st.month,
+          year: st.year,
+          presentCount: st.presentCount,
+          presentDates: st.presentDates,
+          feePerSession: st.feePerSession,
+          tuitionAmount: st.tuitionAmount ?? st.presentCount * st.feePerSession,
+          surchargeAmount: st.surchargeAmount ?? 0,
+          surcharges: st.surcharges ?? [],
+          totalAmount: st.totalAmount,
+          status: st.status,
+          transferContent: st.transferContent,
+          vietQrUrl: st.vietQrUrl,
+          bankName: st.bankName,
+          bankAccount: st.bankAccount,
+          accountHolder: st.accountHolder,
+          customTitle: st.customTitle,
+          ...(activeClasses.length > 0 ? { classList: activeClasses } : {}),
+        };
+      }),
     };
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportBundle, null, 2));
     const downloadAnchor = document.createElement("a");
-    const safeClassName = classroom.name.replace(/[^a-zA-Z0-9\-_]/g, "_");
+    const safeClassName = (classroom?.name || "TatCaLop").replace(/[^a-zA-Z0-9\-_]/g, "_");
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute("download", `KTTL_HocPhi_${safeClassName}_T${month}_${year}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
 
-    showToast("Đã tải file dữ liệu học phí (.json) vào thư mục Downloads!");
+    showToast(`Đã tải file dữ liệu (${billableStudents.length} học viên) vào thư mục Downloads!`);
   };
 
-  // Khởi động trực tiếp Tool EXE trên máy tính (nạp sẵn danh sách học viên lớp này)
+  // Khởi động trực tiếp Tool EXE trên máy tính (nạp sẵn danh sách học viên)
   const handleDirectLaunchTool = async () => {
     try {
       // 1. Tự động kết xuất và tải file JSON vào thư mục Downloads của máy
       exportInvoicesJsonForTool();
+
+      const isLocalhost =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+      if (!isLocalhost) {
+        // Trên Web Online (Vercel): Kích hoạt protocol kttl-zalo://open để mở Tool đã chạy trên Windows của người dùng
+        setLaunchStatus({
+          type: "loading",
+          message: "⏳ Đã tải file JSON về Downloads & đang gọi mở Zalo_Bulk_Sender trên máy tính...",
+        });
+        try {
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = "kttl-zalo://open";
+          document.body.appendChild(iframe);
+          setTimeout(() => iframe.remove(), 2000);
+        } catch (err) {}
+
+        setLaunchStatus({
+          type: "warn",
+          message:
+            "💡 Đã tải file học phí (.json) về Downloads và gửi lệnh mở Zalo_Bulk_Sender. Nếu máy chưa mở sẵn Tool: hãy tải Tool (.exe hoặc .zip) ở nút bên cạnh, mở lên rồi bấm '⚡ Nhận file mới từ Downloads'!",
+        });
+        showToast("💡 Đã tải file JSON về Downloads. Mở Tool Zalo_Bulk_Sender để nhận danh sách!");
+        return;
+      }
 
       setLaunchStatus({
         type: "loading",
@@ -333,16 +375,16 @@ export default function ZaloParentSenderModal({
       });
       showToast("⏳ Đang khởi động Tool Zalo Bulk Sender trên máy tính...");
 
-      // 2. Kích hoạt mở Tool trên máy
+      // 2. Kích hoạt mở Tool trên máy (khi chạy local)
       const res = await fetch(
-        `/api/coach/send-zalo-parents?action=open_tool&classId=${classroom.id}&month=${month}&year=${year}`
+        `/api/coach/send-zalo-parents?action=open_tool&classId=${classroom?.id || ""}&month=${month}&year=${year}`
       );
       const data = await res.json();
       if (data.success) {
         setLaunchStatus({
           type: "success",
           message:
-            "🚀 Đã kích hoạt Tool Zalo thành công và nạp sẵn dữ liệu học phí của lớp! Nếu cửa sổ Tool chưa nổi lên trên cùng, bạn vui lòng bấm vào biểu tượng Tool trên thanh Taskbar.",
+            "🚀 Đã kích hoạt Tool Zalo thành công và nạp sẵn dữ liệu học phí! Nếu cửa sổ Tool chưa nổi lên trên cùng, bạn vui lòng bấm vào biểu tượng Tool trên thanh Taskbar.",
         });
         showToast("🚀 Đã mở Tool Zalo trên máy tính!");
       } else {
@@ -454,7 +496,7 @@ export default function ZaloParentSenderModal({
               {/* NÚT 1: TẢI TOOL EXE & ZIP */}
               <div className="inline-flex rounded shadow-xs">
                 <a
-                  href="/api/tool/download"
+                  href="/downloads/Zalo_Bulk_Sender.exe"
                   download="Zalo_Bulk_Sender.exe"
                   className="rounded-l border border-amber-400/50 bg-amber-500 hover:bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-950 active:scale-95 transition-all flex items-center gap-1.5"
                   title="Tải trực tiếp phần mềm Zalo_Bulk_Sender.exe"
@@ -463,7 +505,7 @@ export default function ZaloParentSenderModal({
                   <span>📥 Tải Tool (.exe)</span>
                 </a>
                 <a
-                  href="/api/tool/download?format=zip"
+                  href="/downloads/Zalo_Bulk_Sender.zip"
                   download="Zalo_Bulk_Sender.zip"
                   className="rounded-r border-y border-r border-amber-400/50 bg-amber-600 hover:bg-amber-500 px-2 py-1.5 text-[11px] font-semibold text-slate-950 active:scale-95 transition-all flex items-center"
                   title="Tải bản nén (.zip) dự phòng nếu máy tính chặn tải file .exe"
@@ -488,12 +530,16 @@ export default function ZaloParentSenderModal({
                       presentCount: s.presentCount,
                       presentDates: s.presentDates,
                       feePerSession: s.feePerSession,
+                      tuitionAmount: s.tuitionAmount,
+                      surchargeAmount: s.surchargeAmount,
+                      surcharges: s.surcharges,
                       totalAmount: s.totalAmount,
                       bankName: s.bankName,
                       bankAccount: s.bankAccount,
                       accountHolder: s.accountHolder,
                       transferContent: s.transferContent,
                       vietQrUrl: s.vietQrUrl,
+                      customTitle: s.customTitle,
                       classList: s.classList,
                     }));
                     const safeClass = (classroom?.name || "Lop").replace(/[^a-zA-Z0-9\-_]/g, "_");
