@@ -147,6 +147,34 @@ function truncateText(
 }
 
 /**
+ * Chia chuỗi văn bản thành nhiều dòng theo chiều rộng tối đa (không cắt mất chữ bằng ...)
+ */
+function wrapTextLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string[] {
+  if (!text) return [""];
+  if (ctx.measureText(text).width <= maxWidth) return [text];
+
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length > 0 ? lines : [text];
+}
+
+/**
  * Sinh canvas vẽ thẻ báo học phí sắc nét chuẩn Retina (2x scale)
  */
 export async function generateInvoiceCardCanvas(
@@ -154,11 +182,47 @@ export async function generateInvoiceCardCanvas(
 ): Promise<HTMLCanvasElement> {
   const scale = 2;
   const width = 560;
+  const cardW = width - 40;
   const activeClassList = (data.classList || []).filter((c) => c.presentCount > 0);
   const hasMultipleClasses = activeClassList.length > 1;
+
+  // Đo trước số dòng của "Các ngày có mặt" để tính chiều cao thẻ chính xác
+  const measureCanvas = document.createElement("canvas");
+  const measureCtx = measureCanvas.getContext("2d");
+  let extraDatesHeight = 0;
+  const multiClassDateLines: string[][] = [];
+
+  if (measureCtx) {
+    if (hasMultipleClasses) {
+      measureCtx.font = "500 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      activeClassList.forEach((clsItem) => {
+        const hasDates = clsItem.presentDates && clsItem.presentDates.length > 0;
+        if (hasDates) {
+          const lines = wrapTextLines(measureCtx, `Ngày: ${clsItem.presentDates.join(", ")}`, cardW - 200);
+          multiClassDateLines.push(lines);
+          if (lines.length > 1) {
+            extraDatesHeight += (lines.length - 1) * 16;
+          }
+        } else {
+          multiClassDateLines.push([]);
+        }
+      });
+    } else {
+      measureCtx.font = "600 14.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      const datesStr =
+        data.presentDates && data.presentDates.length > 0
+          ? data.presentDates.join(", ")
+          : "Chưa có buổi học";
+      const lines = wrapTextLines(measureCtx, datesStr, cardW - 170);
+      if (lines.length > 1) {
+        extraDatesHeight += (lines.length - 1) * 20;
+      }
+    }
+  }
+
   const extraHeight = hasMultipleClasses
-    ? (activeClassList.length * 62)
-    : 0;
+    ? (activeClassList.length * 62) + extraDatesHeight
+    : extraDatesHeight;
   const surchargeRowsCount = data.surcharges && data.surcharges.length > 0 ? (data.surcharges.length + 1) : 0;
   const surchargeHeight = surchargeRowsCount * 30;
   const baseHeight = 890 + (data.branchName ? 34 : 0);
@@ -180,7 +244,6 @@ export async function generateInvoiceCardCanvas(
   // 2. Thẻ Card chính ở giữa
   const cardX = 20;
   const cardY = 20;
-  const cardW = width - 40;
   const cardH = height - 40;
 
   // Đổ bóng cho card
@@ -275,7 +338,8 @@ export async function generateInvoiceCardCanvas(
     value: string,
     isBoldVal: boolean = false,
     valColor: string = "#0F172A",
-    valFontSize: number = 15.5
+    valFontSize: number = 15.5,
+    wrapLines: boolean = false
   ) => {
     // 1. Nhãn căn lề trái (to hơn, sắc nét)
     ctx.font = "600 14.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -289,9 +353,18 @@ export async function generateInvoiceCardCanvas(
     ctx.fillStyle = valColor;
     ctx.textAlign = "right";
     const maxValW = cardW - 170;
-    ctx.fillText(truncateText(ctx, value, maxValW), colValX, curY + rowH / 2);
 
-    curY += rowH;
+    if (wrapLines) {
+      const lines = wrapTextLines(ctx, value, maxValW);
+      const lineStep = 20;
+      lines.forEach((line, lIdx) => {
+        ctx.fillText(line, colValX, curY + rowH / 2 + lIdx * lineStep);
+      });
+      curY += rowH + Math.max(0, lines.length - 1) * lineStep;
+    } else {
+      ctx.fillText(truncateText(ctx, value, maxValW), colValX, curY + rowH / 2);
+      curY += rowH;
+    }
   };
 
   // Hiển thị tên học sinh (không kèm mã số HS theo yêu cầu)
@@ -308,7 +381,11 @@ export async function generateInvoiceCardCanvas(
     const boxRightX = padLeft + (cardW - 48);
     activeClassList.forEach((clsItem, idx) => {
       const hasDates = clsItem.presentDates && clsItem.presentDates.length > 0;
-      const boxH = hasDates ? 48 : 38;
+      const dLines = multiClassDateLines[idx] && multiClassDateLines[idx].length > 0
+        ? multiClassDateLines[idx]
+        : (hasDates ? [`Ngày: ${clsItem.presentDates.join(", ")}`] : []);
+      const extraLineH = dLines.length > 1 ? (dLines.length - 1) * 16 : 0;
+      const boxH = (hasDates ? 48 : 38) + extraLineH;
       ctx.fillStyle = "#F8FAFC";
       roundRect(ctx, padLeft, curY, cardW - 48, boxH, 8);
       ctx.fill();
@@ -341,8 +418,12 @@ export async function generateInvoiceCardCanvas(
       if (hasDates) {
         ctx.textAlign = "right";
         ctx.fillStyle = "#94A3B8";
-        const datesText = truncateText(ctx, `Ngày: ${clsItem.presentDates.join(", ")}`, cardW - 200);
-        ctx.fillText(datesText, boxRightX - 8, curY + 24);
+        const linesToDraw = dLines.length > 0
+          ? dLines
+          : wrapTextLines(ctx, `Ngày: ${clsItem.presentDates.join(", ")}`, cardW - 200);
+        linesToDraw.forEach((line, lIdx) => {
+          ctx.fillText(line, boxRightX - 8, curY + 24 + lIdx * 16);
+        });
       }
 
       curY += boxH + 6;
@@ -359,7 +440,7 @@ export async function generateInvoiceCardCanvas(
       data.presentDates && data.presentDates.length > 0
         ? data.presentDates.join(", ")
         : "Chưa có buổi học";
-    renderRow("Các ngày có mặt:", datesStr, false, "#334155", 14.5);
+    renderRow("Các ngày có mặt:", datesStr, false, "#334155", 14.5, true);
     renderRow("Đơn giá:", `${formatCurrencyVND(data.feePerSession)}/buổi`, false, "#1E293B", 15);
   }
 
