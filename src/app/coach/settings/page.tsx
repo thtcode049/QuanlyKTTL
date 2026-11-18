@@ -41,6 +41,10 @@ export default function CoachSettingsPage() {
   const [useCustomQr, setUseCustomQr] = useState<boolean>(false);
 
   // Zalo template state (Không chứa Zalo OA)
+  const DEFAULT_GREETING_TEMPLATE =
+    "CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {studentName} ({studentCode}).";
+  const [sendGreeting, setSendGreeting] = useState<boolean>(true);
+  const [greetingTemplate, setGreetingTemplate] = useState<string>(DEFAULT_GREETING_TEMPLATE);
   const [titleTemplate, setTitleTemplate] = useState(dataStore.zaloConfig.titleTemplate);
   const [bodyTemplate, setBodyTemplate] = useState(dataStore.zaloConfig.bodyTemplate);
   const [footerNote, setFooterNote] = useState(dataStore.zaloConfig.footerNote);
@@ -72,6 +76,13 @@ export default function CoachSettingsPage() {
     if (cfg.qrTemplate) setQrTemplate(cfg.qrTemplate);
     if (cfg.customQrImage) setCustomQrImage(cfg.customQrImage);
     if (cfg.useCustomQr !== undefined) setUseCustomQr(Boolean(cfg.useCustomQr));
+
+    try {
+      const savedSendGreeting = localStorage.getItem("kttl_zalo_send_greeting");
+      if (savedSendGreeting !== null) setSendGreeting(savedSendGreeting === "true");
+      const savedGreetingTpl = localStorage.getItem("kttl_zalo_greeting_template");
+      if (savedGreetingTpl !== null) setGreetingTemplate(savedGreetingTpl);
+    } catch (e) {}
 
     const zcfg = dataStore.zaloConfig;
     if (zcfg.titleTemplate) setTitleTemplate(zcfg.titleTemplate);
@@ -106,6 +117,8 @@ export default function CoachSettingsPage() {
   };
 
   const handleResetZaloTemplate = () => {
+    setSendGreeting(true);
+    setGreetingTemplate(DEFAULT_GREETING_TEMPLATE);
     setTitleTemplate("[KTTL] THÔNG BÁO HỌC PHÍ THÁNG {month}/{year}");
     setBodyTemplate(
       "Kính gửi phụ huynh em {studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng {month}/{year}."
@@ -137,6 +150,11 @@ export default function CoachSettingsPage() {
       bodyTemplate,
       footerNote,
     });
+
+    try {
+      localStorage.setItem("kttl_zalo_send_greeting", String(sendGreeting));
+      localStorage.setItem("kttl_zalo_greeting_template", greetingTemplate.trim() || DEFAULT_GREETING_TEMPLATE);
+    } catch (err) {}
 
     setSavedSuccess(true);
     try {
@@ -467,6 +485,69 @@ export default function CoachSettingsPage() {
           <div className="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Template Inputs (7 cols) */}
             <div className="lg:col-span-7 space-y-3.5 text-xs">
+              {/* Tin nhắn chào gửi kèm ảnh thẻ qua Zalo Bulk Sender */}
+              <div className="rounded border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 font-bold text-slate-900 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sendGreeting}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setSendGreeting(val);
+                        try {
+                          localStorage.setItem("kttl_zalo_send_greeting", String(val));
+                        } catch (err) {}
+                      }}
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>💬 Tin nhắn chào gửi kèm ảnh thẻ (Zalo Bulk Sender)</span>
+                  </label>
+                </div>
+
+                {sendGreeting && (
+                  <>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        { tag: "{studentName}", label: "Tên học viên" },
+                        { tag: "{studentCode}", label: "Mã HV" },
+                        { tag: "{month}", label: "Tháng" },
+                        { tag: "{year}", label: "Năm" },
+                        { tag: "{totalAmount}", label: "Tổng học phí" },
+                      ].map((t) => (
+                        <button
+                          key={t.tag}
+                          type="button"
+                          onClick={() => {
+                            const next = `${greetingTemplate} ${t.tag}`;
+                            setGreetingTemplate(next);
+                            try {
+                              localStorage.setItem("kttl_zalo_greeting_template", next);
+                            } catch (err) {}
+                          }}
+                          className="rounded bg-white px-2 py-0.5 text-[11px] font-semibold text-brand-primary border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                        >
+                          + {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={greetingTemplate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setGreetingTemplate(val);
+                        try {
+                          localStorage.setItem("kttl_zalo_greeting_template", val);
+                        } catch (err) {}
+                      }}
+                      placeholder={DEFAULT_GREETING_TEMPLATE}
+                      className="w-full rounded border border-emerald-200 bg-white p-2 text-xs text-slate-900 focus:border-brand-primary focus:outline-none"
+                    />
+                  </>
+                )}
+              </div>
+
               <div>
                 <label className="font-semibold text-slate-700 block mb-1">
                   Tiêu đề tin nhắn
@@ -551,6 +632,17 @@ export default function CoachSettingsPage() {
                       <p className="text-[10px] text-slate-400">Vừa xong</p>
                     </div>
                   </div>
+
+                  {sendGreeting && (
+                    <div className="rounded bg-blue-50/70 border border-blue-100 px-2.5 py-2 text-[11px] text-slate-800 leading-relaxed">
+                      {(greetingTemplate || DEFAULT_GREETING_TEMPLATE)
+                        .replace(/\{studentName\}/g, "Nguyễn Minh Khang")
+                        .replace(/\{studentCode\}/g, "HS18")
+                        .replace(/\{month\}/g, "10")
+                        .replace(/\{year\}/g, "2026")
+                        .replace(/\{totalAmount\}/g, "600.000 đ")}
+                    </div>
+                  )}
 
                   <h4 className="font-bold text-blue-800 text-xs">
                     {titleTemplate.replace("{month}", "10").replace("{year}", "2026")}
