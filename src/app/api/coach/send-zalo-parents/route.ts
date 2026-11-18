@@ -228,8 +228,19 @@ export async function GET(req: NextRequest) {
             });
           }
 
+          const sendGreetingParam = searchParams.get("sendGreeting");
+          const greetingTemplateParam = searchParams.get("greetingTemplate");
+
           const exportBundle = {
             exportTime: new Date().toISOString(),
+            ...(greetingTemplateParam !== null || sendGreetingParam !== null
+              ? {
+                  greetingConfig: {
+                    enabled: sendGreetingParam !== "false",
+                    template: greetingTemplateParam || "",
+                  },
+                }
+              : {}),
             classInfo: {
               classId,
               className: targetClass?.name,

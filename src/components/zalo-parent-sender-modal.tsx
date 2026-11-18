@@ -179,6 +179,17 @@ export default function ZaloParentSenderModal({
     }
   }, [initialStudentId, students]);
 
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined") {
+      try {
+        const savedSend = localStorage.getItem("kttl_zalo_send_greeting");
+        if (savedSend !== null) setSendGreeting(savedSend === "true");
+        const savedTpl = localStorage.getItem("kttl_zalo_greeting_template");
+        if (savedTpl !== null) setGreetingTemplate(savedTpl);
+      } catch (e) {}
+    }
+  }, [isOpen]);
+
   if (!isOpen || !classroom) return null;
 
   // Đánh dấu 1 học sinh đã gửi qua Tool
@@ -400,7 +411,7 @@ export default function ZaloParentSenderModal({
 
       // 2. Kích hoạt mở Tool trên máy (khi chạy local)
       const res = await fetch(
-        `/api/coach/send-zalo-parents?action=open_tool&classId=${classroom?.id || ""}&month=${month}&year=${year}`
+        `/api/coach/send-zalo-parents?action=open_tool&classId=${classroom?.id || ""}&month=${month}&year=${year}&sendGreeting=${sendGreeting}&greetingTemplate=${encodeURIComponent(greetingTemplate.trim() || DEFAULT_GREETING)}`
       );
       const data = await res.json();
       if (data.success) {
