@@ -17,10 +17,12 @@ import queue
 import random
 import re
 import shutil
+import subprocess
 import sys
 import threading
 import time
 import urllib.parse
+import urllib.request
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
@@ -41,6 +43,35 @@ CARDS_DIR = DATA_DIR / "cards_output"
 LOG_DIR = DATA_DIR / "logs"
 CONFIG_FILE = DATA_DIR / "config.json"
 ZALO_URL = "https://chat.zalo.me/"
+APP_VERSION = "2.2.0"
+
+
+def load_tool_config() -> dict:
+    try:
+        if CONFIG_FILE.exists():
+            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def save_tool_config(patch: dict):
+    try:
+        cfg = load_tool_config()
+        cfg.update(patch)
+        CONFIG_FILE.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def parse_version(v: str) -> tuple[int, ...]:
+    nums = []
+    for part in str(v or "0").strip().lstrip("vV").split("."):
+        try:
+            nums.append(int(re.sub(r"\D", "", part) or "0"))
+        except Exception:
+            nums.append(0)
+    return tuple(nums)
 
 SEL_SEARCH = "input#contact-search-input"
 SEL_FRIEND = "div[id^='friend-item-']"
@@ -1256,6 +1287,7 @@ class App(ctk.CTk):
         self.preview_image_path: Path | None = None
         self.counts = {"OK": 0, "NOT_FOUND": 0, "ERROR": 0, "NO_PHONE": 0}
         self.var_only_pending = ctk.BooleanVar(value=False)
+        self.available_update: dict | None = None
 
         self.f_title = ctk.CTkFont("Segoe UI", 20, "bold")
         self.f_h = ctk.CTkFont("Segoe UI", 13, "bold")
@@ -1273,6 +1305,9 @@ class App(ctk.CTk):
             # Tự kiểm tra xem có file tải mới từ Downloads không
             self.after(1000, self._auto_check_downloads_silent)
 
+        # Tự kiểm tra phiên bản mới ở nền
+        self.after(1800, lambda: self._check_updates_async(silent=True))
+
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -1281,10 +1316,22 @@ class App(ctk.CTk):
         head = ctk.CTkFrame(self, fg_color="transparent")
         head.grid(row=0, column=0, sticky="ew", padx=18, pady=(12, 6))
         ctk.CTkLabel(head, text="⚡ Zalo Bulk Sender", font=self.f_title, text_color="#e6edf7").pack(side="left")
-        ctk.CTkLabel(head, text="• Gửi Thẻ Báo Học Phí Tự Động", font=self.f_body, text_color=C_MUTED).pack(side="left", padx=8)
+        ctk.CTkLabel(head, text=f"v{APP_VERSION} • Gửi Thẻ Báo Học Phí Tự Động", font=self.f_body, text_color=C_MUTED).pack(side="left", padx=8)
 
         self.lbl_login = ctk.CTkLabel(head, text="● Chưa kết nối Zalo", font=self.f_h, text_color=C_MUTED)
         self.lbl_login.pack(side="right")
+
+        self.b_update = ctk.CTkButton(
+            head,
+            text="🔄 Kiểm tra cập nhật",
+            command=self._on_update_button_click,
+            fg_color="#1e293b",
+            hover_color="#334155",
+            height=28,
+            corner_radius=8,
+            font=self.f_body,
+        )
+        self.b_update.pack(side="right", padx=12)
 
         # Tabview Chính
         self.tabs = ctk.CTkTabview(self, fg_color=C_CARD, corner_radius=14, border_width=1, border_color=C_BORDER)
@@ -1546,6 +1593,10 @@ class App(ctk.CTk):
             cls_obj = data.get("classroom")
             if isinstance(cls_obj, dict):
                 bundle_class_name = cls_obj.get("name", "")
+            server_url = str(data.get("serverUrl") or "").strip().rstrip("/")
+            if server_url.startswith("http"):
+                save_tool_config({"serverUrl": server_url})
+                self.after(600, lambda: self._check_updates_async(silent=True))
 
         if not students:
             messagebox.showwarning("Dữ liệu rỗng", "File không chứa danh sách học sinh.")
@@ -1871,9 +1922,165 @@ class App(ctk.CTk):
                     head = "⏹ ĐÃ DỪNG" if p["stopped"] else "🏁 HOÀN TẤT"
                     self.log(f"{head}: Thành công {c.get('OK', 0)} • Lỗi/Không tìm thấy {c.get('NOT_FOUND', 0) + c.get('ERROR', 0)}", "ok")
                     self.lbl_status.configure(text="Tiến trình đã hoàn thành.")
+                elif kind == "update_found":
+                    self.available_update = p
+                    ver = p.get("version", "")
+                    self.b_update.configure(
+                        text=f"🎉 Cập nhật v{ver}",
+                        fg_color="#059669",
+                        hover_color="#10b981",
+                        state="normal",
+                    )
+                    self.log(f"Phát hiện phiên bản mới v{ver} (hiện tại v{APP_VERSION}). Bấm nút 'Cập nhật v{ver}' ở góc trên để tự động nâng cấp!", "ok")
+                    if not p.get("silent"):
+                        self._prompt_and_install_update()
+                elif kind == "update_none":
+                    self.b_update.configure(text="🔄 Kiểm tra cập nhật", state="normal")
+                    if not p.get("silent"):
+                        messagebox.showinfo("Đã là bản mới nhất", f"Bạn đang sử dụng phiên bản mới nhất (v{APP_VERSION}).")
+                elif kind == "update_error":
+                    self.b_update.configure(text="🔄 Kiểm tra cập nhật", state="normal")
+                    if not p.get("silent"):
+                        messagebox.showwarning("Không kiểm tra được", p.get("error", "Không thể kết nối máy chủ cập nhật."))
+                elif kind == "update_progress":
+                    pct = float(p.get("pct", 0))
+                    self.progress.set(pct)
+                    self.lbl_status.configure(text=p.get("msg", "Đang tải bản cập nhật..."))
+                elif kind == "update_ready":
+                    self._apply_downloaded_update(Path(p["new_exe"]), p["version"])
         except queue.Empty:
             pass
         self.after(100, self._poll)
+
+    # ---------- Tự động kiểm tra & cài đặt cập nhật ----------
+    def _check_updates_async(self, silent: bool = True):
+        server_url = str(load_tool_config().get("serverUrl") or "").strip().rstrip("/")
+        if not server_url:
+            if not silent:
+                messagebox.showinfo(
+                    "Chưa có địa chỉ Web",
+                    "Hãy nạp 1 file dữ liệu học phí (.json) tải từ trang web để Tool ghi nhớ địa chỉ máy chủ cập nhật.",
+                )
+            return
+
+        if not silent:
+            self.b_update.configure(text="⏳ Đang kiểm tra...", state="disabled")
+
+        def _worker():
+            try:
+                url = f"{server_url}/downloads/version.json?t={int(time.time())}"
+                req = urllib.request.Request(url, headers={"User-Agent": "KTTL-Zalo-Sender"})
+                with urllib.request.urlopen(req, timeout=6) as resp:
+                    info = json.loads(resp.read().decode("utf-8"))
+                remote_ver = str(info.get("version") or "").strip()
+                dl_path = str(info.get("downloadUrl") or "/downloads/Zalo_Bulk_Sender.exe").strip()
+                full_dl_url = dl_path if dl_path.startswith("http") else f"{server_url}{dl_path}"
+                if remote_ver and parse_version(remote_ver) > parse_version(APP_VERSION):
+                    self.ui_q.put(("update_found", {
+                        "version": remote_ver,
+                        "downloadUrl": full_dl_url,
+                        "notes": info.get("notes", ""),
+                        "silent": silent,
+                    }))
+                else:
+                    self.ui_q.put(("update_none", {"silent": silent}))
+            except Exception as e:
+                self.ui_q.put(("update_error", {"silent": silent, "error": f"Lỗi kiểm tra cập nhật: {e}"}))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_update_button_click(self):
+        if self.available_update:
+            self._prompt_and_install_update()
+        else:
+            self._check_updates_async(silent=False)
+
+    def _prompt_and_install_update(self):
+        if not self.available_update:
+            return
+        ver = self.available_update.get("version", "")
+        notes = self.available_update.get("notes", "")
+        msg = f"Đã có phiên bản mới v{ver} (bản hiện tại: v{APP_VERSION})."
+        if notes:
+            msg += f"\n\nNội dung mới:\n{notes}"
+        msg += "\n\nBạn có muốn Tool tự động tải và cập nhật ngay không?"
+        if not messagebox.askyesno("Cập nhật phiên bản mới", msg):
+            return
+
+        if not getattr(sys, "frozen", False):
+            messagebox.showinfo(
+                "Đang chạy từ mã nguồn",
+                "Bạn đang chạy trực tiếp từ file Python (.py). Bản cập nhật tự động chỉ áp dụng cho file .exe đã đóng gói.",
+            )
+            return
+
+        dl_url = self.available_update["downloadUrl"]
+        self.b_update.configure(text="⏳ Đang tải bản mới...", state="disabled")
+        self.log(f"Đang tải bản cập nhật v{ver} từ {dl_url}...", "info")
+
+        def _download_worker():
+            try:
+                tmp_exe = DATA_DIR / "Zalo_Bulk_Sender.new.exe"
+                req = urllib.request.Request(dl_url, headers={"User-Agent": "KTTL-Zalo-Sender"})
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    total_size = int(resp.headers.get("Content-Length") or 0)
+                    downloaded = 0
+                    with open(tmp_exe, "wb") as out_f:
+                        while True:
+                            chunk = resp.read(262144)
+                            if not chunk:
+                                break
+                            out_f.write(chunk)
+                            downloaded += len(chunk)
+                            if total_size > 0:
+                                pct = min(1.0, downloaded / total_size)
+                                mb_now = downloaded / (1024 * 1024)
+                                mb_tot = total_size / (1024 * 1024)
+                                self.ui_q.put(("update_progress", {
+                                    "pct": pct,
+                                    "msg": f"Đang tải v{ver}: {mb_now:.1f} / {mb_tot:.1f} MB ({int(pct*100)}%)",
+                                }))
+                # Kiểm tra file .exe hợp lệ (tối thiểu 5MB và có header PE 'MZ')
+                if not tmp_exe.exists() or tmp_exe.stat().st_size < 5 * 1024 * 1024:
+                    raise RuntimeError("File tải về không đầy đủ hoặc bị lỗi.")
+                with open(tmp_exe, "rb") as f_chk:
+                    if f_chk.read(2) != b"MZ":
+                        raise RuntimeError("File tải về không phải định dạng .exe hợp lệ.")
+                self.ui_q.put(("update_ready", {"new_exe": str(tmp_exe), "version": ver}))
+            except Exception as e:
+                self.ui_q.put(("update_error", {"silent": False, "error": f"Tải bản cập nhật thất bại: {e}"}))
+
+        threading.Thread(target=_download_worker, daemon=True).start()
+
+    def _apply_downloaded_update(self, new_exe: Path, new_version: str):
+        try:
+            current_exe = Path(sys.executable).resolve()
+            bat_path = DATA_DIR / "apply_update.bat"
+            bat_script = (
+                "@echo off\r\n"
+                "timeout /t 2 /nobreak >nul\r\n"
+                ":retry\r\n"
+                f'move /Y "{new_exe}" "{current_exe}" >nul 2>&1\r\n'
+                "if errorlevel 1 (\r\n"
+                "  timeout /t 1 /nobreak >nul\r\n"
+                "  goto retry\r\n"
+                ")\r\n"
+                f'start "" "{current_exe}"\r\n'
+                'del "%~f0"\r\n'
+            )
+            bat_path.write_text(bat_script, encoding="utf-8")
+            creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            subprocess.Popen(
+                ["cmd.exe", "/c", str(bat_path)],
+                creationflags=creation_flags,
+                close_fds=True,
+            )
+            self.log(f"Đang khởi động lại sang phiên bản v{new_version}...", "ok")
+            self.worker.stop_event.set()
+            self.worker.submit("quit")
+            self.destroy()
+        except Exception as e:
+            messagebox.showerror("Lỗi cài đặt cập nhật", f"Không thể tự động thay thế file .exe: {e}")
 
     def _on_close(self):
         if self.busy and not messagebox.askyesno("Thoát", "Đang gửi dữ liệu. Dừng và thoát?"):

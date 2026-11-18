@@ -265,7 +265,8 @@ export default function ZaloParentSenderModal({
       (st) => st.presentCount > 0 || st.totalAmount > 0
     );
     const exportBundle = {
-      version: "2.1",
+      version: "2.2.0",
+      serverUrl: typeof window !== "undefined" ? window.location.origin : "",
       generatedAt: new Date().toISOString(),
       month,
       year,
