@@ -47,6 +47,20 @@ function applyZaloPlaceholders(template: string, data: InvoiceCardData): string 
     .replace(/\{transferContent\}/g, data.transferContent || "");
 }
 
+export function resolveInvoiceTitle(data: InvoiceCardData): string {
+  if (data.customTitle) return data.customTitle;
+  const tpl = dataStore.zaloConfig?.titleTemplate;
+  if (tpl && tpl.trim()) return applyZaloPlaceholders(tpl, data);
+  return `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`;
+}
+
+export function resolveInvoiceIntro(data: InvoiceCardData): string {
+  if (data.customIntro) return data.customIntro;
+  const tpl = dataStore.zaloConfig?.bodyTemplate;
+  if (tpl && tpl.trim()) return applyZaloPlaceholders(tpl, data);
+  return `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year}.`;
+}
+
 /**
  * Tải ảnh QR hoặc tài nguyên ảnh an toàn không bao giờ bị CORS / Tainted Canvas:
  * Bóc tách trực tiếp base64 PNG từ SVG của img.vietqr.io hoặc thông qua proxy nội bộ
@@ -201,8 +215,8 @@ export async function generateInvoiceCardCanvas(
   const hasMultipleClasses = activeClassList.length > 1;
 
   // Đo trước số dòng của "Lời chào" & "Các ngày có mặt" để tính chiều cao thẻ chính xác
-  const rawTitle = data.customTitle || (dataStore.zaloConfig?.titleTemplate ? applyZaloPlaceholders(dataStore.zaloConfig.titleTemplate, data) : `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`);
-  const rawIntro = data.customIntro || (dataStore.zaloConfig?.bodyTemplate ? applyZaloPlaceholders(dataStore.zaloConfig.bodyTemplate, data) : `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year}.`);
+  const rawTitle = resolveInvoiceTitle(data);
+  const rawIntro = resolveInvoiceIntro(data);
 
   const measureCanvas = document.createElement("canvas");
   const measureCtx = measureCanvas.getContext("2d");

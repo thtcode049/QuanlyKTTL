@@ -21,6 +21,7 @@ import {
   InvoiceCardData,
   downloadInvoiceCardPng,
   copyInvoiceCardToClipboard,
+  resolveInvoiceTitle,
 } from "@/lib/invoice-card-generator";
 import { formatCurrencyVND, generateVietQrUrl, generateVietQrDataUrl } from "@/lib/vietqr";
 
@@ -46,7 +47,7 @@ export default function InvoiceReceiptModal({
 
   useEffect(() => {
     if (!data) return;
-    setTitleInput(data.customTitle || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`);
+    setTitleInput(resolveInvoiceTitle(data));
     if (data.vietQrUrl) {
       setLocalQrSrc(data.vietQrUrl);
       return;
