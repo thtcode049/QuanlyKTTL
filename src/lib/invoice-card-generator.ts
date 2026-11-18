@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { formatCurrencyVND, generateVietQrDataUrl, resolveBank } from "./vietqr";
+import { dataStore } from "./data-store";
 
 export interface InvoiceClassItem {
   className: string;
@@ -31,6 +32,19 @@ export interface InvoiceCardData {
   vietQrUrl: string;
   classList?: InvoiceClassItem[];
   customTitle?: string;
+  customIntro?: string;
+}
+
+function applyZaloPlaceholders(template: string, data: InvoiceCardData): string {
+  return template
+    .replace(/\{studentName\}/g, data.studentName || "")
+    .replace(/\{studentCode\}/g, data.studentCode || "")
+    .replace(/\{className\}/g, data.className || "")
+    .replace(/\{month\}/g, String(data.month))
+    .replace(/\{year\}/g, String(data.year))
+    .replace(/\{presentCount\}/g, String(data.presentCount))
+    .replace(/\{totalAmount\}/g, formatCurrencyVND(data.totalAmount))
+    .replace(/\{transferContent\}/g, data.transferContent || "");
 }
 
 /**
@@ -186,13 +200,24 @@ export async function generateInvoiceCardCanvas(
   const activeClassList = (data.classList || []).filter((c) => c.presentCount > 0);
   const hasMultipleClasses = activeClassList.length > 1;
 
-  // Đo trước số dòng của "Các ngày có mặt" để tính chiều cao thẻ chính xác
+  // Đo trước số dòng của "Lời chào" & "Các ngày có mặt" để tính chiều cao thẻ chính xác
+  const rawTitle = data.customTitle || (dataStore.zaloConfig?.titleTemplate ? applyZaloPlaceholders(dataStore.zaloConfig.titleTemplate, data) : `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`);
+  const rawIntro = data.customIntro || (dataStore.zaloConfig?.bodyTemplate ? applyZaloPlaceholders(dataStore.zaloConfig.bodyTemplate, data) : `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year}.`);
+
   const measureCanvas = document.createElement("canvas");
   const measureCtx = measureCanvas.getContext("2d");
   let extraDatesHeight = 0;
+  let extraIntroHeight = 0;
+  let introLines: string[] = [rawIntro];
   const multiClassDateLines: string[][] = [];
 
   if (measureCtx) {
+    measureCtx.font = "500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    introLines = wrapTextLines(measureCtx, rawIntro, cardW - 48);
+    if (introLines.length > 2) {
+      extraIntroHeight = (introLines.length - 2) * 19;
+    }
+
     if (hasMultipleClasses) {
       measureCtx.font = "500 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       activeClassList.forEach((clsItem) => {
@@ -221,8 +246,8 @@ export async function generateInvoiceCardCanvas(
   }
 
   const extraHeight = hasMultipleClasses
-    ? (activeClassList.length * 62) + extraDatesHeight
-    : extraDatesHeight;
+    ? (activeClassList.length * 62) + extraDatesHeight + extraIntroHeight
+    : extraDatesHeight + extraIntroHeight;
   const surchargeRowsCount = data.surcharges && data.surcharges.length > 0 ? (data.surcharges.length + 1) : 0;
   const surchargeHeight = surchargeRowsCount * 30;
   const baseHeight = 890 + (data.branchName ? 34 : 0);
@@ -302,22 +327,21 @@ export async function generateInvoiceCardCanvas(
   ctx.fillStyle = "#059669";
   ctx.fillText(badgeText, padLeft + 9, curY + 5);
 
-  // 5. Tiêu đề chính (cho phép tùy biến customTitle)
+  // 5. Tiêu đề chính (lấy từ customTitle hoặc Cài đặt Mẫu Tin Nhắn Zalo)
   curY += 32;
   ctx.font = "800 18.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#0F172A";
-  const titleText = data.customTitle || `[KTTL] THÔNG BÁO HỌC PHÍ THÁNG ${data.month}/${data.year}`;
-  ctx.fillText(titleText, padLeft, curY);
+  ctx.fillText(truncateText(ctx, rawTitle, cardW - 48), padLeft, curY);
 
-  // 6. Lời chào
+  // 6. Lời chào (lấy từ customIntro hoặc Cài đặt Mẫu Tin Nhắn Zalo, tự động xuống dòng)
   curY += 25;
   ctx.font = "500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = "#475569";
-  const introLine1 = `Kính gửi phụ huynh em ${data.studentName}, CLB Cờ vua Kiện Tướng Tương Lai`;
-  const introLine2 = `xin gửi bảng tổng kết học phí tháng ${data.month}/${data.year}.`;
-  ctx.fillText(truncateText(ctx, introLine1, cardW - 48), padLeft, curY);
-  curY += 19;
-  ctx.fillText(introLine2, padLeft, curY);
+  const drawnIntroLines = introLines.length > 0 ? introLines : wrapTextLines(ctx, rawIntro, cardW - 48);
+  drawnIntroLines.forEach((line, lIdx) => {
+    ctx.fillText(line, padLeft, curY + lIdx * 19);
+  });
+  curY += Math.max(1, drawnIntroLines.length - 1) * 19;
 
   // Đường kẻ phân cách
   curY += 20;
