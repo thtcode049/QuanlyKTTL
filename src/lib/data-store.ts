@@ -404,6 +404,7 @@ class InMemoryDataStore {
   public notifications: NotificationData[] = [...initialNotifications];
   public invoices: MonthlyInvoiceData[] = [];
   public cachedInvoiceStatuses: Record<string, "PENDING" | "PAID"> = {};
+  public cachedZaloSentAt: Record<string, string> = {};
 
   constructor() {
     this.normalizeCoachData();
@@ -568,6 +569,7 @@ class InMemoryDataStore {
 
       // Phục hồi trạng thái đã gửi Zalo
       if (data.zaloSentMap && typeof data.zaloSentMap === "object") {
+        this.cachedZaloSentAt = { ...this.cachedZaloSentAt, ...data.zaloSentMap };
         this.invoices.forEach((inv) => {
           const direct = data.zaloSentMap[inv.id];
           const composite = data.zaloSentMap[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`];
@@ -801,6 +803,15 @@ class InMemoryDataStore {
               this.cachedInvoiceStatuses[composite] = inv.status;
               this.cachedInvoiceStatuses[inv.id] = inv.status;
               this.cachedInvoiceStatuses[studentMonth] = inv.status;
+            }
+            if (inv.zaloSentAt) {
+              const isoSent =
+                typeof inv.zaloSentAt === "string"
+                  ? inv.zaloSentAt
+                  : new Date(inv.zaloSentAt).toISOString();
+              this.cachedZaloSentAt[composite] = isoSent;
+              this.cachedZaloSentAt[inv.id] = isoSent;
+              this.cachedZaloSentAt[studentMonth] = isoSent;
             }
           });
         }
@@ -1271,6 +1282,11 @@ class InMemoryDataStore {
 
         // Mặc định ban đầu luôn là "PENDING" (chưa đóng) theo đúng yêu cầu
         const status: "PENDING" | "PAID" = savedStatus || "PENDING";
+        const savedSentAt =
+          existing?.zaloSentAt ||
+          this.cachedZaloSentAt[compositeKey] ||
+          (existing?.id ? this.cachedZaloSentAt[existing.id] : undefined) ||
+          this.cachedZaloSentAt[studentMonthKey];
 
         newInvoices.push({
           id: existing?.id || `inv-${cls.id}-${student.id}-${month}-${year}`,
@@ -1286,7 +1302,7 @@ class InMemoryDataStore {
           surcharges,
           totalAmount,
           status,
-          zaloSentAt: existing?.zaloSentAt,
+          zaloSentAt: savedSentAt,
           vietQrUrl: existing?.vietQrUrl,
           createdAt: existing?.createdAt || new Date().toISOString(),
         });
@@ -1330,7 +1346,11 @@ class InMemoryDataStore {
   public markInvoiceZaloSent(invoiceId: string, sentAt?: string) {
     const inv = this.invoices.find((i) => i.id === invoiceId);
     if (inv) {
-      inv.zaloSentAt = sentAt || new Date().toISOString();
+      const iso = sentAt || new Date().toISOString();
+      inv.zaloSentAt = iso;
+      this.cachedZaloSentAt[inv.id] = iso;
+      this.cachedZaloSentAt[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`] = iso;
+      this.cachedZaloSentAt[`${inv.studentId}_${inv.month}_${inv.year}`] = iso;
       this.saveToLocalStorage();
     }
   }
@@ -1346,10 +1366,14 @@ class InMemoryDataStore {
     const inv = this.invoices.find(
       (i) => i.classId === classId && i.studentId === studentId && i.month === month && i.year === year
     );
+    const iso = sentAt || new Date().toISOString();
+    this.cachedZaloSentAt[`${classId}_${studentId}_${month}_${year}`] = iso;
+    this.cachedZaloSentAt[`${studentId}_${month}_${year}`] = iso;
     if (inv) {
-      inv.zaloSentAt = sentAt || new Date().toISOString();
-      this.saveToLocalStorage();
+      inv.zaloSentAt = iso;
+      this.cachedZaloSentAt[inv.id] = iso;
     }
+    this.saveToLocalStorage();
   }
 
   // Tính thù lao HLV: Số ca dạy thực tế * Đơn giá ca dạy (Hỗ trợ lọc theo danh sách cơ sở targetBranchIds)

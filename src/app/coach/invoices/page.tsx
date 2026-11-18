@@ -438,6 +438,21 @@ function InvoicesContent() {
     reloadInvoices();
   }, [selectedClassId, selectedMonth, selectedYear, classes]);
 
+  // Tự động đồng bộ trạng thái đã gửi Zalo từ DB khi quay lại tab trình duyệt
+  useEffect(() => {
+    let lastSyncAt = 0;
+    const handleFocusSync = () => {
+      const now = Date.now();
+      if (now - lastSyncAt < 4000) return;
+      lastSyncAt = now;
+      dataStore.syncWithDatabase().then(() => {
+        reloadInvoices();
+      });
+    };
+    window.addEventListener("focus", handleFocusSync);
+    return () => window.removeEventListener("focus", handleFocusSync);
+  }, [selectedClassId, selectedMonth, selectedYear, classes]);
+
   // Tìm các buổi học của lớp trong tháng để lấy danh sách ngày có mặt
   const classSessions = dataStore.sessions.filter((sess) => {
     if (!isAllClasses && sess.classId !== selectedClass?.id) return false;

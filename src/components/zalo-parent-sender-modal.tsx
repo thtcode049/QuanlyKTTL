@@ -347,6 +347,7 @@ export default function ZaloParentSenderModal({
           surcharges: st.surcharges ?? [],
           totalAmount: st.totalAmount,
           status: st.status,
+          zaloSentAt: st.zaloSentAt || sentMap[st.studentId] || undefined,
           transferContent: st.transferContent,
           vietQrUrl: st.vietQrUrl,
           bankName: st.bankName,

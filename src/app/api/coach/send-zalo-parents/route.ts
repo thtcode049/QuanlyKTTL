@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dataStore } from "@/lib/data-store";
 import { generateVietQrUrl, formatTuitionTransferContent } from "@/lib/vietqr";
+import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -534,23 +535,116 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, studentId, studentIds, month, year } = body;
 
-    // Đánh dấu học viên đã gửi thẻ học phí qua Tool Zalo
+    // Đánh dấu học viên đã gửi thẻ học phí qua Tool Zalo (lưu cả RAM & PostgreSQL)
     if (action === "mark_sent") {
-      const now = new Date().toISOString();
-      if (studentId) {
-        dataStore.invoices.forEach((inv) => {
-          if (inv.studentId === studentId && (!month || inv.month === month) && (!year || inv.year === year)) {
-            inv.zaloSentAt = now;
-          }
-        });
-      } else if (Array.isArray(studentIds)) {
-        dataStore.invoices.forEach((inv) => {
-          if (studentIds.includes(inv.studentId) && (!month || inv.month === month) && (!year || inv.year === year)) {
-            inv.zaloSentAt = now;
-          }
+      const nowDate = new Date();
+      const now = nowDate.toISOString();
+      const targetIds: string[] = [];
+      if (studentId) targetIds.push(String(studentId));
+      if (Array.isArray(studentIds)) {
+        studentIds.forEach((id: any) => {
+          if (id && !targetIds.includes(String(id))) targetIds.push(String(id));
         });
       }
+
+      const numMonth = month ? Number(month) : undefined;
+      const numYear = year ? Number(year) : undefined;
+
+      dataStore.invoices.forEach((inv) => {
+        if (
+          targetIds.includes(inv.studentId) &&
+          (!numMonth || inv.month === numMonth) &&
+          (!numYear || inv.year === numYear)
+        ) {
+          inv.zaloSentAt = now;
+          dataStore.cachedZaloSentAt[inv.id] = now;
+          dataStore.cachedZaloSentAt[`${inv.classId}_${inv.studentId}_${inv.month}_${inv.year}`] = now;
+          dataStore.cachedZaloSentAt[`${inv.studentId}_${inv.month}_${inv.year}`] = now;
+        }
+      });
       dataStore.saveToLocalStorage();
+
+      // Đồng bộ xuống CSDL PostgreSQL để Web & mọi thiết bị tự nhận trạng thái đã gửi
+      if (targetIds.length > 0) {
+        try {
+          await prisma.monthlyInvoice.updateMany({
+            where: {
+              studentId: { in: targetIds },
+              ...(numMonth ? { month: numMonth } : {}),
+              ...(numYear ? { year: numYear } : {}),
+            },
+            data: { zaloSentAt: nowDate },
+          });
+
+          // Nếu học viên chưa có dòng MonthlyInvoice trong DB cho tháng/năm này -> tự tạo từ lớp đang học hoặc điểm danh trong tháng
+          if (numMonth && numYear) {
+            const monthStart = new Date(Date.UTC(numYear, numMonth - 1, 1));
+            const monthEnd = new Date(Date.UTC(numYear, numMonth, 1));
+            for (const sid of targetIds) {
+              const studentDb = await prisma.student.findUnique({
+                where: { id: sid },
+                include: { classes: { include: { classroom: true } } },
+              });
+              if (!studentDb) continue;
+
+              const existingMonthInvs = await prisma.monthlyInvoice.findMany({
+                where: { studentId: sid, month: numMonth, year: numYear },
+                select: { classId: true },
+              });
+              const existingClassSet = new Set(existingMonthInvs.map((e) => e.classId));
+
+              // Thu thập các lớp liên quan (đang học hoặc có điểm danh trong tháng)
+              const candidateClassMap = new Map<string, number>();
+              studentDb.classes.forEach((cs) => {
+                candidateClassMap.set(cs.classId, cs.classroom.feePerSession);
+              });
+
+              const monthAttendance = await prisma.attendanceRecord.findMany({
+                where: {
+                  studentId: sid,
+                  session: { date: { gte: monthStart, lt: monthEnd } },
+                },
+                include: { session: { include: { classroom: true } } },
+              });
+              monthAttendance.forEach((rec) => {
+                candidateClassMap.set(rec.session.classId, rec.session.classroom.feePerSession);
+              });
+
+              for (const [cid, clsFee] of candidateClassMap.entries()) {
+                if (existingClassSet.has(cid)) continue;
+                const presentCnt = monthAttendance.filter(
+                  (r) => r.session.classId === cid && r.status === "PRESENT"
+                ).length;
+                const fee = studentDb.customFeePerSession ?? clsFee;
+                const tuition = presentCnt * fee;
+                const paddedM = numMonth.toString().padStart(2, "0");
+                const uniqueCode = `HP-${numYear}${paddedM}-${studentDb.code || sid.slice(0, 4)}-${cid.slice(0, 6)}`;
+                await prisma.monthlyInvoice
+                  .create({
+                    data: {
+                      invoiceCode: uniqueCode,
+                      classId: cid,
+                      studentId: sid,
+                      month: numMonth,
+                      year: numYear,
+                      presentCount: presentCnt,
+                      feePerSession: fee,
+                      tuitionAmount: tuition,
+                      surchargeAmount: 0,
+                      totalAmount: tuition,
+                      status: "PENDING",
+                      zaloSentAt: nowDate,
+                    },
+                  })
+                  .catch(() => {});
+              }
+            }
+          }
+        } catch (dbErr) {
+          console.warn("Lỗi lưu zaloSentAt xuống PostgreSQL:", dbErr);
+        }
+      }
+
       return NextResponse.json({ success: true, message: "Đã cập nhật trạng thái gửi thẻ học phí qua Tool Zalo!" });
     }
 

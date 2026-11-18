@@ -1,5 +1,5 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "downloadUrl": "/downloads/Zalo_Bulk_Sender.exe",
-  "notes": "Thêm ô tùy chỉnh nội dung tin nhắn chào kèm ảnh thẻ trực tiếp trên giao diện Web & Tool Zalo."
+  "notes": "Cho phép xóa từng dòng học viên khỏi danh sách gửi, tự động lọc học viên trùng đã gửi ở lớp trước, và tự động đồng bộ trạng thái Đã gửi lên Web."
 }

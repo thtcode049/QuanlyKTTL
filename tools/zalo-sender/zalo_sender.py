@@ -42,8 +42,9 @@ PROFILE_DIR = DATA_DIR / "zalo_profile"
 CARDS_DIR = DATA_DIR / "cards_output"
 LOG_DIR = DATA_DIR / "logs"
 CONFIG_FILE = DATA_DIR / "config.json"
+SENT_HISTORY_FILE = DATA_DIR / "sent_history.json"
 ZALO_URL = "https://chat.zalo.me/"
-APP_VERSION = "2.2.1"
+APP_VERSION = "2.2.2"
 DEFAULT_GREETING_TEMPLATE = (
     "CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {studentName} ({studentCode})."
 )
@@ -89,6 +90,69 @@ def parse_version(v: str) -> tuple[int, ...]:
         except Exception:
             nums.append(0)
     return tuple(nums)
+
+
+def get_student_history_key(item: dict) -> str:
+    m = item.get("month", "")
+    y = item.get("year", "")
+    sid = str(item.get("studentId") or "").strip()
+    if sid:
+        return f"{y}-{m}:id:{sid}"
+    code = str(item.get("studentCode") or "").strip()
+    name = str(item.get("studentName") or "").strip().lower()
+    return f"{y}-{m}:name:{code}_{name}"
+
+
+def load_sent_history() -> dict:
+    try:
+        if SENT_HISTORY_FILE.exists():
+            return json.loads(SENT_HISTORY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def is_student_sent_in_month(item: dict, history: dict | None = None) -> bool:
+    if item.get("zaloSentAt"):
+        return True
+    hist = history if history is not None else load_sent_history()
+    return get_student_history_key(item) in hist
+
+
+def record_student_sent(item: dict):
+    try:
+        hist = load_sent_history()
+        hist[get_student_history_key(item)] = datetime.now().isoformat()
+        SENT_HISTORY_FILE.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def notify_web_mark_sent(item: dict, log_cb=None):
+    server_url = str(load_tool_config().get("serverUrl") or "").strip().rstrip("/")
+    sid = str(item.get("studentId") or "").strip()
+    if not server_url or not sid:
+        return
+    try:
+        payload = json.dumps({
+            "action": "mark_sent",
+            "studentId": sid,
+            "month": item.get("month"),
+            "year": item.get("year"),
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            f"{server_url}/api/coach/send-zalo-parents",
+            data=payload,
+            headers={"Content-Type": "application/json", "User-Agent": "KTTL-Zalo-Sender"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            if res_data.get("success") and log_cb:
+                log_cb(f"↳ Đã đồng bộ trạng thái 'Đã gửi' cho {item.get('studentName')} lên Web.", "ok")
+    except Exception as e:
+        if log_cb:
+            log_cb(f"↳ Chưa đồng bộ trạng thái lên Web được ({e}).", "warn")
 
 SEL_SEARCH = "input#contact-search-input"
 SEL_FRIEND = "div[id^='friend-item-']"
@@ -1195,6 +1259,14 @@ class ZaloWorker(threading.Thread):
                 if status == "OK":
                     sent_since_break += 1
                     consecutive_err = 0
+                    record_student_sent(item)
+                    item["zaloSentAt"] = datetime.now().isoformat()
+                    self.emit("student_sent_ok", get_student_history_key(item))
+                    threading.Thread(
+                        target=notify_web_mark_sent,
+                        args=(item, self.log),
+                        daemon=True,
+                    ).start()
                 elif status == "ERROR":
                     consecutive_err += 1
                     if consecutive_err >= MAX_CONSECUTIVE_ERRORS:
@@ -1294,6 +1366,7 @@ class App(ctk.CTk):
         self.worker.start()
 
         self.busy = False
+        self.original_invoice_items: list[dict] = []
         self.all_invoice_items: list[dict] = []
         self.invoice_items: list[dict] = []
         self.sendable_items: list[dict] = []
@@ -1430,7 +1503,7 @@ class App(ctk.CTk):
 
         self.chk_only_pending = ctk.CTkCheckBox(
             toolbar,
-            text="Chỉ lấy chưa đóng (PENDING)",
+            text="Chỉ chưa đóng",
             variable=self.var_only_pending,
             command=self._apply_student_filters,
             font=self.f_body,
@@ -1438,6 +1511,30 @@ class App(ctk.CTk):
             checkbox_height=18,
         )
         self.chk_only_pending.pack(side="left", padx=8)
+
+        self.b_skip_sent = ctk.CTkButton(
+            toolbar,
+            text="🧹 Bỏ đã gửi",
+            command=self._remove_already_sent_in_month,
+            fg_color="#334155",
+            hover_color="#475569",
+            height=30,
+            corner_radius=8,
+            font=self.f_body,
+        )
+        self.b_skip_sent.pack(side="left", padx=4)
+
+        self.b_restore_list = ctk.CTkButton(
+            toolbar,
+            text="↺ Khôi phục",
+            command=self._restore_original_items,
+            fg_color="#1e293b",
+            hover_color="#334155",
+            height=30,
+            corner_radius=8,
+            font=self.f_body,
+        )
+        self.b_restore_list.pack(side="left", padx=4)
 
         self.lbl_class_info = ctk.CTkLabel(toolbar, text="Chưa nạp danh sách học sinh nào.", font=self.f_body, text_color=C_MUTED)
         self.lbl_class_info.pack(side="left", padx=8)
@@ -1672,11 +1769,53 @@ class App(ctk.CTk):
         if skipped_zero > 0:
             self.log(f"Đã tự động bỏ qua {skipped_zero} học viên 0 buổi / 0 đ.", "info")
 
-        self.all_invoice_items = billable
+        self.original_invoice_items = list(billable)
+        self.all_invoice_items = list(billable)
         self._loaded_file_name = p.name
         self._loaded_bundle_class = bundle_class_name
         self._apply_student_filters()
         self.log(f"Đã nạp {len(self.invoice_items)}/{len(billable)} học viên từ {p.name}", "ok")
+
+    def _remove_student_item(self, item: dict):
+        if self.busy:
+            messagebox.showwarning("Đang gửi", "Không thể xóa học viên trong khi tiến trình gửi đang chạy.")
+            return
+        target_key = get_student_history_key(item)
+        removed = False
+        next_items = []
+        for s in self.all_invoice_items:
+            if not removed and s is item:
+                removed = True
+                continue
+            if not removed and get_student_history_key(s) == target_key and s.get("invoiceId") == item.get("invoiceId"):
+                removed = True
+                continue
+            next_items.append(s)
+        self.all_invoice_items = next_items
+        self.log(f"Đã bỏ học viên {item.get('studentName')} ({item.get('studentCode')}) khỏi danh sách gửi.", "info")
+        self._apply_student_filters()
+
+    def _remove_already_sent_in_month(self):
+        if self.busy:
+            return
+        if not self.all_invoice_items:
+            return
+        hist = load_sent_history()
+        kept = [s for s in self.all_invoice_items if not is_student_sent_in_month(s, hist)]
+        removed_count = len(self.all_invoice_items) - len(kept)
+        if removed_count == 0:
+            messagebox.showinfo("Không có học viên trùng", "Chưa có học viên nào trong danh sách này được ghi nhận đã gửi trong tháng.")
+            return
+        self.all_invoice_items = kept
+        self.log(f"Đã tự động loại bỏ {removed_count} học viên đã gửi trước đó trong tháng.", "ok")
+        self._apply_student_filters()
+
+    def _restore_original_items(self):
+        if self.busy or not self.original_invoice_items:
+            return
+        self.all_invoice_items = list(self.original_invoice_items)
+        self.log(f"Đã khôi phục lại đầy đủ {len(self.all_invoice_items)} học viên từ file vừa nạp.", "info")
+        self._apply_student_filters()
 
     def _apply_student_filters(self):
         only_pending = bool(self.var_only_pending.get())
@@ -1690,14 +1829,16 @@ class App(ctk.CTk):
 
         first = self.invoice_items[0] if self.invoice_items else (self.all_invoice_items[0] if self.all_invoice_items else {})
         cls_name = getattr(self, "_loaded_bundle_class", "") or first.get("className", "")
-        if len(cls_name) > 36:
-            cls_name = cls_name[:33] + "..."
+        if len(cls_name) > 30:
+            cls_name = cls_name[:27] + "..."
         m = first.get("month", "")
         y = first.get("year", "")
         total_money = format_money(sum(float(s.get("totalAmount") or 0) for s in self.invoice_items))
+        removed_cnt = max(0, len(self.original_invoice_items) - len(self.all_invoice_items))
+        removed_note = f" • Đã bỏ {removed_cnt}" if removed_cnt > 0 else ""
         info_str = (
             f"{cls_name + ' • ' if cls_name else ''}Tháng {m}/{y} • "
-            f"{len(self.sendable_items)} có SĐT / {len(self.missing_phone_items)} thiếu SĐT ({total_money})"
+            f"{len(self.sendable_items)} có SĐT / {len(self.missing_phone_items)} thiếu SĐT ({total_money}){removed_note}"
         )
         self.lbl_class_info.configure(text=info_str, text_color=C_OK if self.invoice_items else C_WARN)
         self.lbl_sendable_hdr.configure(text=f"📱 Gửi tự động — Có SĐT ({len(self.sendable_items)})")
@@ -1706,13 +1847,16 @@ class App(ctk.CTk):
             state="normal" if self.missing_phone_items else "disabled",
             text=f"💾 Tải tất cả ảnh thiếu SĐT ({len(self.missing_phone_items)})",
         )
+        self.b_restore_list.configure(state="normal" if removed_cnt > 0 else "disabled")
 
         self._render_students_list()
         self._render_missing_phone_list()
         if self.sendable_items:
-            self._select_student(self.sendable_items[0])
+            if not self.selected_item or self.selected_item not in self.invoice_items:
+                self._select_student(self.sendable_items[0])
         elif self.missing_phone_items:
-            self._select_student(self.missing_phone_items[0])
+            if not self.selected_item or self.selected_item not in self.invoice_items:
+                self._select_student(self.missing_phone_items[0])
         else:
             self.selected_item = None
             self.lbl_preview_img.configure(image="", text="Không có học viên nào khớp bộ lọc.")
@@ -1730,8 +1874,16 @@ class App(ctk.CTk):
             ).pack(pady=24)
             return
 
+        hist = load_sent_history()
         for item in self.sendable_items:
-            f = ctk.CTkFrame(self.scroll_students, fg_color=C_CARD, corner_radius=8, border_width=1, border_color=C_BORDER)
+            already_sent = is_student_sent_in_month(item, hist)
+            f = ctk.CTkFrame(
+                self.scroll_students,
+                fg_color="#11221b" if already_sent else C_CARD,
+                corner_radius=8,
+                border_width=1,
+                border_color="#166534" if already_sent else C_BORDER,
+            )
             f.pack(fill="x", padx=2, pady=3)
 
             name = item.get("studentName", "")
@@ -1743,16 +1895,31 @@ class App(ctk.CTk):
             class_tag = f" • {len(active_classes)} lớp" if len(active_classes) > 1 else ""
             is_paid = item.get("status") == "PAID"
             status_tag = " [Đã đóng]" if is_paid else ""
+            sent_tag = " [Đã gửi tháng này]" if already_sent else ""
 
             # Left badge
             badge = ctk.CTkLabel(f, text=code, font=self.f_h, width=54, fg_color="#1e293b", corner_radius=6)
             badge.pack(side="left", padx=8, pady=8)
 
+            # Right remove button
+            btn_del = ctk.CTkButton(
+                f,
+                text="✕",
+                width=28,
+                height=28,
+                corner_radius=6,
+                fg_color="#334155",
+                hover_color=C_ERR,
+                font=self.f_h,
+                command=lambda it=item: self._remove_student_item(it),
+            )
+            btn_del.pack(side="right", padx=(2, 8), pady=8)
+
             # Center info
             info = ctk.CTkFrame(f, fg_color="transparent")
             info.pack(side="left", fill="x", expand=True, padx=4)
-            ctk.CTkLabel(info, text=f"{name}  •  {phone}{status_tag}", font=self.f_h,
-                         text_color=C_OK if is_paid else "#f8fafc", anchor="w").pack(fill="x")
+            ctk.CTkLabel(info, text=f"{name}  •  {phone}{status_tag}{sent_tag}", font=self.f_h,
+                         text_color=C_OK if (is_paid or already_sent) else "#f8fafc", anchor="w").pack(fill="x")
             ctk.CTkLabel(info, text=f"Thực học: {count} buổi{class_tag}  |  Tổng thu: {amount}",
                          font=self.f_body, text_color=C_MUTED, anchor="w").pack(fill="x")
 
@@ -1774,7 +1941,9 @@ class App(ctk.CTk):
             ).pack(pady=24)
             return
 
+        hist = load_sent_history()
         for item in self.missing_phone_items:
+            already_sent = is_student_sent_in_month(item, hist)
             f = ctk.CTkFrame(
                 self.scroll_missing_phone,
                 fg_color="#1f1a14",
@@ -1790,17 +1959,25 @@ class App(ctk.CTk):
             count = item.get("presentCount", 0)
             raw_phone = str(item.get("parentPhone") or "").strip()
             phone_note = f"SĐT lỗi: {raw_phone}" if raw_phone else "Chưa có SĐT phụ huynh"
+            sent_tag = " [Đã gửi]" if already_sent else ""
 
-            info = ctk.CTkFrame(f, fg_color="transparent")
-            info.pack(side="left", fill="x", expand=True, padx=8, pady=6)
-            ctk.CTkLabel(info, text=f"{name} ({code})", font=self.f_h, text_color="#fef3c7", anchor="w").pack(fill="x")
-            ctk.CTkLabel(info, text=f"{count} buổi • {amount} | {phone_note}",
-                         font=self.f_body, text_color="#fbbf24", anchor="w").pack(fill="x")
+            btn_del = ctk.CTkButton(
+                f,
+                text="✕",
+                width=26,
+                height=28,
+                corner_radius=6,
+                fg_color="#334155",
+                hover_color=C_ERR,
+                font=self.f_h,
+                command=lambda it=item: self._remove_student_item(it),
+            )
+            btn_del.pack(side="right", padx=(2, 6), pady=8)
 
             btn_dl = ctk.CTkButton(
                 f,
                 text="💾 Tải ảnh",
-                width=78,
+                width=74,
                 height=28,
                 corner_radius=6,
                 fg_color="#059669",
@@ -1808,7 +1985,13 @@ class App(ctk.CTk):
                 font=self.f_body,
                 command=lambda it=item: self._download_single_card(it),
             )
-            btn_dl.pack(side="right", padx=8, pady=8)
+            btn_dl.pack(side="right", padx=(4, 2), pady=8)
+
+            info = ctk.CTkFrame(f, fg_color="transparent")
+            info.pack(side="left", fill="x", expand=True, padx=8, pady=6)
+            ctk.CTkLabel(info, text=f"{name} ({code}){sent_tag}", font=self.f_h, text_color="#fef3c7", anchor="w").pack(fill="x")
+            ctk.CTkLabel(info, text=f"{count} buổi • {amount} | {phone_note}",
+                         font=self.f_body, text_color="#fbbf24", anchor="w").pack(fill="x")
 
             f.bind("<Button-1>", lambda e, it=item: self._select_student(it))
             info.bind("<Button-1>", lambda e, it=item: self._select_student(it))
@@ -1997,6 +2180,8 @@ class App(ctk.CTk):
                             os.startfile(dest_dir)
                     except Exception:
                         pass
+                elif kind == "student_sent_ok":
+                    self._render_students_list()
                 elif kind == "result":
                     i, total = p["i"], p["total"]
                     self.progress.set(i / total)
@@ -2007,6 +2192,7 @@ class App(ctk.CTk):
                     head = "⏹ ĐÃ DỪNG" if p["stopped"] else "🏁 HOÀN TẤT"
                     self.log(f"{head}: Thành công {c.get('OK', 0)} • Lỗi/Không tìm thấy {c.get('NOT_FOUND', 0) + c.get('ERROR', 0)}", "ok")
                     self.lbl_status.configure(text="Tiến trình đã hoàn thành.")
+                    self._render_students_list()
                 elif kind == "update_found":
                     self.available_update = p
                     ver = p.get("version", "")
