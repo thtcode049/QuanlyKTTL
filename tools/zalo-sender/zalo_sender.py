@@ -43,7 +43,24 @@ CARDS_DIR = DATA_DIR / "cards_output"
 LOG_DIR = DATA_DIR / "logs"
 CONFIG_FILE = DATA_DIR / "config.json"
 ZALO_URL = "https://chat.zalo.me/"
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
+DEFAULT_GREETING_TEMPLATE = (
+    "CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {studentName} ({studentCode})."
+)
+
+
+def format_greeting_message(template: str, item: dict) -> str:
+    tpl = (template or "").strip() or DEFAULT_GREETING_TEMPLATE
+    replacements = {
+        "{studentName}": str(item.get("studentName", "")),
+        "{studentCode}": str(item.get("studentCode", "")),
+        "{month}": str(item.get("month", "")),
+        "{year}": str(item.get("year", "")),
+        "{totalAmount}": format_money(item.get("totalAmount", 0)),
+    }
+    for k, v in replacements.items():
+        tpl = tpl.replace(k, v)
+    return tpl
 
 
 def load_tool_config() -> dict:
@@ -665,6 +682,7 @@ class SendConfig:
     batch_pause: float = 30.0
     search_timeout: float = 6.0
     send_greeting_text: bool = True
+    greeting_template: str = DEFAULT_GREETING_TEMPLATE
 
 
 # ----------------------------------------------------------------------------
@@ -1056,13 +1074,10 @@ class ZaloWorker(threading.Thread):
 
             # 3. Gửi lời chào nếu được cấu hình
             if cfg.send_greeting_text:
-                st_name = item.get("studentName", "")
-                st_code = item.get("studentCode", "")
-                month = item.get("month", "")
-                year = item.get("year", "")
-                greeting = f"CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {st_name} ({st_code})."
-                self._type_and_send_message(greeting)
-                page.wait_for_timeout(800)
+                greeting = format_greeting_message(cfg.greeting_template, item)
+                if greeting.strip():
+                    self._type_and_send_message(greeting)
+                    page.wait_for_timeout(800)
 
             # 4. Upload ảnh thẻ học phí - 100% TRONG article#chatView
             # TUYỆT ĐỐI KHÔNG CLICK VÀO BẤT KỲ SELECTOR NÀO Ở SIDEBAR
@@ -1287,6 +1302,9 @@ class App(ctk.CTk):
         self.preview_image_path: Path | None = None
         self.counts = {"OK": 0, "NOT_FOUND": 0, "ERROR": 0, "NO_PHONE": 0}
         self.var_only_pending = ctk.BooleanVar(value=False)
+        saved_cfg = load_tool_config()
+        self.var_send_greeting = ctk.BooleanVar(value=bool(saved_cfg.get("sendGreeting", True)))
+        self._initial_greeting_tpl = str(saved_cfg.get("greetingTemplate") or DEFAULT_GREETING_TEMPLATE)
         self.available_update: dict | None = None
 
         self.f_title = ctk.CTkFont("Segoe UI", 20, "bold")
@@ -1398,11 +1416,11 @@ class App(ctk.CTk):
         tab.grid_columnconfigure(0, weight=4)
         tab.grid_columnconfigure(1, weight=3)
         tab.grid_columnconfigure(2, weight=4)
-        tab.grid_rowconfigure(1, weight=1)
+        tab.grid_rowconfigure(2, weight=1)
 
         # Thanh công cụ nạp file
         toolbar = ctk.CTkFrame(tab, fg_color="transparent")
-        toolbar.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 8))
+        toolbar.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 6))
 
         ctk.CTkButton(toolbar, text="📂 Mở file dữ liệu học phí (.json / .xlsx)", command=self._open_file_dialog,
                       fg_color="#7c3aed", hover_color="#8b5cf6", height=32, corner_radius=8, font=self.f_h).pack(side="left")
@@ -1424,9 +1442,47 @@ class App(ctk.CTk):
         self.lbl_class_info = ctk.CTkLabel(toolbar, text="Chưa nạp danh sách học sinh nào.", font=self.f_body, text_color=C_MUTED)
         self.lbl_class_info.pack(side="left", padx=8)
 
+        # Thanh tùy chỉnh tin nhắn chào kèm ảnh
+        greet_bar = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=8, border_width=1, border_color=C_BORDER)
+        greet_bar.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(0, 8))
+        greet_bar.grid_columnconfigure(1, weight=1)
+
+        self.chk_send_greeting = ctk.CTkCheckBox(
+            greet_bar,
+            text="💬 Tin nhắn chào kèm ảnh:",
+            variable=self.var_send_greeting,
+            command=self._save_greeting_prefs,
+            font=self.f_body,
+            checkbox_width=18,
+            checkbox_height=18,
+        )
+        self.chk_send_greeting.grid(row=0, column=0, padx=(10, 6), pady=6)
+
+        self.ent_greeting_tpl = ctk.CTkEntry(
+            greet_bar,
+            font=self.f_body,
+            height=30,
+            placeholder_text="Biến: {studentName}, {studentCode}, {month}, {year}, {totalAmount}",
+        )
+        self.ent_greeting_tpl.insert(0, self._initial_greeting_tpl)
+        self.ent_greeting_tpl.grid(row=0, column=1, sticky="ew", padx=4, pady=6)
+        self.ent_greeting_tpl.bind("<FocusOut>", lambda _e: self._save_greeting_prefs())
+
+        ctk.CTkButton(
+            greet_bar,
+            text="↺ Mặc định",
+            command=self._reset_greeting_tpl,
+            fg_color="#334155",
+            hover_color="#475569",
+            width=82,
+            height=28,
+            corner_radius=6,
+            font=self.f_body,
+        ).grid(row=0, column=2, padx=(4, 10), pady=6)
+
         # Cột 1: Danh sách học viên có SĐT (gửi tự động)
         left_box = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
-        left_box.grid(row=1, column=0, sticky="nsew", padx=(0, 5))
+        left_box.grid(row=2, column=0, sticky="nsew", padx=(0, 5))
         left_box.grid_columnconfigure(0, weight=1)
         left_box.grid_rowconfigure(1, weight=1)
 
@@ -1440,7 +1496,7 @@ class App(ctk.CTk):
 
         # Cột 2: Học viên thiếu SĐT (tải ảnh để nhắn thủ công)
         mid_box = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=10, border_width=1, border_color="#78350f")
-        mid_box.grid(row=1, column=1, sticky="nsew", padx=5)
+        mid_box.grid(row=2, column=1, sticky="nsew", padx=5)
         mid_box.grid_columnconfigure(0, weight=1)
         mid_box.grid_rowconfigure(2, weight=1)
 
@@ -1466,7 +1522,7 @@ class App(ctk.CTk):
 
         # Cột 3: Xem trước thẻ ảnh & Lưu ảnh
         right_box = ctk.CTkFrame(tab, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
-        right_box.grid(row=1, column=2, sticky="nsew", padx=(5, 0))
+        right_box.grid(row=2, column=2, sticky="nsew", padx=(5, 0))
         right_box.grid_columnconfigure(0, weight=1)
         right_box.grid_rowconfigure(1, weight=1)
 
@@ -1597,6 +1653,14 @@ class App(ctk.CTk):
             if server_url.startswith("http"):
                 save_tool_config({"serverUrl": server_url})
                 self.after(600, lambda: self._check_updates_async(silent=True))
+            greet_cfg = data.get("greetingConfig")
+            if isinstance(greet_cfg, dict):
+                if "enabled" in greet_cfg:
+                    self.var_send_greeting.set(bool(greet_cfg["enabled"]))
+                if greet_cfg.get("template"):
+                    self.ent_greeting_tpl.delete(0, "end")
+                    self.ent_greeting_tpl.insert(0, str(greet_cfg["template"]))
+                self._save_greeting_prefs()
 
         if not students:
             messagebox.showwarning("Dữ liệu rỗng", "File không chứa danh sách học sinh.")
@@ -1814,9 +1878,30 @@ class App(ctk.CTk):
         self._set_busy(True)
         self.worker.submit("open")
 
+    def _save_greeting_prefs(self):
+        tpl = self.ent_greeting_tpl.get().strip() or DEFAULT_GREETING_TEMPLATE
+        save_tool_config({
+            "sendGreeting": bool(self.var_send_greeting.get()),
+            "greetingTemplate": tpl,
+        })
+
+    def _reset_greeting_tpl(self):
+        self.ent_greeting_tpl.delete(0, "end")
+        self.ent_greeting_tpl.insert(0, DEFAULT_GREETING_TEMPLATE)
+        self.var_send_greeting.set(True)
+        self._save_greeting_prefs()
+
     def _start_send(self):
         curr_tab = self.tabs.get()
-        cfg = SendConfig(delay_min=3.0, delay_max=6.0, batch_size=35, batch_pause=30.0)
+        self._save_greeting_prefs()
+        cfg = SendConfig(
+            delay_min=3.0,
+            delay_max=6.0,
+            batch_size=35,
+            batch_pause=30.0,
+            send_greeting_text=bool(self.var_send_greeting.get()),
+            greeting_template=self.ent_greeting_tpl.get().strip() or DEFAULT_GREETING_TEMPLATE,
+        )
 
         if "Gửi Thẻ Báo Học Phí" in curr_tab:
             if not self.invoice_items:

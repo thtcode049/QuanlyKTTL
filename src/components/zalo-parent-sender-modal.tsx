@@ -100,6 +100,24 @@ export default function ZaloParentSenderModal({
   // Hiển thị tab Hướng dẫn dùng tool
   const [showGuide, setShowGuide] = useState(false);
 
+  // Tùy chỉnh tin nhắn chào gửi kèm ảnh thẻ
+  const DEFAULT_GREETING =
+    "CLB Cờ vua Kiện Tướng Tương Lai gửi Quý phụ huynh Thẻ Báo Học Phí tháng {month}/{year} của em {studentName} ({studentCode}).";
+  const [sendGreeting, setSendGreeting] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kttl_zalo_send_greeting");
+      if (saved !== null) return saved === "true";
+    }
+    return true;
+  });
+  const [greetingTemplate, setGreetingTemplate] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kttl_zalo_greeting_template");
+      if (saved !== null) return saved;
+    }
+    return DEFAULT_GREETING;
+  });
+
   // Bản đồ theo dõi trạng thái đã gửi Zalo qua Tool: studentId -> ISO string thời gian gửi
   const [sentMap, setSentMap] = useState<Record<string, string>>(() => {
     const initialMap: Record<string, string> = {};
@@ -265,9 +283,13 @@ export default function ZaloParentSenderModal({
       (st) => st.presentCount > 0 || st.totalAmount > 0
     );
     const exportBundle = {
-      version: "2.2.0",
+      version: "2.2.1",
       serverUrl: typeof window !== "undefined" ? window.location.origin : "",
       generatedAt: new Date().toISOString(),
+      greetingConfig: {
+        enabled: sendGreeting,
+        template: greetingTemplate.trim() || DEFAULT_GREETING,
+      },
       month,
       year,
       classroom: {
@@ -754,6 +776,65 @@ export default function ZaloParentSenderModal({
               </div>
             </div>
           )}
+
+          {/* Tùy chỉnh tin nhắn chào kèm ảnh thẻ */}
+          <div className="rounded border border-slate-200 bg-slate-50/80 p-3 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={sendGreeting}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setSendGreeting(val);
+                    try {
+                      localStorage.setItem("kttl_zalo_send_greeting", String(val));
+                    } catch (err) {}
+                  }}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span>💬 Gửi tin nhắn chào kèm ảnh thẻ học phí</span>
+              </label>
+              <span className="text-[11px] text-slate-500">
+                Biến hỗ trợ:{" "}
+                <code className="bg-white px-1 py-0.5 rounded border border-slate-200 text-emerald-700">{"{studentName}"}</code>{" "}
+                <code className="bg-white px-1 py-0.5 rounded border border-slate-200 text-emerald-700">{"{studentCode}"}</code>{" "}
+                <code className="bg-white px-1 py-0.5 rounded border-slate-200 text-emerald-700">{"{month}"}</code>{" "}
+                <code className="bg-white px-1 py-0.5 rounded border-slate-200 text-emerald-700">{"{year}"}</code>{" "}
+                <code className="bg-white px-1 py-0.5 rounded border-slate-200 text-emerald-700">{"{totalAmount}"}</code>
+              </span>
+            </div>
+            {sendGreeting && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={greetingTemplate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setGreetingTemplate(val);
+                    try {
+                      localStorage.setItem("kttl_zalo_greeting_template", val);
+                    } catch (err) {}
+                  }}
+                  placeholder={DEFAULT_GREETING}
+                  className="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGreetingTemplate(DEFAULT_GREETING);
+                    try {
+                      localStorage.setItem("kttl_zalo_greeting_template", DEFAULT_GREETING);
+                    } catch (err) {}
+                  }}
+                  className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-100 whitespace-nowrap"
+                  title="Khôi phục mẫu mặc định"
+                >
+                  Mặc định
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Main 3-Column Grid: Sendable Students (5) + Missing Phone Students (3) + Card Visual Preview (4) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

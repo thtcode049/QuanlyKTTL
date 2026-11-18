@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "downloadUrl": "/downloads/Zalo_Bulk_Sender.exe",
-  "notes": "Hỗ trợ nhiều lớp, phụ phí, lọc lớp 0 buổi, cột học viên thiếu SĐT và tự động cập nhật."
+  "notes": "Thêm ô tùy chỉnh nội dung tin nhắn chào kèm ảnh thẻ trực tiếp trên giao diện Web & Tool Zalo."
 }
