@@ -13,7 +13,7 @@ import {
   ShoppingBag,
   ArrowRight,
 } from "lucide-react";
-import { dataStore, resolveCanonicalCoachId, getCoachClasses, getClassBranchName, isPrivateClass } from "@/lib/data-store";
+import { dataStore, resolveCanonicalCoachId, getCoachClasses, getClassBranchName, isPrivateClass, parseRecordBooks } from "@/lib/data-store";
 import { formatCurrencyVND } from "@/lib/vietqr";
 
 export default function CoachPayrollPage() {
@@ -89,10 +89,12 @@ export default function CoachPayrollPage() {
     let clsBookRevenue = 0;
     clsSessions.forEach((sess) => {
       sess.records.forEach((rec) => {
-        if (rec.bookPrice && rec.bookPrice > 0) {
-          clsBooks += 1;
-          clsBookRevenue += rec.bookPrice;
-        }
+        parseRecordBooks(rec).forEach((b) => {
+          if (b.price > 0) {
+            clsBooks += 1;
+            clsBookRevenue += b.price;
+          }
+        });
       });
     });
     const clsBookCommission = Math.round(clsBookRevenue * (coachBookPct / 100));
@@ -349,8 +351,16 @@ export default function CoachPayrollPage() {
             const branchName = getClassBranchName(cls);
             const pCount = sess.records.filter((r) => r.status === "PRESENT").length;
 
-            const booksInSess = sess.records.filter((r) => r.bookPrice && r.bookPrice > 0);
-            const sessBookPrice = booksInSess.reduce((sum, r) => sum + (r.bookPrice || 0), 0);
+            const booksInSess = sess.records.flatMap((r) =>
+              parseRecordBooks(r)
+                .filter((b) => b.price > 0)
+                .map((b, bIdx) => ({
+                  id: `${r.id}-${bIdx}`,
+                  bookTitle: b.title,
+                  bookPrice: b.price,
+                }))
+            );
+            const sessBookPrice = booksInSess.reduce((sum, r) => sum + r.bookPrice, 0);
             const sessBookCommission = Math.round(sessBookPrice * 0.3);
 
             return (
@@ -419,8 +429,16 @@ export default function CoachPayrollPage() {
                 const branchName = getClassBranchName(cls);
                 const pCount = sess.records.filter((r) => r.status === "PRESENT").length;
 
-                const booksInSess = sess.records.filter((r) => r.bookPrice && r.bookPrice > 0);
-                const sessBookPrice = booksInSess.reduce((sum, r) => sum + (r.bookPrice || 0), 0);
+                const booksInSess = sess.records.flatMap((r) =>
+                  parseRecordBooks(r)
+                    .filter((b) => b.price > 0)
+                    .map((b, bIdx) => ({
+                      id: `${r.id}-${bIdx}`,
+                      bookTitle: b.title,
+                      bookPrice: b.price,
+                    }))
+                );
+                const sessBookPrice = booksInSess.reduce((sum, r) => sum + r.bookPrice, 0);
                 const sessBookCommission = Math.round(sessBookPrice * 0.3);
 
                 return (

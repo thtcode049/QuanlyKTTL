@@ -42,6 +42,9 @@ import {
   getCoachClasses,
   STANDARD_BOOKS,
   DEFAULT_LUNCH_FEE,
+  BookItem,
+  parseRecordBooks,
+  serializeBooksToRecord,
 } from "@/lib/data-store";
 import { getStudentAvatarUrl } from "@/lib/chess-avatars";
 import confetti from "canvas-confetti";
@@ -287,7 +290,7 @@ function AttendanceContent() {
     return [...classStudents, ...makeupStudents];
   }, [classStudents, makeupStudents]);
 
-  // State điểm danh hiện tại: studentId -> { status, note, hasBook, bookTitle, bookPrice, hasLunch, lunchFee, hasOther, otherFeeTitle, otherFeePrice, surchargeOpen }
+  // State điểm danh hiện tại: studentId -> { status, note, hasBook, books, hasLunch, lunchFee, hasOther, otherFeeTitle, otherFeePrice, surchargeOpen }
   const [records, setRecords] = useState<
     Record<
       string,
@@ -295,8 +298,7 @@ function AttendanceContent() {
         status: "PRESENT" | "ABSENT";
         note: string;
         hasBook: boolean;
-        bookTitle: string;
-        bookPrice: number;
+        books: BookItem[];
         hasLunch: boolean;
         lunchFee: number;
         hasOther: boolean;
@@ -340,8 +342,7 @@ function AttendanceContent() {
         status: "PRESENT" | "ABSENT";
         note: string;
         hasBook: boolean;
-        bookTitle: string;
-        bookPrice: number;
+        books: BookItem[];
         hasLunch: boolean;
         lunchFee: number;
         hasOther: boolean;
@@ -359,7 +360,8 @@ function AttendanceContent() {
         const r = existingSession.records.find((rec) => rec.studentId === std.id);
         const isMakeup = initialMakeupIds.includes(std.id);
         const notInOriginalSession = !r && !isMakeup;
-        const hasBook = !!(r?.bookTitle && r?.bookPrice);
+        const parsedBooks = parseRecordBooks(r);
+        const hasBook = parsedBooks.length > 0;
         const hasLunch = !!(r?.lunchFee && r.lunchFee > 0);
         const hasOther = !!(r?.otherFeePrice && r.otherFeePrice > 0);
 
@@ -367,8 +369,7 @@ function AttendanceContent() {
           status: r ? r.status : "ABSENT",
           note: r?.coachNote || (isMakeup ? "Học bù" : ""),
           hasBook,
-          bookTitle: r?.bookTitle || STANDARD_BOOKS[0].title,
-          bookPrice: r?.bookPrice || STANDARD_BOOKS[0].price,
+          books: hasBook ? parsedBooks : [{ title: STANDARD_BOOKS[0].title, price: STANDARD_BOOKS[0].price }],
           hasLunch,
           lunchFee: r?.lunchFee || DEFAULT_LUNCH_FEE,
           hasOther,
@@ -387,8 +388,7 @@ function AttendanceContent() {
           status: isBeforeJoinDate ? "ABSENT" : "PRESENT",
           note: isMakeup ? "Học bù" : "",
           hasBook: false,
-          bookTitle: STANDARD_BOOKS[0].title,
-          bookPrice: STANDARD_BOOKS[0].price,
+          books: [{ title: STANDARD_BOOKS[0].title, price: STANDARD_BOOKS[0].price }],
           hasLunch: false,
           lunchFee: DEFAULT_LUNCH_FEE,
           hasOther: false,
@@ -409,8 +409,7 @@ function AttendanceContent() {
       status: "PRESENT" as const,
       note: isMakeup ? "Học bù" : "",
       hasBook: false,
-      bookTitle: STANDARD_BOOKS[0].title,
-      bookPrice: STANDARD_BOOKS[0].price,
+      books: [{ title: STANDARD_BOOKS[0].title, price: STANDARD_BOOKS[0].price }],
       hasLunch: false,
       lunchFee: DEFAULT_LUNCH_FEE,
       hasOther: false,
@@ -461,40 +460,88 @@ function AttendanceContent() {
   const handleBookToggle = (studentId: string) => {
     setRecords((prev) => {
       const current = prev[studentId] || getDefaultRecord(studentId);
+      const nextHasBook = !current.hasBook;
       return {
         ...prev,
         [studentId]: {
           ...current,
-          hasBook: !current.hasBook,
+          hasBook: nextHasBook,
+          books:
+            nextHasBook && (!current.books || current.books.length === 0)
+              ? [{ title: STANDARD_BOOKS[0].title, price: STANDARD_BOOKS[0].price }]
+              : current.books,
         },
       };
     });
   };
 
-  const handleBookTitleChange = (studentId: string, bookTitle: string) => {
+  const handleAddBook = (studentId: string) => {
     setRecords((prev) => {
       const current = prev[studentId] || getDefaultRecord(studentId);
-      // Nếu tên sách trùng với sách tiêu chuẩn, tự động cập nhật đơn giá chuẩn tương ứng
-      const matched = STANDARD_BOOKS.find((b) => b.title.toLowerCase() === bookTitle.toLowerCase());
+      const nextBooks = [
+        ...(current.books || []),
+        { title: STANDARD_BOOKS[0].title, price: STANDARD_BOOKS[0].price },
+      ];
       return {
         ...prev,
         [studentId]: {
           ...current,
-          bookTitle,
-          bookPrice: matched ? matched.price : current.bookPrice,
+          hasBook: true,
+          books: nextBooks,
         },
       };
     });
   };
 
-  const handleBookPriceChange = (studentId: string, bookPrice: number) => {
-    setRecords((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...(prev[studentId] || getDefaultRecord(studentId)),
-        bookPrice,
-      },
-    }));
+  const handleRemoveBook = (studentId: string, index: number) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      const nextBooks = (current.books || []).filter((_, i) => i !== index);
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          hasBook: nextBooks.length > 0,
+          books:
+            nextBooks.length > 0
+              ? nextBooks
+              : [{ title: STANDARD_BOOKS[0].title, price: STANDARD_BOOKS[0].price }],
+        },
+      };
+    });
+  };
+
+  const handleBookTitleChange = (studentId: string, index: number, bookTitle: string) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      const matched = STANDARD_BOOKS.find((b) => b.title.toLowerCase() === bookTitle.toLowerCase());
+      const nextBooks = (current.books || []).map((b, i) =>
+        i === index ? { title: bookTitle, price: matched ? matched.price : b.price } : b
+      );
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          books: nextBooks,
+        },
+      };
+    });
+  };
+
+  const handleBookPriceChange = (studentId: string, index: number, bookPrice: number) => {
+    setRecords((prev) => {
+      const current = prev[studentId] || getDefaultRecord(studentId);
+      const nextBooks = (current.books || []).map((b, i) =>
+        i === index ? { ...b, price: bookPrice } : b
+      );
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          books: nextBooks,
+        },
+      };
+    });
   };
 
   const handleLunchToggle = (studentId: string) => {
@@ -628,14 +675,18 @@ function AttendanceContent() {
           note = note ? `[Học bù] ${note}` : "[Học bù]";
         }
 
+        const serializedBooks = current?.hasBook
+          ? serializeBooksToRecord(current.books || [])
+          : { bookTitle: undefined, bookPrice: undefined };
+
         return {
           id: `rec-${Date.now()}-${std.id}`,
           sessionId: `sess-${selectedClass.id}-${sessionDate}`,
           studentId: std.id,
           status: finalStatus,
           coachNote: note,
-          bookTitle: current?.hasBook ? (current?.bookTitle || STANDARD_BOOKS[0].title) : undefined,
-          bookPrice: current?.hasBook ? (Number(current?.bookPrice) || 0) : undefined,
+          bookTitle: serializedBooks.bookTitle,
+          bookPrice: serializedBooks.bookPrice,
           lunchFee: current?.hasLunch ? (Number(current?.lunchFee) || 0) : undefined,
           otherFeeTitle: current?.hasOther ? (current?.otherFeeTitle || "Phụ phí khác") : undefined,
           otherFeePrice: current?.hasOther ? (Number(current?.otherFeePrice) || 0) : undefined,
@@ -919,9 +970,16 @@ function AttendanceContent() {
   const absentCount = sessionStudents.length - presentCount;
 
   // Thống kê phát sách và phụ phí trong buổi học
-  const totalBooksInSession = sessionStudents.filter((std) => records[std.id]?.hasBook).length;
+  const totalBooksInSession = sessionStudents.reduce(
+    (sum, std) => sum + (records[std.id]?.hasBook ? (records[std.id]?.books?.length || 0) : 0),
+    0
+  );
   const totalBookPriceInSession = sessionStudents.reduce(
-    (sum, std) => sum + (records[std.id]?.hasBook ? Number(records[std.id]?.bookPrice) || 0 : 0),
+    (sum, std) =>
+      sum +
+      (records[std.id]?.hasBook
+        ? (records[std.id]?.books || []).reduce((bSum, b) => bSum + (Number(b.price) || 0), 0)
+        : 0),
     0
   );
   const totalLunchInSession = sessionStudents.filter((std) => records[std.id]?.hasLunch).length;
@@ -1435,9 +1493,12 @@ function AttendanceContent() {
                       {/* Surcharge & Note & Status Toggle */}
                       {(() => {
                         const rec = records[std.id] || getDefaultRecord(std.id);
-                        const hasAnySurcharge = Boolean(rec.hasBook || rec.hasLunch || rec.hasOther);
+                        const recBooksTotal = rec.hasBook
+                          ? (rec.books || []).reduce((s, b) => s + (Number(b.price) || 0), 0)
+                          : 0;
+                        const hasAnySurcharge = Boolean((rec.hasBook && (rec.books || []).length > 0) || rec.hasLunch || rec.hasOther);
                         const totalSurchargeAmount =
-                          (rec.hasBook ? Number(rec.bookPrice) || 0 : 0) +
+                          recBooksTotal +
                           (rec.hasLunch ? Number(rec.lunchFee) || 0 : 0) +
                           (rec.hasOther ? Number(rec.otherFeePrice) || 0 : 0);
 
@@ -1472,12 +1533,16 @@ function AttendanceContent() {
                                 {/* Tags tóm tắt khi thu gọn */}
                                 {!rec.surchargeOpen && hasAnySurcharge && (
                                   <div className="flex flex-wrap items-center gap-1 text-[11px]">
-                                    {rec.hasBook && (
-                                      <span className="inline-flex items-center gap-1 rounded bg-amber-100/80 px-2 py-0.5 text-amber-900 font-medium border border-amber-200">
-                                        <BookOpen className="h-3 w-3 text-amber-600" />
-                                        {rec.bookTitle}: {(rec.bookPrice || 0).toLocaleString("vi-VN")} đ
-                                      </span>
-                                    )}
+                                    {rec.hasBook &&
+                                      (rec.books || []).map((book, bIdx) => (
+                                        <span
+                                          key={bIdx}
+                                          className="inline-flex items-center gap-1 rounded bg-amber-100/80 px-2 py-0.5 text-amber-900 font-medium border border-amber-200"
+                                        >
+                                          <BookOpen className="h-3 w-3 text-amber-600" />
+                                          {book.title || "Sách"}: {(book.price || 0).toLocaleString("vi-VN")} đ
+                                        </span>
+                                      ))}
                                     {rec.hasLunch && (
                                       <span className="inline-flex items-center gap-1 rounded bg-orange-100/80 px-2 py-0.5 text-orange-900 font-medium border border-orange-200">
                                         <Utensils className="h-3 w-3 text-orange-600" />
@@ -1497,71 +1562,97 @@ function AttendanceContent() {
                               {/* Panel nhập các mục phụ phí khi bấm mở */}
                               {rec.surchargeOpen && (
                                 <div className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50/60 p-2.5 animate-fade-in w-full text-xs shadow-xs text-left">
-                                  {/* 1. Phát sách */}
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-amber-200/60 pb-2">
-                                    <label className="flex items-center gap-1.5 font-bold text-amber-950 cursor-pointer min-w-[100px] select-none">
-                                      <input
-                                        type="checkbox"
-                                        checked={!!rec.hasBook}
-                                        onChange={() => handleBookToggle(std.id)}
-                                        className="h-3.5 w-3.5 rounded text-amber-600 focus:ring-amber-500"
-                                      />
-                                      <BookOpen className="h-3.5 w-3.5 text-amber-600" />
-                                      <span>Phát sách:</span>
-                                    </label>
+                                  {/* 1. Phát sách (Hỗ trợ phát nhiều cuốn trong 1 buổi) */}
+                                  <div className="flex flex-col gap-2 border-b border-amber-200/60 pb-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <label className="flex items-center gap-1.5 font-bold text-amber-950 cursor-pointer min-w-[100px] select-none">
+                                        <input
+                                          type="checkbox"
+                                          checked={!!rec.hasBook}
+                                          onChange={() => handleBookToggle(std.id)}
+                                          className="h-3.5 w-3.5 rounded text-amber-600 focus:ring-amber-500"
+                                        />
+                                        <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                                        <span>Phát sách{rec.hasBook && (rec.books?.length || 0) > 1 ? ` (${rec.books.length} cuốn)` : ""}:</span>
+                                      </label>
+
+                                      {rec.hasBook && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAddBook(std.id)}
+                                          className="inline-flex items-center gap-1 rounded-md border border-amber-400 bg-white px-2 py-0.5 text-[11px] font-bold text-amber-800 hover:bg-amber-100 transition-colors"
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          <span>Thêm sách</span>
+                                        </button>
+                                      )}
+                                    </div>
 
                                     {rec.hasBook && (
-                                      <div className="flex flex-1 flex-wrap items-center gap-2">
-                                        <select
-                                          value={STANDARD_BOOKS.some((b) => b.title === rec.bookTitle) ? rec.bookTitle : "CUSTOM"}
-                                          onChange={(e) => {
-                                            if (e.target.value === "CUSTOM") {
-                                              handleBookTitleChange(std.id, "");
-                                            } else {
-                                              const found = STANDARD_BOOKS.find((b) => b.title === e.target.value);
-                                              if (found) {
-                                                handleBookTitleChange(std.id, found.title);
-                                                handleBookPriceChange(std.id, found.price);
-                                              }
-                                            }
-                                          }}
-                                          className="rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800 focus:border-brand-primary focus:outline-none"
-                                        >
-                                          {STANDARD_BOOKS.map((b, idx) => (
-                                            <option key={idx} value={b.title}>
-                                              {b.title} ({b.price.toLocaleString("vi-VN")} đ)
-                                            </option>
-                                          ))}
-                                          <option value="CUSTOM">-- Sách khác (Tự nhập) --</option>
-                                        </select>
+                                      <div className="flex flex-col gap-1.5 pl-0 sm:pl-5">
+                                        {(rec.books || []).map((book, bIdx) => (
+                                          <div key={bIdx} className="flex flex-1 flex-wrap items-center gap-2">
+                                            <select
+                                              value={STANDARD_BOOKS.some((b) => b.title === book.title) ? book.title : "CUSTOM"}
+                                              onChange={(e) => {
+                                                if (e.target.value === "CUSTOM") {
+                                                  handleBookTitleChange(std.id, bIdx, "");
+                                                } else {
+                                                  const found = STANDARD_BOOKS.find((b) => b.title === e.target.value);
+                                                  if (found) {
+                                                    handleBookTitleChange(std.id, bIdx, found.title);
+                                                    handleBookPriceChange(std.id, bIdx, found.price);
+                                                  }
+                                                }
+                                              }}
+                                              className="rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800 focus:border-brand-primary focus:outline-none"
+                                            >
+                                              {STANDARD_BOOKS.map((b, idx) => (
+                                                <option key={idx} value={b.title}>
+                                                  {b.title} ({b.price.toLocaleString("vi-VN")} đ)
+                                                </option>
+                                              ))}
+                                              <option value="CUSTOM">-- Sách khác (Tự nhập) --</option>
+                                            </select>
 
-                                        {!STANDARD_BOOKS.some((b) => b.title === rec.bookTitle) && (
-                                          <input
-                                            type="text"
-                                            value={rec.bookTitle || ""}
-                                            onChange={(e) => handleBookTitleChange(std.id, e.target.value)}
-                                            placeholder="Tên sách cờ vua..."
-                                            className="flex-1 min-w-[140px] rounded border border-amber-300 bg-white px-2 py-1 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none"
-                                          />
-                                        )}
+                                            {!STANDARD_BOOKS.some((b) => b.title === book.title) && (
+                                              <input
+                                                type="text"
+                                                value={book.title || ""}
+                                                onChange={(e) => handleBookTitleChange(std.id, bIdx, e.target.value)}
+                                                placeholder="Tên sách cờ vua..."
+                                                className="flex-1 min-w-[140px] rounded border border-amber-300 bg-white px-2 py-1 text-xs font-medium text-slate-900 focus:border-brand-primary focus:outline-none"
+                                              />
+                                            )}
 
-                                        <div className="relative w-28">
-                                          <input
-                                            type="number"
-                                            step="5000"
-                                            value={rec.bookPrice || 0}
-                                            onChange={(e) => handleBookPriceChange(std.id, Number(e.target.value))}
-                                            placeholder="Giá sách"
-                                            className="w-full rounded border border-amber-300 bg-white py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
-                                          />
-                                          <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
-                                            đ
-                                          </span>
-                                        </div>
+                                            <div className="relative w-28">
+                                              <input
+                                                type="number"
+                                                step="5000"
+                                                value={book.price || 0}
+                                                onChange={(e) => handleBookPriceChange(std.id, bIdx, Number(e.target.value))}
+                                                placeholder="Giá sách"
+                                                className="w-full rounded border border-amber-300 bg-white py-1 pl-2 pr-5 text-xs font-bold text-slate-900 focus:border-brand-primary focus:outline-none"
+                                              />
+                                              <span className="pointer-events-none absolute right-2 top-1 text-[10px] font-bold text-slate-400">
+                                                đ
+                                              </span>
+                                            </div>
 
-                                        <span className="text-[11px] font-bold text-emerald-700 whitespace-nowrap">
-                                          (+30%: {Math.round((rec.bookPrice || 0) * 0.3).toLocaleString("vi-VN")} đ)
-                                        </span>
+                                            <span className="text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                                              (+30%: {Math.round((book.price || 0) * 0.3).toLocaleString("vi-VN")} đ)
+                                            </span>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveBook(std.id, bIdx)}
+                                              title="Xóa cuốn sách này"
+                                              className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                          </div>
+                                        ))}
                                       </div>
                                     )}
                                   </div>

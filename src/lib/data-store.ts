@@ -18,6 +18,63 @@ export const STANDARD_BOOKS = [
 
 export const DEFAULT_LUNCH_FEE = 50000;
 
+export interface BookItem {
+  title: string;
+  price: number;
+}
+
+const MULTI_BOOKS_PREFIX = "__BOOKS__:";
+
+/**
+ * Parse danh sách sách từ một AttendanceRecord (hỗ trợ cả 1 sách truyền thống và nhiều sách JSON).
+ */
+export function parseRecordBooks(rec?: { bookTitle?: string | null; bookPrice?: number | null }): BookItem[] {
+  if (!rec) return [];
+  const rawTitle = rec.bookTitle?.trim() || "";
+  if (rawTitle.startsWith(MULTI_BOOKS_PREFIX)) {
+    try {
+      const parsed = JSON.parse(rawTitle.slice(MULTI_BOOKS_PREFIX.length));
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((b: any) => ({
+            title: String(b?.title || "").trim() || "Sách Cờ Vua Bài Tập",
+            price: Number(b?.price) || 0,
+          }))
+          .filter((b) => b.price > 0 || b.title);
+      }
+    } catch {
+      // fallback to single-book format below
+    }
+  }
+  if (rec.bookPrice && rec.bookPrice > 0) {
+    return [{ title: rawTitle || "Sách Cờ Vua Bài Tập", price: Number(rec.bookPrice) }];
+  }
+  return [];
+}
+
+/**
+ * Serialize danh sách sách thành cặp (bookTitle, bookPrice) tương thích DB hiện tại.
+ * 1 sách giữ nguyên dạng phẳng; 2+ sách dùng prefix JSON và bookPrice = tổng tiền sách.
+ */
+export function serializeBooksToRecord(books: BookItem[]): { bookTitle?: string; bookPrice?: number } {
+  const valid = books
+    .map((b) => ({
+      title: (b.title || "").trim() || "Sách Cờ Vua Bài Tập",
+      price: Number(b.price) || 0,
+    }))
+    .filter((b) => b.price > 0);
+  if (valid.length === 0) {
+    return { bookTitle: undefined, bookPrice: undefined };
+  }
+  if (valid.length === 1) {
+    return { bookTitle: valid[0].title, bookPrice: valid[0].price };
+  }
+  return {
+    bookTitle: MULTI_BOOKS_PREFIX + JSON.stringify(valid),
+    bookPrice: valid.reduce((sum, b) => sum + b.price, 0),
+  };
+}
+
 export interface BranchData {
   id: string;
   name: string;
@@ -1219,15 +1276,18 @@ class InMemoryDataStore {
             if (record.status === "PRESENT") {
               presentCount += 1;
             }
-            // 1. Phụ phí phát sách
-            if (record.bookPrice && record.bookPrice > 0) {
-              surcharges.push({
-                type: "BOOK",
-                title: record.bookTitle || "Sách Cờ Vua Bài Tập",
-                amount: record.bookPrice,
-                date: sess.date,
-                sessionId: sess.id,
-              });
+            // 1. Phụ phí phát sách (hỗ trợ 1 hoặc nhiều cuốn sách trong 1 buổi)
+            const recordBooks = parseRecordBooks(record);
+            for (const b of recordBooks) {
+              if (b.price > 0) {
+                surcharges.push({
+                  type: "BOOK",
+                  title: b.title,
+                  amount: b.price,
+                  date: sess.date,
+                  sessionId: sess.id,
+                });
+              }
             }
             // 2. Phụ phí ăn trưa
             if (record.lunchFee && record.lunchFee > 0) {
@@ -1442,10 +1502,13 @@ class InMemoryDataStore {
         let totalClassBookRevenue = 0;
         sessionsInMonth.forEach((sess) => {
           sess.records.forEach((rec) => {
-            if (rec.bookPrice && rec.bookPrice > 0) {
-              totalClassBooksCount += 1;
-              totalClassBookRevenue += rec.bookPrice;
-            }
+            const recordBooks = parseRecordBooks(rec);
+            recordBooks.forEach((b) => {
+              if (b.price > 0) {
+                totalClassBooksCount += 1;
+                totalClassBookRevenue += b.price;
+              }
+            });
           });
         });
 
@@ -1571,24 +1634,27 @@ class InMemoryDataStore {
       const coach = this.users.find((u) => u.id === cls?.coachId);
 
       sess.records.forEach((rec) => {
-        if (rec.bookPrice && rec.bookPrice > 0) {
-          const std = this.students.find((s) => s.id === rec.studentId);
-          inClassBooks.push({
-            id: `class-book-${rec.id || sess.id + '-' + rec.studentId}`,
-            coachId: cls?.coachId || coachId || "",
-            coachName: coach?.name || "HLV",
-            bookTitle: rec.bookTitle || "Sách Cờ Vua Bài Tập",
-            quantity: 1,
-            unitPrice: rec.bookPrice,
-            totalPrice: rec.bookPrice,
-            takenDate: sess.date,
-            classId: sess.classId,
-            className: cls?.name,
-            note: `Học viên: ${std?.fullName || rec.studentId}${rec.coachNote ? ` • ${rec.coachNote}` : ""}`,
-            source: 'CLASS_ATTENDANCE',
-            createdAt: sess.date,
-          });
-        }
+        const recordBooks = parseRecordBooks(rec);
+        recordBooks.forEach((b, bIdx) => {
+          if (b.price > 0) {
+            const std = this.students.find((s) => s.id === rec.studentId);
+            inClassBooks.push({
+              id: `class-book-${rec.id || sess.id + '-' + rec.studentId}-${bIdx}`,
+              coachId: cls?.coachId || coachId || "",
+              coachName: coach?.name || "HLV",
+              bookTitle: b.title,
+              quantity: 1,
+              unitPrice: b.price,
+              totalPrice: b.price,
+              takenDate: sess.date,
+              classId: sess.classId,
+              className: cls?.name,
+              note: `Học viên: ${std?.fullName || rec.studentId}${rec.coachNote ? ` • ${rec.coachNote}` : ""}`,
+              source: 'CLASS_ATTENDANCE',
+              createdAt: sess.date,
+            });
+          }
+        });
       });
     });
 

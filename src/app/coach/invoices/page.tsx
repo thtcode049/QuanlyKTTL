@@ -26,7 +26,10 @@ import {
   ReceiptText,
   Filter,
   RotateCcw,
+  Receipt,
+  Plus,
 } from "lucide-react";
+import QuickSurchargeModal from "@/components/quick-surcharge-modal";
 import { ExcelColumnFilter, ColumnFilterState } from "@/components/excel-column-filter";
 import {
   dataStore,
@@ -186,6 +189,27 @@ function InvoicesContent() {
 
   // Modal Xuất Hàng Loạt Ảnh Thẻ Học Phí (PNG / ZIP)
   const [batchExportModalOpen, setBatchExportModalOpen] = useState(false);
+
+  // Modal Thêm / Quản Lý Phụ Phí Nhanh Cho Học Sinh
+  const [surchargeModalTarget, setSurchargeModalTarget] = useState<{
+    student: StudentData;
+    availableClasses: ClassroomData[];
+    initialClassId?: string;
+  } | null>(null);
+
+  const handleOpenQuickSurcharge = (student: StudentData, preferredClassId?: string) => {
+    const studentClasses = classes.filter(
+      (c) =>
+        student.classIds.includes(c.id) ||
+        invoices.some((i) => i.studentId === student.id && i.classId === c.id)
+    );
+    const available = studentClasses.length > 0 ? studentClasses : classes;
+    setSurchargeModalTarget({
+      student,
+      availableClasses: available,
+      initialClassId: preferredClassId || available[0]?.id,
+    });
+  };
 
   // Tùy chọn gộp phiếu thu cho học viên học nhiều lớp khi đang xem từng lớp riêng
   const [preferConsolidatedCards, setPreferConsolidatedCards] = useState<boolean>(true);
@@ -1418,7 +1442,23 @@ function InvoicesContent() {
                         <span className="font-mono text-[10px] font-bold text-slate-400">
                           {agg.studentCode}
                         </span>
-                        <h4 className="text-xs font-bold text-slate-900">{agg.studentName}</h4>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenQuickSurcharge(agg.student, agg.classItems[0]?.classId)}
+                          className="text-left text-xs font-bold text-slate-900 hover:text-brand-primary hover:underline transition-colors"
+                          title="Bấm vào học sinh để thêm phụ phí"
+                        >
+                          {agg.studentName}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenQuickSurcharge(agg.student, agg.classItems[0]?.classId)}
+                          className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-800 border border-amber-200 hover:bg-amber-100"
+                          title="Thêm phụ phí cho học sinh này"
+                        >
+                          <Plus className="h-2.5 w-2.5" />
+                          <span>Phụ phí</span>
+                        </button>
                         {agg.classItems.length > 1 && (
                           <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.2 text-[9.5px] font-extrabold border border-teal-200">
                             Học {agg.classItems.length} lớp
@@ -1529,7 +1569,25 @@ function InvoicesContent() {
                         <span className="font-mono text-[10px] font-bold text-slate-400">
                           {student?.code}
                         </span>
-                        <h4 className="text-xs font-bold text-slate-900">{student?.fullName}</h4>
+                        <button
+                          type="button"
+                          onClick={() => student && handleOpenQuickSurcharge(student, inv.classId)}
+                          className="text-left text-xs font-bold text-slate-900 hover:text-brand-primary hover:underline transition-colors"
+                          title="Bấm vào học sinh để thêm phụ phí"
+                        >
+                          {student?.fullName}
+                        </button>
+                        {student && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickSurcharge(student, inv.classId)}
+                            className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-800 border border-amber-200 hover:bg-amber-100"
+                            title="Thêm phụ phí cho học sinh này"
+                          >
+                            <Plus className="h-2.5 w-2.5" />
+                            <span>Phụ phí</span>
+                          </button>
+                        )}
                         {otherInvs.length > 0 && (
                           <span className="rounded bg-teal-100 text-teal-800 px-1.5 py-0.2 text-[9.5px] font-extrabold border border-teal-200">
                             Học {1 + otherInvs.length} lớp
@@ -1743,7 +1801,23 @@ function InvoicesContent() {
                       </td>
                       <td className="sticky left-[65px] z-10 bg-white group-hover:bg-slate-50 px-2.5 py-2 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)]">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-900 whitespace-nowrap">{agg.studentName}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickSurcharge(agg.student, agg.classItems[0]?.classId)}
+                            className="font-bold text-slate-900 hover:text-brand-primary hover:underline whitespace-nowrap text-left transition-colors"
+                            title="Bấm vào học sinh để thêm phụ phí"
+                          >
+                            {agg.studentName}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickSurcharge(agg.student, agg.classItems[0]?.classId)}
+                            className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-800 border border-amber-200 hover:bg-amber-100 opacity-80 group-hover:opacity-100 transition-opacity"
+                            title="Thêm phụ phí cho học sinh này"
+                          >
+                            <Plus className="h-2.5 w-2.5" />
+                            <span>Phụ phí</span>
+                          </button>
                           {agg.classItems.length > 1 && (
                             <span className="rounded bg-teal-100 text-teal-800 px-1 py-0.2 text-[9px] font-extrabold border border-teal-200">
                               {agg.classItems.length} lớp
@@ -2050,7 +2124,25 @@ function InvoicesContent() {
                       </td>
                       <td className="sticky left-[65px] z-10 bg-white group-hover:bg-slate-50 px-2.5 py-2 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)]">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-900 whitespace-nowrap">{student?.fullName}</span>
+                          <button
+                            type="button"
+                            onClick={() => student && handleOpenQuickSurcharge(student, inv.classId)}
+                            className="font-bold text-slate-900 hover:text-brand-primary hover:underline whitespace-nowrap text-left transition-colors"
+                            title="Bấm vào học sinh để thêm phụ phí"
+                          >
+                            {student?.fullName}
+                          </button>
+                          {student && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenQuickSurcharge(student, inv.classId)}
+                              className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-800 border border-amber-200 hover:bg-amber-100 opacity-80 group-hover:opacity-100 transition-opacity"
+                              title="Thêm phụ phí cho học sinh này"
+                            >
+                              <Plus className="h-2.5 w-2.5" />
+                              <span>Phụ phí</span>
+                            </button>
+                          )}
                           {otherInvs.length > 0 && (
                             <span
                               className="rounded bg-teal-50 text-teal-700 px-1 py-0.2 text-[9px] font-extrabold border border-teal-200"
@@ -2451,6 +2543,18 @@ function InvoicesContent() {
                 };
               })
         }
+      />
+
+      {/* Modal Thêm / Quản Lý Phụ Phí Nhanh Cho Học Sinh */}
+      <QuickSurchargeModal
+        isOpen={!!surchargeModalTarget}
+        onClose={() => setSurchargeModalTarget(null)}
+        student={surchargeModalTarget?.student || null}
+        month={selectedMonth}
+        year={selectedYear}
+        availableClasses={surchargeModalTarget?.availableClasses || []}
+        initialClassId={surchargeModalTarget?.initialClassId}
+        onSuccess={reloadInvoices}
       />
 
       {/* Modal Xuất Hàng Loạt Ảnh Thẻ Học Phí PNG / ZIP */}
